@@ -33,5 +33,5 @@ function draw(){
         }
     }
 
-    drawSprite(0, x, y);
+	player.draw();
 }
