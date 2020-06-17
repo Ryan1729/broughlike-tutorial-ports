@@ -10,4 +10,22 @@ class Monster{
         drawSprite(this.sprite, this.tile.x, this.tile.y);
 	}
 
+
+    tryMove(dx, dy){
+        let newTile = this.tile.getNeighbor(dx,dy);
+        if(newTile.passable){
+            if(!newTile.monster){
+                this.move(newTile);
+            }
+            return true;
+        }
+    }
+
+    move(tile){
+        if(this.tile){
+            this.tile.monster = null;
+        }
+        this.tile = tile;
+        tile.monster = this;
+    }
 }
