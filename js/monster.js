@@ -43,9 +43,26 @@ class Monster{
         if(newTile.passable){
             if(!newTile.monster){
                 this.move(newTile);
+            }else{
+                if(this.isPlayer != newTile.monster.isPlayer){
+                    newTile.monster.hit(1);
+                }
             }
             return true;
         }
+    }
+
+    hit(damage){
+        this.hp -= damage;
+        if(this.hp <= 0){
+            this.die();
+        }
+    }
+
+    die(){
+        this.dead = true;
+        this.tile.monster = null;
+        this.sprite = 1;
     }
 
     move(tile){
