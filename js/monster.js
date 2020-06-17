@@ -24,8 +24,19 @@ class Monster{
 
     draw(){
         drawSprite(this.sprite, this.tile.x, this.tile.y);
+
+        this.drawHp();
     }
 
+    drawHp(){
+        for(let i=0; i<this.hp; i++){
+            drawSprite(
+                9,
+                this.tile.x + (i%3)*(5/16),
+                this.tile.y - Math.floor(i/3)*(5/16)
+            );
+        }
+    }
 
     tryMove(dx, dy){
         let newTile = this.tile.getNeighbor(dx,dy);
