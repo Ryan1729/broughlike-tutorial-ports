@@ -29,3 +29,10 @@ class Monster{
         tile.monster = this;
     }
 }
+
+class Player extends Monster{
+    constructor(tile){
+        super(tile, 0, 3);
+        this.isPlayer = true;
+    }
+}
