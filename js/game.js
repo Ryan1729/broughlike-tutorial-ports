@@ -33,5 +33,9 @@ function draw(){
         }
     }
 
-	player.draw();
+    for(let i=0;i<monsters.length;i++){
+        monsters[i].draw();
+    }
+
+    player.draw();
 }
