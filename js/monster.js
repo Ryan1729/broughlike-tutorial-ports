@@ -36,3 +36,33 @@ class Player extends Monster{
         this.isPlayer = true;
     }
 }
+
+class Bird extends Monster{
+    constructor(tile){
+        super(tile, 4, 3);
+    }
+}
+
+class Snake extends Monster{
+    constructor(tile){
+        super(tile, 5, 1);
+    }
+}
+
+class Tank extends Monster{
+    constructor(tile){
+        super(tile, 6, 2);
+    }
+}
+
+class Eater extends Monster{
+    constructor(tile){
+        super(tile, 7, 1);
+    }
+}
+
+class Jester extends Monster{
+    constructor(tile){
+        super(tile, 8, 2);
+    }
+}
