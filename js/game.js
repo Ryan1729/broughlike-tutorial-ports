@@ -7,6 +7,8 @@ function setupCanvas(){
     canvas.height = tileSize*numTiles;
     canvas.style.width = canvas.width + 'px';
     canvas.style.height = canvas.height + 'px';
+
+    ctx.imageSmoothingEnabled = false;
 }
 function drawSprite(sprite, x, y){
     ctx.drawImage(
