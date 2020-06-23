@@ -7,7 +7,7 @@ function generateTiles(){
     for(let i=0;i<numTiles;i++){
         tiles[i] = [];
         for(let j=0;j<numTiles;j++){
-            if(Math.random() < 0.3){
+            if(Math.random() < 0.3 || !inBounds(i,j)){
                 tiles[i][j] = new Wall(i,j);
             }else{
                 tiles[i][j] = new Floor(i,j);
