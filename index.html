@@ -22,9 +22,12 @@
 <script src="js/spell.js"></script>
 
 <script>
-    
+    tileSize = 64;
+    numTiles = 9;
+    uiWidth = 4;
+
     x = y = 0;
-    
+
     document.querySelector("html").onkeypress = function(e){
         if(e.key=="w") y--;
         if(e.key=="s") y++;
