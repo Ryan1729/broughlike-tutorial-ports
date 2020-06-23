@@ -8,3 +8,21 @@ function setupCanvas(){
     canvas.style.width = canvas.width + 'px';
     canvas.style.height = canvas.height + 'px';
 }
+function drawSprite(sprite, x, y){
+    ctx.drawImage(
+        spritesheet,
+        sprite*16,
+        0,
+        16,
+        16,
+        x*tileSize,
+        y*tileSize,
+        tileSize,
+        tileSize
+    );
+}
+
+function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    drawSprite(0, x, y);
+}
