@@ -13,10 +13,16 @@
 </style>
 
 <canvas></canvas>
+
+<script src="js/game.js"></script>
+<script src="js/map.js"></script>
+<script src="js/tile.js"></script>
+<script src="js/monster.js"></script>
+<script src="js/util.js"></script>
+<script src="js/spell.js"></script>
+
 <script>
-    canvas = document.querySelector("canvas");
-    ctx = canvas.getContext("2d");
-    ctx.fillRect(0,0,20,20,20);
+    
     x = y = 0;
     
     document.querySelector("html").onkeypress = function(e){
@@ -30,4 +36,6 @@
         ctx.fillRect (x*20,y*20,20,20);
     }
     setInterval(draw, 15);
+    
+    setupCanvas();
 </script>
