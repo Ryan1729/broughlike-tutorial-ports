@@ -12,6 +12,7 @@
         if(e.key=="d") x++;
     };
     function draw(){
+        ctx.clearRect(0,0,1000,1000);
         ctx.fillRect (x*20,y*20,20,20);
     }
     setInterval(draw, 15);
