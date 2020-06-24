@@ -6,6 +6,10 @@ class Monster{
         this.hp = hp;
     }
 
+    heal(damage){
+        this.hp = Math.min(maxHp, this.hp+damage);
+    }
+
     update(){
         if(this.stunned){
             this.stunned = false;
@@ -133,6 +137,16 @@ class Tank extends Monster{
 class Eater extends Monster{
     constructor(tile){
         super(tile, 7, 1);
+    }
+
+    doStuff(){
+        let neighbors = this.tile.getAdjacentNeighbors().filter(t => !t.passable && inBounds(t.x,t.y));
+        if(neighbors.length){
+            neighbors[0].replace(Floor);
+            this.heal(0.5);
+        }else{
+            super.doStuff();
+        }
     }
 }
 
