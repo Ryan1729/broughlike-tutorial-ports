@@ -45,6 +45,8 @@ class Monster{
                 this.move(newTile);
             }else{
                 if(this.isPlayer != newTile.monster.isPlayer){
+                    this.attackedThisTurn = true;
+
                     newTile.monster.hit(1);
                 }
             }
@@ -96,6 +98,15 @@ class Bird extends Monster{
 class Snake extends Monster{
     constructor(tile){
         super(tile, 5, 1);
+    }
+
+    doStuff(){
+        this.attackedThisTurn = false;
+        super.doStuff();
+
+        if(!this.attackedThisTurn){
+            super.doStuff();
+        }
     }
 }
 
