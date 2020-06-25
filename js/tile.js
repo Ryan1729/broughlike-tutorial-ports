@@ -55,10 +55,31 @@ class Floor extends Tile{
     constructor(x,y){
         super(x, y, 2, true);
     };
+
+    stepOn(monster){
+        //TODO: complete
+    }
 }
 
 class Wall extends Tile{
     constructor(x, y){
         super(x, y, 3, false);
+    }
+}
+
+class Exit extends Tile{
+    constructor(x, y){
+        super(x, y, 11, true);
+    }
+
+    stepOn(monster){
+        if(monster.isPlayer){
+            if(level == numLevels){
+                showTitle();
+            }else{
+                level++;
+                startLevel(Math.min(maxHp, player.hp+1));
+            }
+        }
     }
 }
