@@ -2,8 +2,12 @@ function generateLevel(){
     tryTo('generate map', function(){
         return generateTiles() == randomPassableTile().getConnectedTiles().length;
     });
-    
+
     generateMonsters();
+
+    for(let i=0;i<3;i++){
+        randomPassableTile().treasure = true;
+    }
 }
 
 function generateTiles(){
@@ -22,7 +26,7 @@ function generateTiles(){
             }
         }
     }
-    
+
     return passableTiles;
 }
 

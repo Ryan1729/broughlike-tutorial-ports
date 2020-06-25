@@ -46,9 +46,13 @@ class Tile{
         return connectedTiles;
     }
 
-	draw(){
+    draw(){
         drawSprite(this.sprite, this.x, this.y);
-	}
+        
+        if(this.treasure){                      
+            drawSprite(12, this.x, this.y);                                             
+        }  
+    }
 }
 
 class Floor extends Tile{
