@@ -73,10 +73,11 @@ class Monster{
             }else{
                 if(this.isPlayer != newTile.monster.isPlayer){
                     this.attackedThisTurn = true;
-
                     newTile.monster.stunned = true;
-
                     newTile.monster.hit(1);
+
+                    this.offsetX = (newTile.x - this.tile.x)/2;
+                    this.offsetY = (newTile.y - this.tile.y)/2;
                 }
             }
             return true;
