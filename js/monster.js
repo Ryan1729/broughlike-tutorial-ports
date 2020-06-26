@@ -76,6 +76,8 @@ class Monster{
                     newTile.monster.stunned = true;
                     newTile.monster.hit(1);
 
+                    shakeAmount = 5;
+
                     this.offsetX = (newTile.x - this.tile.x)/2;
                     this.offsetY = (newTile.y - this.tile.y)/2;
                 }
