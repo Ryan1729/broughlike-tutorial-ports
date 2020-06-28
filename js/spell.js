@@ -14,5 +14,11 @@ spells = {
             }
         }
         shakeAmount = 20;
+    },
+    MAELSTROM: function(){
+        for(let i=0;i<monsters.length;i++){
+            monsters[i].move(randomPassableTile());
+            monsters[i].teleportCounter = 2;
+        }
     }
 };
