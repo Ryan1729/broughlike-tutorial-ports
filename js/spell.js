@@ -20,5 +20,8 @@ spells = {
             monsters[i].move(randomPassableTile());
             monsters[i].teleportCounter = 2;
         }
+    },
+    MULLIGAN: function(){
+        startLevel(1, player.spells);
     }
 };
