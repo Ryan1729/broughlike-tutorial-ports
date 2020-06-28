@@ -54,6 +54,8 @@
             if(e.key=="s") player.tryMove(0, 1);
             if(e.key=="a") player.tryMove(-1, 0);
             if(e.key=="d") player.tryMove(1, 0);
+
+            if(e.key>=1 && e.key<=9) player.castSpell(e.key-1);
         }
     };
     setInterval(draw, 15);
