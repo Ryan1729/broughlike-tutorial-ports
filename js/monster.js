@@ -8,6 +8,7 @@ class Monster{
         this.offsetX = 0;
         this.offsetY = 0;
         this.lastMove = [-1,0];
+        this.bonusAttack = 0;
     }
 
     heal(damage){
@@ -76,7 +77,8 @@ class Monster{
                 if(this.isPlayer != newTile.monster.isPlayer){
                     this.attackedThisTurn = true;
                     newTile.monster.stunned = true;
-                    newTile.monster.hit(1);
+                    newTile.monster.hit(1 + this.bonusAttack);
+                    this.bonusAttack = 0;
 
                     shakeAmount = 5;
 

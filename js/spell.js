@@ -79,5 +79,8 @@ spells = {
                 t.replace(Floor).treasure = true;
             }
         });
+    },
+    POWER: function(){
+        player.bonusAttack=5;
     }
 };
