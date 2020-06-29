@@ -91,17 +91,20 @@ class Monster{
     }
 
     hit(damage){
+        if(this.shield>0){
+            return;
+        }
         this.hp -= damage;
         if(this.hp <= 0){
             this.die();
         }
-        
-        
-        if(this.isPlayer){                                                     
-            playSound("hit1");                                              
-        }else{                                                       
-            playSound("hit2");                                              
-        }  
+
+
+        if(this.isPlayer){
+            playSound("hit1");
+        }else{
+            playSound("hit2");
+        }
     }
 
     die(){
@@ -131,18 +134,22 @@ class Player extends Monster{
         this.spells = shuffle(Object.keys(spells)).splice(0,numSpells);
     }
 
+    update(){
+        this.shield--;
+    }
+
     tryMove(dx, dy){
         if(super.tryMove(dx,dy)){
             tick();
         }
     }
-    
-    addSpell(){                                                       
+
+    addSpell(){
         let newSpell = shuffle(Object.keys(spells))[0];
         this.spells.push(newSpell);
     }
 
-    castSpell(index){                                                   
+    castSpell(index){
         let spellName = this.spells[index];
         if(spellName){
             delete this.spells[index];

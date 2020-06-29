@@ -89,5 +89,11 @@ spells = {
                 player.spells[i] = player.spells[i-1];
             }
         }
+    },
+    BRAVERY: function(){
+        player.shield = 2;
+        for(let i=0;i<monsters.length;i++){
+            monsters[i].stunned = true;
+        }
     }
 };
