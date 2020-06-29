@@ -52,6 +52,18 @@ class Tile{
         if(this.treasure){
             drawSprite(12, this.x, this.y);
         }
+
+        if(this.effectCounter){
+            this.effectCounter--;
+            ctx.globalAlpha = this.effectCounter/30;
+            drawSprite(this.effect, this.x, this.y);
+            ctx.globalAlpha = 1;
+        }
+    }
+
+    setEffect(effectSprite){
+        this.effect = effectSprite;
+        this.effectCounter = 30;
     }
 }
 
