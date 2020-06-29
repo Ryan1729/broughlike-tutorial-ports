@@ -98,6 +98,17 @@ spells = {
     },
     BOLT: function(){
         boltTravel(player.lastMove, 15 + Math.abs(player.lastMove[1]), 4);
+    },
+    CROSS: function(){
+        let directions = [
+            [0, -1],
+            [0, 1],
+            [-1, 0],
+            [1, 0]
+        ];
+        for(let k=0;k<directions.length;k++){
+            boltTravel(directions[k], 15 + Math.abs(directions[k][1]), 2);
+        }
     }
 };
 
