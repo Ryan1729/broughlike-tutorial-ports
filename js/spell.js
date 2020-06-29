@@ -72,5 +72,12 @@ spells = {
             monsters[i].heal(1);
             monsters[i].tile.treasure = true;
         }
+    },
+    ALCHEMY: function(){
+        player.tile.getAdjacentNeighbors().forEach(function(t){
+            if(!t.passable && inBounds(t.x, t.y)){
+                t.replace(Floor).treasure = true;
+            }
+        });
     }
 };
