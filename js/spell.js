@@ -33,5 +33,26 @@ spells = {
         });
         player.tile.setEffect(13);
         player.heal(1);
+    },
+    DASH: function(){
+        let newTile = player.tile;
+        while(true){
+            let testTile = newTile.getNeighbor(player.lastMove[0],player.lastMove[1]);
+            if(testTile.passable && !testTile.monster){
+                newTile = testTile;
+            }else{
+                break;
+            }
+        }
+        if(player.tile != newTile){
+            player.move(newTile);
+            newTile.getAdjacentNeighbors().forEach(t => {
+                if(t.monster){
+                    t.setEffect(14);
+                    t.monster.stunned = true;
+                    t.monster.hit(1);
+                }
+            });
+        }
     }
 };

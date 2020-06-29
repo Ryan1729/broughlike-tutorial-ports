@@ -7,6 +7,7 @@ class Monster{
         this.teleportCounter = 2;
         this.offsetX = 0;
         this.offsetY = 0;
+        this.lastMove = [-1,0];
     }
 
     heal(damage){
@@ -68,6 +69,7 @@ class Monster{
     tryMove(dx, dy){
         let newTile = this.tile.getNeighbor(dx,dy);
         if(newTile.passable){
+            this.lastMove = [dx,dy];
             if(!newTile.monster){
                 this.move(newTile);
             }else{
