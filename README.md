@@ -1,3 +1,13 @@
-# JavaScript Broughlike Tutorial
+# Broughlike Tutorial Ports
 
-This is (at least starting out as) a straight run through of https://github.com/nluqo/broughlike-tutorial
+This repo consists of ports of the code from [this excellent tutorial](https://github.com/nluqo/broughlike-tutorial) to different languages/platforms, from the original browser-based JS version. Note that the actual instructions aren't redone; only the code has been ported.
+
+## js-original
+
+A completed version of the code from the [original tutorial](https://github.com/nluqo/broughlike-tutorial).
+
+## pico8 (WIP)
+
+A version of the code for the [pico-8 fantasy console](https://www.lexaloffle.com/pico-8.php).
+
+
