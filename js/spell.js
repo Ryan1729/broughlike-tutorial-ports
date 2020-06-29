@@ -82,5 +82,12 @@ spells = {
     },
     POWER: function(){
         player.bonusAttack=5;
+    },
+    BUBBLE: function(){
+        for(let i=player.spells.length-1;i>0;i--){
+            if(!player.spells[i]){
+                player.spells[i] = player.spells[i-1];
+            }
+        }
     }
 };
