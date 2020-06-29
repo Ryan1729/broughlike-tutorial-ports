@@ -54,5 +54,17 @@ spells = {
                 }
             });
         }
+    },
+    DIG: function(){
+        for(let i=1;i<numTiles-1;i++){
+            for(let j=1;j<numTiles-1;j++){
+                let tile = getTile(i,j);
+                if(!tile.passable){
+                    tile.replace(Floor);
+                }
+            }
+        }
+        player.tile.setEffect(13);
+        player.heal(2);
     }
 };
