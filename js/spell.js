@@ -95,5 +95,24 @@ spells = {
         for(let i=0;i<monsters.length;i++){
             monsters[i].stunned = true;
         }
+    },
+    BOLT: function(){
+        boltTravel(player.lastMove, 15 + Math.abs(player.lastMove[1]), 4);
     }
 };
+
+function boltTravel(direction, effect, damage){
+    let newTile = player.tile;
+    while(true){
+        let testTile = newTile.getNeighbor(direction[0], direction[1]);
+        if(testTile.passable){
+            newTile = testTile;
+            if(newTile.monster){
+                newTile.monster.hit(damage);
+            }
+            newTile.setEffect(effect);
+        }else{
+            break;
+        }
+    }
+}
