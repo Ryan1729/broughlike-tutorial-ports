@@ -109,6 +109,17 @@ spells = {
         for(let k=0;k<directions.length;k++){
             boltTravel(directions[k], 15 + Math.abs(directions[k][1]), 2);
         }
+    },
+    EX: function(){
+        let directions = [
+            [-1, -1],
+            [-1, 1],
+            [1, -1],
+            [1, 1]
+        ];
+        for(let k=0;k<directions.length;k++){
+            boltTravel(directions[k], 14, 3);
+        }
     }
 };
 
