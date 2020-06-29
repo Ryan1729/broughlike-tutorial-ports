@@ -93,7 +93,7 @@ function showTitle(){
 function startGame(){
     level = 1;
     score = 0;
-    
+
     numSpells = 1;
 
     startLevel(startingHp);
