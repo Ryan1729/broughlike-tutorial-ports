@@ -66,5 +66,11 @@ spells = {
         }
         player.tile.setEffect(13);
         player.heal(2);
+    },
+    KINGMAKER: function(){
+        for(let i=0;i<monsters.length;i++){
+            monsters[i].heal(1);
+            monsters[i].tile.treasure = true;
+        }
     }
 };
