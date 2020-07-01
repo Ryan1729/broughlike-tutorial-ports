@@ -8,6 +8,16 @@ __lua__
 -- game
 --
 
+function draw_sprite(sprite, x, y)
+  sspr(
+    (sprite % 8) * tilesize,
+    flr(sprite / 8) * tilesize,
+    tilesize,
+    tilesize,
+    x * tilesize,
+    y * tilesize
+  )
+end
 -->8
 
 --
@@ -44,12 +54,25 @@ __lua__
 -- main
 --
 
-function _draw()
-	cls()
-	
-	print("hello world!", 37, 70, 14)
+x = 0
+y = 0
+tilesize=16
+
+function _init()
+  palt(15, true)
 end
 
+function _draw()
+  cls(13)
+  draw_sprite(0, x, y)
+end
+
+function _update()
+  if (btnp(0)) x -= 1
+  if (btnp(1)) x += 1
+  if (btnp(2)) y -= 1
+  if (btnp(3)) y += 1
+end
 
 __gfx__
 ffffffffffffffffffffffffffffffff11111111111111111133333333333311fffffffffffffffffffffffffffffffffffffffffffffffffddffddfffffffff
