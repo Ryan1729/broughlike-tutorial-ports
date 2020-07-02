@@ -56,6 +56,17 @@ function get_tile(x, y)
     end
 end
 
+function random_passable_tile()
+    local tile;
+    try_to('get random passable tile', function()
+        local x = flr(rnd(numTiles))
+        local y = flr(rnd(numTiles))
+        tile = get_tile(x, y);
+        return tile.passable and not tile.monster;
+    end);
+    return tile
+end
+
 -->8
 
 --
@@ -104,6 +115,15 @@ end
 -- util
 --
 
+function try_to(description, callback)
+    for timeout=1000, 0, -1 do
+        if(callback()) then
+            return
+        end
+    end
+    assert(false, "Timeout while trying to "..description)
+end
+
 -->8
 
 --
@@ -117,15 +137,19 @@ end
 --
 
 numTiles=9
+tilesize=16
 
 x = 0
 y = 0
-tilesize=16
 
 function _init()
   palt(15, true)
 
   generate_level()
+
+  starting_tile = random_passable_tile()
+  x = starting_tile.x
+  y = starting_tile.y
 end
 
 function _draw()
