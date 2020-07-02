@@ -9,14 +9,16 @@ __lua__
 --
 
 function draw_sprite(sprite, x, y)
-  sspr(
-    (sprite % 8) * tilesize,
-    flr(sprite / 8) * tilesize,
-    tilesize,
-    tilesize,
-    x * tilesize,
-    y * tilesize
-  )
+    sspr(
+        (sprite % 8) * tilesize,
+        flr(sprite / 8) * tilesize,
+        tilesize,
+        tilesize,
+        -- we offset the sprites by 8 so at least
+        -- part of all the tiles can be seen
+        x * tilesize - 8,
+        y * tilesize - 8
+    )
 end
 -->8
 
@@ -24,11 +26,71 @@ end
 -- map
 --
 
+function generate_level()
+    generate_tiles()
+end
+
+function generate_tiles()
+    tiles = {}
+    for i=0,numTiles do
+        tiles[i] = {}
+        for j=0,numTiles do
+            if (rnd(1) < 0.3 or not in_bounds(i, j)) then
+                tiles[i][j] = wall:new(i,j)
+            else
+                tiles[i][j] = floor:new(i,j);
+            end
+        end
+    end
+end
+
+function in_bounds(x,y)
+    return x>0 and y>0 and x<numTiles-1 and y<numTiles-1
+end
+
+function get_tile(x, y)
+    if(in_bounds(x,y)) then
+        return tiles[x][y]
+    else
+        return wall:new(x,y)
+    end
+end
+
 -->8
 
 --
 -- tile
 --
+
+tile = {}
+
+function tile:new(x, y, sprite, passable)
+    obj = {
+        x = x,
+        y = y,
+        sprite = sprite,
+        passable = passable
+    }
+    setmetatable(obj, self)
+    self.__index = self
+    return obj
+end
+
+function tile:draw()
+  draw_sprite(self.sprite, self.x, self.y)
+end
+
+floor = tile:new()
+
+function floor:new(x, y)
+  return tile.new(self, x, y, 2, true)
+end
+
+wall = tile:new()
+
+function wall:new(x, y)
+  return tile.new(self, x, y, 3, false)
+end
 
 -->8
 
@@ -54,16 +116,27 @@ end
 -- main
 --
 
+numTiles=9
+
 x = 0
 y = 0
 tilesize=16
 
 function _init()
   palt(15, true)
+
+  generate_level()
 end
 
 function _draw()
   cls(13)
+
+  for i=0,numTiles do
+    for j=0,numTiles do
+        get_tile(i, j):draw()
+    end
+  end
+
   draw_sprite(0, x, y)
 end
 
