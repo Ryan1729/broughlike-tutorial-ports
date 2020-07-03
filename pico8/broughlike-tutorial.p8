@@ -27,10 +27,19 @@ end
 --
 
 function generate_level()
-    generate_tiles()
+    try_to('generate map', function()
+        local tile_count = generate_tiles()
+
+        local connected = random_passable_tile():get_connected_tiles()
+
+        return tile_count == #(connected)
+        --return generate_tiles() == #(random_passable_tile():get_connected_tiles())
+    end)
 end
 
 function generate_tiles()
+    local passable_tiles = 0
+
     tiles = {}
     for i=0,numTiles do
         tiles[i] = {}
@@ -39,9 +48,13 @@ function generate_tiles()
                 tiles[i][j] = wall:new(i,j)
             else
                 tiles[i][j] = floor:new(i,j);
+
+                passable_tiles += 1
             end
         end
     end
+
+    return passable_tiles
 end
 
 function in_bounds(x,y)
@@ -91,6 +104,38 @@ function tile:draw()
   draw_sprite(self.sprite, self.x, self.y)
 end
 
+
+function tile:get_neighbor(dx, dy)
+    return get_tile(self.x + dx, self.y + dy)
+end
+
+function tile:get_adjacent_neighbors()
+    return shuffle({
+        self:get_neighbor(0, -1),
+        self:get_neighbor(0, 1),
+        self:get_neighbor(-1, 0),
+        self:get_neighbor(1, 0)
+    });
+end
+
+function tile:get_adjacent_passable_neighbors()
+    return filter(self:get_adjacent_neighbors(), function (t) return t.passable end);
+end
+
+function tile:get_connected_tiles()
+    local connected_tiles = {self}
+    local frontier = {self}
+    while (#frontier > 0) do
+        local neighbors = filter(
+            pop(frontier):get_adjacent_passable_neighbors(),
+            function (t) return not contains(connected_tiles, t) end
+        )
+        connected_tiles = concat(connected_tiles, neighbors)
+        frontier = concat(frontier, neighbors)
+    end
+    return connected_tiles
+end
+
 floor = tile:new()
 
 function floor:new(x, y)
@@ -121,7 +166,69 @@ function try_to(description, callback)
             return
         end
     end
-    assert(false, "Timeout while trying to "..description)
+    assert(false, "timeout while trying to "..description)
+end
+
+function filter(tbl, predicate)
+    local output = {}
+
+    for i=1,#tbl do
+        local v = tbl[i]
+        if (predicate(v)) then
+            add(output, v)
+        end
+    end
+
+    return output
+end
+
+function pop(tbl)
+    local len = #tbl
+    local v = tbl[len]
+    tbl[len] = nil
+    return v
+end
+
+function concat(t1, t2)
+    local output = {}
+
+    local len1 = #t1
+    for i=1,len1 do
+        output[i] = t1[i]
+    end
+
+    for i=1,#t2 do
+        output[len1 + i] = t2[i]
+    end
+
+    return output
+end
+
+function contains(tbl, elem)
+    for e in all(tbl) do
+        if (e == elem) return true
+    end
+    return false
+end
+
+function shuffle(arr)
+    for i=1, #arr do
+        local r = flr(rnd(i)) + 1
+        arr[i], arr[r] = arr[r], arr[i]
+    end
+    return arr;
+end
+
+-- https://www.lexaloffle.com/bbs/?pid=43636
+-- converts anything to string, even nested tables
+function tostring(any)
+  if (type(any)~="table") return tostr(any)
+  local str = "{"
+  for k,v in pairs(any) do
+    if (str~="{") str=str..","
+    str=str..tostring(k).."="..tostring(v)
+  end
+  return str.."}"
 end
 
 -->8
