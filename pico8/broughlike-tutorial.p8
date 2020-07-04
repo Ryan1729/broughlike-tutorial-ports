@@ -154,6 +154,52 @@ end
 -- monster
 --
 
+monster = {}
+
+function monster:new(tile, sprite, hp)
+    obj = {
+        sprite = sprite,
+        hp = hp
+    }
+    setmetatable(obj, self)
+    self.__index = self
+    obj:move(tile)
+    return obj
+end
+
+function monster:draw()
+  draw_sprite(self.sprite, self.tile.x, self.tile.y)
+end
+
+function monster:try_move(dx, dy)
+    local new_tile = self.tile:get_neighbor(dx, dy)
+    if(new_tile.passable) then
+        if(new_tile.monster == nil) then
+            self:move(new_tile)
+        end
+        return true
+    end
+    return false
+end
+
+function monster:move(tile)
+    if(self.tile ~= nil) then
+        self.tile.monster = nil
+    end
+    self.tile = tile
+    tile.monster = self
+end
+
+player_class = monster:new({})
+
+function player_class:new(tile)
+    local player = monster.new(self, tile, 0, 3)
+
+    player.is_player = true
+
+    return player
+end
+
 -->8
 
 --
@@ -221,12 +267,14 @@ end
 
 -- https://www.lexaloffle.com/bbs/?pid=43636
 -- converts anything to string, even nested tables
-function tostring(any)
-  if (type(any)~="table") return tostr(any)
+-- (max_depth added by ryan1729)
+function tostring(any, max_depth)
+  max_depth = max_depth or 16
+  if (type(any)~="table" or max_depth <= 0) return tostr(any)
   local str = "{"
   for k,v in pairs(any) do
     if (str~="{") str=str..","
-    str=str..tostring(k).."="..tostring(v)
+    str=str..tostring(k, max_depth - 1).."="..tostring(v, max_depth - 1)
   end
   return str.."}"
 end
@@ -246,17 +294,12 @@ end
 numTiles=9
 tilesize=16
 
-x = 0
-y = 0
-
 function _init()
   palt(15, true)
 
   generate_level()
 
-  starting_tile = random_passable_tile()
-  x = starting_tile.x
-  y = starting_tile.y
+  player = player_class:new(random_passable_tile())
 end
 
 function _draw()
@@ -268,14 +311,14 @@ function _draw()
     end
   end
 
-  draw_sprite(0, x, y)
+  player:draw()
 end
 
 function _update()
-  if (btnp(0)) x -= 1
-  if (btnp(1)) x += 1
-  if (btnp(2)) y -= 1
-  if (btnp(3)) y += 1
+  if (btnp(0)) player:try_move(-1, 0)
+  if (btnp(1)) player:try_move(1, 0)
+  if (btnp(2)) player:try_move(0, -1)
+  if (btnp(3)) player:try_move(0, 1)
 end
 
 __gfx__
