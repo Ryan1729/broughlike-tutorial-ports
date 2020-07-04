@@ -30,7 +30,7 @@ function generate_level()
     try_to('generate map', function()
         return generate_tiles() == #(random_passable_tile():get_connected_tiles())
     end)
-    
+
     generate_monsters()
 end
 
@@ -111,10 +111,14 @@ function tile:new(x, y, sprite, passable)
     return obj
 end
 
+function tile:dist(other)
+  return abs(self.x-other.x)+abs(self.y-other.y);
+end
+
+
 function tile:draw()
   draw_sprite(self.sprite, self.x, self.y)
 end
-
 
 function tile:get_neighbor(dx, dy)
     return get_tile(self.x + dx, self.y + dy)
@@ -178,6 +182,26 @@ function monster:new(tile, sprite, hp)
     return obj
 end
 
+function monster:update()
+  self:do_stuff()
+end
+
+function monster:do_stuff()
+    local neighbors = self.tile:get_adjacent_passable_neighbors()
+
+    neighbors = filter(neighbors, function(t)
+        return (t.monster == nil) or t.monster.isPlayer
+    end)
+
+    if(#neighbors > 0) then
+        sort(neighbors, function(a,b)
+            return a:dist(player.tile) > b:dist(player.tile)
+        end)
+        local new_tile = neighbors[1]
+        self:try_move(new_tile.x - self.tile.x, new_tile.y - self.tile.y);
+    end
+end
+
 function monster:draw()
   draw_sprite(self.sprite, self.tile.x, self.tile.y)
 end
@@ -209,6 +233,12 @@ function player_class:new(tile)
     player.is_player = true
 
     return player
+end
+
+function player_class:try_move(dx, dy)
+    if (monster.try_move(self, dx,dy)) then
+        tick()
+    end
 end
 
 bird = monster:new({})
@@ -320,6 +350,18 @@ function tostring(any, max_depth)
   return str.."}"
 end
 
+-- https://www.lexaloffle.com/bbs/?pid=50555#p
+-- chosen for brevity
+function sort(a,cmp)
+  for i=1,#a do
+    local j = i
+    while j > 1 and cmp(a[j-1],a[j]) do
+        a[j],a[j-1] = a[j-1],a[j]
+        j = j - 1
+    end
+  end
+end
+
 -->8
 
 --
@@ -358,6 +400,16 @@ function _draw()
     end
 
     player:draw()
+end
+
+function tick()
+    for k=#monsters,1,-1 do
+        if(not monsters[k].dead) then
+            monsters[k]:update()
+        else
+            del(monsters, monsters[k])
+        end
+    end
 end
 
 function _update()
