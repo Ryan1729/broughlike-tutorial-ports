@@ -28,13 +28,10 @@ end
 
 function generate_level()
     try_to('generate map', function()
-        local tile_count = generate_tiles()
-
-        local connected = random_passable_tile():get_connected_tiles()
-
-        return tile_count == #(connected)
-        --return generate_tiles() == #(random_passable_tile():get_connected_tiles())
+        return generate_tiles() == #(random_passable_tile():get_connected_tiles())
     end)
+    
+    generate_monsters()
 end
 
 function generate_tiles()
@@ -78,6 +75,20 @@ function random_passable_tile()
         return tile.passable and not tile.monster;
     end);
     return tile
+end
+
+function generate_monsters()
+    monsters = {};
+    local num_monsters = level+1
+    for i=0,num_monsters do
+        spawn_monster()
+    end
+end
+
+function spawn_monster()
+    local monster_type = shuffle({bird, snake, tank, eater, jester})[1]
+    local monster = monster_type:new(random_passable_tile())
+    add(monsters, monster)
 end
 
 -->8
@@ -200,6 +211,36 @@ function player_class:new(tile)
     return player
 end
 
+bird = monster:new({})
+
+function bird:new(tile)
+    return monster.new(self, tile, 4, 3)
+end
+
+snake = monster:new({})
+
+function snake:new(tile)
+    return monster.new(self, tile, 5, 1)
+end
+
+tank = monster:new({})
+
+function tank:new(tile)
+    return monster.new(self, tile, 6, 2)
+end
+
+eater = monster:new({})
+
+function eater:new(tile)
+    return monster.new(self, tile, 7, 1)
+end
+
+jester = monster:new({})
+
+function jester:new(tile)
+    return monster.new(self, tile, 8, 2)
+end
+
 -->8
 
 --
@@ -293,6 +334,7 @@ end
 
 numTiles=9
 tilesize=16
+level=1
 
 function _init()
   palt(15, true)
@@ -303,15 +345,19 @@ function _init()
 end
 
 function _draw()
-  cls(13)
+    cls(13)
 
-  for i=0,numTiles do
-    for j=0,numTiles do
-        get_tile(i, j):draw()
+    for i=0,numTiles do
+        for j=0,numTiles do
+            get_tile(i, j):draw()
+        end
     end
-  end
 
-  player:draw()
+    for i=1,#monsters do
+        monsters[i]:draw()
+    end
+
+    player:draw()
 end
 
 function _update()
