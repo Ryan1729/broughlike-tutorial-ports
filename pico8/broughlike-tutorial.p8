@@ -183,7 +183,11 @@ function monster:new(tile, sprite, hp)
 end
 
 function monster:update()
-  self:do_stuff()
+    if(self.stunned) then
+        self.stunned = false
+        return
+    end
+    self:do_stuff()
 end
 
 function monster:do_stuff()
@@ -226,6 +230,7 @@ function monster:try_move(dx, dy)
         else
             if (self.is_player ~= new_tile.monster.is_player) then
                 self.attacked_this_turn = true
+                new_tile.monster.stunned = true
                 new_tile.monster:hit(1);
             end
         end
@@ -297,6 +302,14 @@ tank = monster:new({})
 
 function tank:new(tile)
     return monster.new(self, tile, 6, 2)
+end
+
+function tank:update()
+    local started_stunned = self.stunned
+    monster.update(self)
+    if(not started_stunned) then
+        self.stunned = true
+    end
 end
 
 eater = monster:new({})
