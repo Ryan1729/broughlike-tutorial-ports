@@ -111,6 +111,11 @@ function tile:new(x, y, sprite, passable)
     return obj
 end
 
+function tile:replace(new_tile_type)
+    tiles[self.x][self.y] = new_tile_type:new(self.x, self.y)
+    return tiles[self.x][self.y]
+end
+
 function tile:dist(other)
   return abs(self.x-other.x)+abs(self.y-other.y);
 end
@@ -180,6 +185,10 @@ function monster:new(tile, sprite, hp)
     self.__index = self
     obj:move(tile)
     return obj
+end
+
+function monster:heal(damage)
+    self.hp = min(max_hp, self.hp + damage)
 end
 
 function monster:update()
@@ -318,6 +327,19 @@ function eater:new(tile)
     return monster.new(self, tile, 7, 1)
 end
 
+function eater:do_stuff()
+    local neighbors = filter(
+        self.tile:get_adjacent_neighbors(),
+        function(t) return not t.passable and in_bounds(t.x,t.y) end
+    )
+    if (#neighbors > 0) then
+        neighbors[1]:replace(floor)
+        self:heal(0.5)
+    else
+        monster.do_stuff(self)
+    end
+end
+
 jester = monster:new({})
 
 function jester:new(tile)
@@ -430,6 +452,7 @@ end
 numTiles=9
 tilesize=16
 level=1
+max_hp=6
 
 function _init()
   palt(0, false)
