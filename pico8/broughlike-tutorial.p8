@@ -346,6 +346,13 @@ function jester:new(tile)
     return monster.new(self, tile, 8, 2)
 end
 
+function jester:do_stuff()
+    local neighbors = self.tile:get_adjacent_passable_neighbors()
+    if (#neighbors > 0) then
+        self:try_move(neighbors[1].x - self.tile.x, neighbors[1].y - self.tile.y);
+    end
+end
+
 -->8
 
 --
