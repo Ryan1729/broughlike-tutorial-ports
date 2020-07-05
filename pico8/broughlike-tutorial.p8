@@ -225,6 +225,7 @@ function monster:try_move(dx, dy)
             self:move(new_tile)
         else
             if (self.is_player ~= new_tile.monster.is_player) then
+                self.attacked_this_turn = true
                 new_tile.monster:hit(1);
             end
         end
@@ -281,6 +282,15 @@ snake = monster:new({})
 
 function snake:new(tile)
     return monster.new(self, tile, 5, 1)
+end
+
+function snake:do_stuff()
+    self.attacked_this_turn = false
+    monster.do_stuff(self)
+
+    if (not self.attacked_this_turn) then
+        monster.do_stuff(self)
+    end
 end
 
 tank = monster:new({})
