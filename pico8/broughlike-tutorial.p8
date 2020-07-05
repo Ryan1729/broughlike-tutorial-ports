@@ -204,6 +204,18 @@ end
 
 function monster:draw()
   draw_sprite(self.sprite, self.tile.x, self.tile.y)
+
+  self:draw_hp()
+end
+
+function monster:draw_hp()
+    for i=0,self.hp - 1 do
+        draw_sprite(
+            9,
+            self.tile.x + (i%3)*(5/16),
+            self.tile.y - flr(i/3)*(5/16)
+        )
+    end
 end
 
 function monster:try_move(dx, dy)
@@ -379,6 +391,7 @@ tilesize=16
 level=1
 
 function _init()
+  palt(0, false)
   palt(15, true)
 
   generate_level()
