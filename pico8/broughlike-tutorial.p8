@@ -190,7 +190,7 @@ function monster:do_stuff()
     local neighbors = self.tile:get_adjacent_passable_neighbors()
 
     neighbors = filter(neighbors, function(t)
-        return (t.monster == nil) or t.monster.isPlayer
+        return (t.monster == nil) or t.monster.is_player
     end)
 
     if(#neighbors > 0) then
@@ -223,10 +223,28 @@ function monster:try_move(dx, dy)
     if(new_tile.passable) then
         if(new_tile.monster == nil) then
             self:move(new_tile)
+        else
+            if (self.is_player ~= new_tile.monster.is_player) then
+                new_tile.monster:hit(1);
+            end
         end
         return true
     end
     return false
+end
+
+
+function monster:hit(damage)
+    self.hp -= damage
+    if(self.hp <= 0) then
+        self:die()
+    end
+end
+
+function monster:die()
+    self.dead = true
+    self.tile.monster = nil
+    self.sprite = 1
 end
 
 function monster:move(tile)
