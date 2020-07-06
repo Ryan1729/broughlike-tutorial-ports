@@ -40,6 +40,8 @@ function start_level(player_hp)
 
     player = player_class:new(random_passable_tile())
     player.hp = player_hp
+
+    random_passable_tile():replace(exit)
 end
 
 -->8
@@ -133,6 +135,10 @@ function tile:new(x, y, sprite, passable)
     return obj
 end
 
+function tile:step_on(monster)
+  --needed for subclasses
+end
+
 function tile:replace(new_tile_type)
     tiles[self.x][self.y] = new_tile_type:new(self.x, self.y)
     return tiles[self.x][self.y]
@@ -184,10 +190,31 @@ function floor:new(x, y)
   return tile.new(self, x, y, 2, true)
 end
 
+function floor:step_on(monster)
+  --TODO: complete
+end
+
 wall = tile:new()
 
 function wall:new(x, y)
   return tile.new(self, x, y, 3, false)
+end
+
+exit = tile:new()
+
+function exit:new(x, y)
+  return tile.new(self, x, y, 11, true)
+end
+
+function exit:step_on(monster)
+    if(monster.is_player) then
+        if(level == num_levels) then
+            show_title()
+        else
+            level += 1
+            start_level(min(max_hp, player.hp+1));
+        end
+    end
 end
 
 -->8
@@ -296,9 +323,10 @@ function monster:move(tile)
     end
     self.tile = tile
     tile.monster = self
+    tile:step_on(self)
 end
 
-player_class = monster:new({})
+player_class = monster:new(tile:new())
 
 function player_class:new(tile)
     local player = monster.new(self, tile, 0, 3)
@@ -315,13 +343,13 @@ function player_class:try_move(dx, dy)
     end
 end
 
-bird = monster:new({})
+bird = monster:new(tile:new())
 
 function bird:new(tile)
     return monster.new(self, tile, 4, 3)
 end
 
-snake = monster:new({})
+snake = monster:new(tile:new())
 
 function snake:new(tile)
     return monster.new(self, tile, 5, 1)
@@ -336,7 +364,7 @@ function snake:do_stuff()
     end
 end
 
-tank = monster:new({})
+tank = monster:new(tile:new())
 
 function tank:new(tile)
     return monster.new(self, tile, 6, 2)
@@ -350,7 +378,7 @@ function tank:update()
     end
 end
 
-eater = monster:new({})
+eater = monster:new(tile:new())
 
 function eater:new(tile)
     return monster.new(self, tile, 7, 1)
@@ -369,7 +397,7 @@ function eater:do_stuff()
     end
 end
 
-jester = monster:new({})
+jester = monster:new(tile:new())
 
 function jester:new(tile)
     return monster.new(self, tile, 8, 2)
