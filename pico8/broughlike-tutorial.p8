@@ -201,7 +201,8 @@ monster = {}
 function monster:new(tile, sprite, hp)
     obj = {
         sprite = sprite,
-        hp = hp
+        hp = hp,
+        teleport_counter = 2
     }
     setmetatable(obj, self)
     self.__index = self
@@ -214,7 +215,8 @@ function monster:heal(damage)
 end
 
 function monster:update()
-    if(self.stunned) then
+    self.teleport_counter -= 1
+    if(self.stunned or self.teleport_counter > 0) then
         self.stunned = false
         return
     end
@@ -238,9 +240,13 @@ function monster:do_stuff()
 end
 
 function monster:draw()
-  draw_sprite(self.sprite, self.tile.x, self.tile.y)
+    if(self.teleport_counter > 0) then
+        draw_sprite(10, self.tile.x, self.tile.y)
+    else
+        draw_sprite(self.sprite, self.tile.x, self.tile.y)
 
-  self:draw_hp()
+        self:draw_hp()
+    end
 end
 
 function monster:draw_hp()
@@ -298,6 +304,7 @@ function player_class:new(tile)
     local player = monster.new(self, tile, 0, 3)
 
     player.is_player = true
+    player.teleport_counter = 0
 
     return player
 end
