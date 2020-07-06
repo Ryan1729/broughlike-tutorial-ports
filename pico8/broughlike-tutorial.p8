@@ -33,6 +33,9 @@ function start_game()
 end
 
 function start_level(player_hp)
+    spawn_rate = 15;
+    spawn_counter = spawn_rate
+
     generate_level()
 
     player = player_class:new(random_passable_tile())
@@ -522,6 +525,13 @@ function tick()
 
     if(player.dead) then
         game_state = "dead"
+    end
+
+    spawn_counter -= 1
+    if(spawn_counter <= 0) then
+        spawn_monster()
+        spawn_counter = spawn_rate
+        spawn_rate -= 1
     end
 end
 
