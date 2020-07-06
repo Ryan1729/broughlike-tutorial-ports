@@ -20,6 +20,25 @@ function draw_sprite(sprite, x, y)
         y * tilesize - 8
     )
 end
+
+function show_title()
+    game_state = "title"
+end
+
+function start_game()
+    level = 1
+    start_level(starting_hp)
+
+    game_state = "running"
+end
+
+function start_level(player_hp)
+    generate_level()
+
+    player = player_class:new(random_passable_tile())
+    player.hp = player_hp
+end
+
 -->8
 
 --
@@ -460,30 +479,36 @@ numTiles=9
 tilesize=16
 level=1
 max_hp=6
+starting_hp = 3
+num_levels = 6
+
+game_state = "title"
 
 function _init()
   palt(0, false)
   palt(15, true)
 
-  generate_level()
-
-  player = player_class:new(random_passable_tile())
+  show_title()
 end
 
 function _draw()
-    cls(13)
+    if (game_state == "running" or game_state == "dead") then
+        cls(13)
 
-    for i=0,numTiles do
-        for j=0,numTiles do
-            get_tile(i, j):draw()
+        for i=0,numTiles do
+            for j=0,numTiles do
+                get_tile(i, j):draw()
+            end
         end
-    end
 
-    for i=1,#monsters do
-        monsters[i]:draw()
-    end
+        for i=1,#monsters do
+            monsters[i]:draw()
+        end
 
-    player:draw()
+        player:draw()
+    else
+        cls(0)
+    end
 end
 
 function tick()
@@ -494,13 +519,25 @@ function tick()
             del(monsters, monsters[k])
         end
     end
+
+    if(player.dead) then
+        game_state = "dead"
+    end
 end
 
 function _update()
-  if (btnp(0)) player:try_move(-1, 0)
-  if (btnp(1)) player:try_move(1, 0)
-  if (btnp(2)) player:try_move(0, -1)
-  if (btnp(3)) player:try_move(0, 1)
+    if(game_state == "title") then
+        if (btnp() > 0) start_game()
+    elseif(game_state == "dead") then
+        if (btnp() > 0) show_title()
+    elseif(game_state == "running") then
+        if (btnp(0)) player:try_move(-1, 0)
+        if (btnp(1)) player:try_move(1, 0)
+        if (btnp(2)) player:try_move(0, -1)
+        if (btnp(3)) player:try_move(0, 1)
+    else
+        assert(false, "unknown game_state ".. game_state)
+    end
 end
 
 __gfx__
