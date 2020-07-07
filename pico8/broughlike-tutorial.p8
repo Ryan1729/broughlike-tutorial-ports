@@ -21,8 +21,22 @@ function draw_sprite(sprite, x, y)
     )
 end
 
+screen_size = 128
+title_char_width = 5
+title_char_height = 6
+
+function draw_title_text(text, text_y, color)
+    -- + 1 to account for the spaces between characters
+    local text_x = (screen_size - (#text * (title_char_width + 1)))/2
+    pr(text, text_x, text_y, color)
+end
+
 function show_title()
+    cls(0)
+
     game_state = "title"
+
+    draw_title_text("peek-brough 8", screen_size/2 - title_char_height, 7)
 end
 
 function start_game()
@@ -501,6 +515,53 @@ function sort(a,cmp)
   end
 end
 
+-- setup for pr
+fdat = [[  0000.0000! 739c.e038" 5280.0000# 02be.afa8$ 23e8.e2f8% 0674.45cc& 6414.c934' 2100.0000( 3318.c618) 618c.6330* 012a.ea90+ 0109.f210, 0000.0230- 0000.e000. 0000.0030/ 3198.cc600 fef7.bdfc1 f18c.637c2 f8ff.8c7c3 f8de.31fc4 defe.318c5 fe3e.31fc6 fe3f.bdfc7 f8cc.c6308 feff.bdfc9 fefe.31fc: 0300.0600; 0300.0660< 0199.8618= 001c.0700> 030c.3330? f0c6.e030@ 746f.783ca 76f7.fdecb f6fd.bdf8c 76f1.8db8d f6f7.bdf8e 7e3d.8c3cf 7e3d.8c60g 7e31.bdbch deff.bdeci f318.c678j f98c.6370k def9.bdecl c631.8c7cm dfff.bdecn f6f7.bdeco 76f7.bdb8p f6f7.ec60q 76f7.bf3cr f6f7.cdecs 7e1c.31f8t fb18.c630u def7.bdb8v def7.b710w def7.ffecx dec9.bdecy defe.31f8z f8cc.cc7c[ 7318.c638\ 630c.618c] 718c.6338^ 2280.0000_ 0000.007c``4100.0000`a001f.bdf4`bc63d.bdfc`c001f.8c3c`d18df.bdbc`e001d.be3c`f3b19.f630`g7ef6.f1fa`hc63d.bdec`i6018.c618`j318c.6372`kc6f5.cd6c`l6318.c618`m0015.fdec`n003d.bdec`o001f.bdf8`pf6f7.ec62`q7ef6.f18e`r001d.bc60`s001f.c3f8`t633c.c618`u0037.bdbc`v0037.b510`w0037.bfa8`x0036.edec`ydef6.f1ba`z003e.667c{ 0188.c218| 0108.4210} 0184.3118~ 02a8.0000`*013e.e500]]
+cmap={}
+for i=0,#fdat/11 do
+ local p=1+i*11
+ cmap[sub(fdat,p,p+1)]=
+  tonum("0x"..sub(fdat,p+2,p+10))
+end
+
+-- https://www.lexaloffle.com/bbs/?tid=32877
+-- by zed
+function pr(str,sx,sy,col)
+ local sx0=sx
+ local p=1
+ while (p <= #str) do
+  local c=sub(str,p,p)
+  local v
+
+  if (c=="\n") then
+   -- linebreak
+   sy+=9 sx=sx0
+  else
+      -- single (a)
+      v = cmap[c.." "]
+      if not v then
+       -- double (`a)
+       v= cmap[sub(str,p,p+1)]
+       p+=1
+      end
+
+   --adjust height
+   local sy1=sy
+   if (band(v,0x0.0002)>0)sy1+=2
+
+   -- draw pixels
+   for y=sy1,sy1+5 do
+       for x=sx,sx+4 do
+        if (band(v,0x8000)<0) pset(x,y,col)
+        v=rotl(v,1)
+       end
+      end
+      sx+=6
+  end
+  p+=1
+ end
+end
+
 -->8
 
 --
@@ -544,8 +605,8 @@ function _draw()
         end
 
         player:draw()
-    else
-        cls(0)
+
+        print("level: "..level, 8, 0, 2)
     end
 end
 
