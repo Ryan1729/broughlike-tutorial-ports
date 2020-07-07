@@ -70,6 +70,10 @@ function generate_level()
     end)
 
     generate_monsters()
+
+    for i=1,3 do
+        random_passable_tile().treasure = true
+    end
 end
 
 function generate_tiles()
@@ -165,6 +169,9 @@ end
 
 function tile:draw()
   draw_sprite(self.sprite, self.x, self.y)
+  if (self.treasure) then
+    draw_sprite(12, self.x, self.y)
+  end
 end
 
 function tile:get_neighbor(dx, dy)
