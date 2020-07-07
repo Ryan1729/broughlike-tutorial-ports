@@ -41,6 +41,7 @@ end
 
 function start_game()
     level = 1
+    score = 0
     start_level(starting_hp)
 
     game_state = "running"
@@ -212,7 +213,11 @@ function floor:new(x, y)
 end
 
 function floor:step_on(monster)
-  --TODO: complete
+    if(monster.is_player and self.treasure) then
+        score += 1
+        self.treasure = false
+        spawn_monster()
+    end
 end
 
 wall = tile:new()
@@ -614,6 +619,7 @@ function _draw()
         player:draw()
 
         print("level: "..level, 8, 0, 2)
+        print("score: "..score, 56, 0, 2)
     end
 end
 
