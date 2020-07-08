@@ -393,7 +393,7 @@ function monster:draw()
 end
 
 function monster:draw_hp()
-    for i=0,self.hp - 1 do
+    for i=0,ceil(self.hp) - 1 do
         draw_sprite(
             9,
             self.tile.x + (i%3)*(5/16),
