@@ -59,6 +59,95 @@ function start_level(player_hp)
     random_passable_tile():replace(exit)
 end
 
+function get_scores()
+    local scores = {}
+    for i=0,63,4 do
+        local score_table = {
+            score = dget(i),
+            run = dget(i+1),
+            total_score = dget(i+2),
+            active = dget(i+3) > 0,
+        }
+
+        if (
+            score_table.score > 0
+            or score_table.run > 0
+            or score_table.total_score > 0
+            or score_table.active
+        ) then
+            add(scores, score_table)
+        else
+            -- negative numbers are invalid and all zeroes is the
+            -- initial state, which is never a real score since run
+            -- is always positive.
+            break
+        end
+    end
+    return scores
+end
+
+function add_score(score, won)
+    local all_scores = get_scores()
+    do
+        local score_table = {
+            score = score,
+            run = 1,
+            total_score = score,
+            active = won,
+        }
+
+        local last_score = pop(all_scores)
+
+        if(last_score ~= nil) then
+            if(last_score.active) then
+                score_table.run = min(last_score.run + 1, 0x7fff.ffff)
+                score_table.total_score += last_score.total_score
+            else
+                add(all_scores, last_score)
+            end
+        end
+        add(all_scores, score_table)
+    end
+
+    -- we only have space for 16 scores
+    -- so we keep the newest one and the
+    -- top scores of the remaining 15
+    local last_score = pop(all_scores)
+
+    local truncated_scores = {}
+
+    sort(all_scores, function(a,b)
+        return a.total_core > b.total_score
+    end)
+
+    for i=1,15 do
+        local current = pop(all_scores)
+        if current == nil then
+            break
+        end
+        add(truncated_scores, current)
+    end
+
+    add(truncated_scores, last_score)
+
+    -- save scores
+    local index = 0
+    for s in all(truncated_scores) do
+        dset(index, s.score)
+        index += 1
+        dset(index, s.run)
+        index += 1
+        dset(index, s.total_score)
+        index += 1
+        dset(index, s.active and 1 or 0)
+        index += 1
+
+        if index > 63 then
+            break
+        end
+    end
+end
+
 -->8
 
 --
@@ -235,6 +324,7 @@ end
 function exit:step_on(monster)
     if(monster.is_player) then
         if(level == num_levels) then
+            add_score(score, true)
             show_title()
         else
             level += 1
@@ -596,6 +686,8 @@ num_levels = 6
 game_state = "title"
 
 function _init()
+  cartdata("ryan1729_peek-brough-8_1")
+
   palt(0, false)
   palt(15, true)
 
@@ -633,6 +725,7 @@ function tick()
     end
 
     if(player.dead) then
+        add_score(score, false)
         game_state = "dead"
     end
 
