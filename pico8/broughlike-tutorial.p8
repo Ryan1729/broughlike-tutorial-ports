@@ -31,12 +31,24 @@ function draw_title_text(text, text_y, color)
     pr(text, text_x, text_y, color)
 end
 
+score_char_width = 3
+score_char_height = 5
+
+function draw_score_text(text, text_y, color)
+    -- + 1 to account for the spaces between characters
+    local text_x = (screen_size - (#text * (score_char_width + 1)))/2
+    print(text, text_x, text_y, color)
+end
+
+
 function show_title()
     cls(0)
 
     game_state = "title"
 
-    draw_title_text("peek-brough 8", screen_size/2 - title_char_height, 7)
+    draw_title_text("peek-brough 8", screen_size/2 - 2*(title_char_height + 1), 7)
+
+    draw_scores()
 end
 
 function start_game()
@@ -117,7 +129,7 @@ function add_score(score, won)
     local truncated_scores = {}
 
     sort(all_scores, function(a,b)
-        return a.total_core > b.total_score
+        return a.total_score > b.total_score
     end)
 
     for i=1,15 do
@@ -144,6 +156,40 @@ function add_score(score, won)
 
         if index > 63 then
             break
+        end
+    end
+end
+
+function draw_scores()
+    local all_scores = get_scores()
+    if(#all_scores > 0) then
+        local score_y = screen_size/2 - (score_char_height + 1)
+        draw_score_text(
+            right_pad({"run","score","total"}),
+            score_y,
+            7
+        )
+
+        local newest_score = pop(all_scores)
+        sort(all_scores, function(a,b)
+            return a.total_score < b.total_score
+        end)
+
+        local sorted_scores = {newest_score}
+        for s in all(all_scores) do
+            add(sorted_scores, s)
+        end
+
+        for i=1,min(10,#sorted_scores) do
+            local score_text = right_pad(
+                {sorted_scores[i].run, sorted_scores[i].score, sorted_scores[i].total_score}
+            )
+
+            draw_score_text(
+                score_text,
+                score_y + i*(score_char_height + 1),
+                i == 1 and 12 or 2
+            )
         end
     end
 end
@@ -588,7 +634,20 @@ function shuffle(arr)
         local r = flr(rnd(i)) + 1
         arr[i], arr[r] = arr[r], arr[i]
     end
-    return arr;
+    return arr
+end
+
+function right_pad(text_array)
+    local final_text = ""
+
+    for text in all(text_array) do
+        text=tostr(text)
+        for i=#text,6 do
+            text=text.." "
+        end
+        final_text = final_text..text
+    end
+    return final_text
 end
 
 -- https://www.lexaloffle.com/bbs/?pid=43636
