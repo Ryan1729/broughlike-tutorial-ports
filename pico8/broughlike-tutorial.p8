@@ -391,7 +391,9 @@ function monster:new(tile, sprite, hp)
     obj = {
         sprite = sprite,
         hp = hp,
-        teleport_counter = 2
+        teleport_counter = 2,
+        offset_x = 0,
+        offset_y = 0
     }
     setmetatable(obj, self)
     self.__index = self
@@ -428,22 +430,33 @@ function monster:do_stuff()
     end
 end
 
+function monster:get_display_x()
+    return self.tile.x + self.offset_x
+end
+
+function monster:get_display_y()
+    return self.tile.y + self.offset_y
+end
+
 function monster:draw()
     if(self.teleport_counter > 0) then
-        draw_sprite(10, self.tile.x, self.tile.y)
+        draw_sprite(10, self:get_display_x(), self:get_display_y())
     else
-        draw_sprite(self.sprite, self.tile.x, self.tile.y)
+        draw_sprite(self.sprite, self:get_display_x(), self:get_display_y())
 
         self:draw_hp()
     end
+
+    self.offset_x -= signum(self.offset_x)*(1/8)
+    self.offset_y -= signum(self.offset_y)*(1/8)
 end
 
 function monster:draw_hp()
     for i=0,ceil(self.hp) - 1 do
         draw_sprite(
             9,
-            self.tile.x + (i%3)*(5/16),
-            self.tile.y - flr(i/3)*(5/16)
+            self:get_display_x() + (i%3)*(5/16),
+            self:get_display_y() - flr(i/3)*(5/16)
         )
     end
 end
@@ -482,6 +495,8 @@ end
 function monster:move(tile)
     if(self.tile ~= nil) then
         self.tile.monster = nil
+        self.offset_x = self.tile.x == nil and 0 or self.tile.x - tile.x
+        self.offset_y = self.tile.y == nil and 0 or self.tile.y - tile.y
     end
     self.tile = tile
     tile.monster = self
@@ -676,6 +691,11 @@ function sort(a,cmp)
   end
 end
 
+-- the built-in `sgn` returns 1 if given 0. we want 0 in that case,
+function signum(n)
+    return n ~= 0 and sgn(n) or 0
+end
+
 -- setup for pr
 fdat = [[  0000.0000! 739c.e038" 5280.0000# 02be.afa8$ 23e8.e2f8% 0674.45cc& 6414.c934' 2100.0000( 3318.c618) 618c.6330* 012a.ea90+ 0109.f210, 0000.0230- 0000.e000. 0000.0030/ 3198.cc600 fef7.bdfc1 f18c.637c2 f8ff.8c7c3 f8de.31fc4 defe.318c5 fe3e.31fc6 fe3f.bdfc7 f8cc.c6308 feff.bdfc9 fefe.31fc: 0300.0600; 0300.0660< 0199.8618= 001c.0700> 030c.3330? f0c6.e030@ 746f.783ca 76f7.fdecb f6fd.bdf8c 76f1.8db8d f6f7.bdf8e 7e3d.8c3cf 7e3d.8c60g 7e31.bdbch deff.bdeci f318.c678j f98c.6370k def9.bdecl c631.8c7cm dfff.bdecn f6f7.bdeco 76f7.bdb8p f6f7.ec60q 76f7.bf3cr f6f7.cdecs 7e1c.31f8t fb18.c630u def7.bdb8v def7.b710w def7.ffecx dec9.bdecy defe.31f8z f8cc.cc7c[ 7318.c638\ 630c.618c] 718c.6338^ 2280.0000_ 0000.007c``4100.0000`a001f.bdf4`bc63d.bdfc`c001f.8c3c`d18df.bdbc`e001d.be3c`f3b19.f630`g7ef6.f1fa`hc63d.bdec`i6018.c618`j318c.6372`kc6f5.cd6c`l6318.c618`m0015.fdec`n003d.bdec`o001f.bdf8`pf6f7.ec62`q7ef6.f18e`r001d.bc60`s001f.c3f8`t633c.c618`u0037.bdbc`v0037.b510`w0037.bfa8`x0036.edec`ydef6.f1ba`z003e.667c{ 0188.c218| 0108.4210} 0184.3118~ 02a8.0000`*013e.e500]]
 cmap={}
@@ -796,7 +816,7 @@ function tick()
     end
 end
 
-function _update()
+function _update60()
     if(game_state == "title") then
         if (btnp() > 0) start_game()
     elseif(game_state == "dead") then
