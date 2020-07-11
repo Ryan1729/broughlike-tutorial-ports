@@ -471,6 +471,9 @@ function monster:try_move(dx, dy)
                 self.attacked_this_turn = true
                 new_tile.monster.stunned = true
                 new_tile.monster:hit(1);
+                
+                self.offset_x = (new_tile.x - self.tile.x)/2
+                self.offset_y = (new_tile.y - self.tile.y)/2
             end
         end
         return true
