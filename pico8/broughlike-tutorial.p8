@@ -16,8 +16,8 @@ function draw_sprite(sprite, x, y)
         tilesize,
         -- we offset the sprites by 8 so at least
         -- part of all the tiles can be seen
-        x * tilesize - 8,
-        y * tilesize - 8
+        x * tilesize + shake_x - 8,
+        y * tilesize + shake_y - 8
     )
 end
 
@@ -471,7 +471,9 @@ function monster:try_move(dx, dy)
                 self.attacked_this_turn = true
                 new_tile.monster.stunned = true
                 new_tile.monster:hit(1);
-                
+
+                shake_amount = 5
+
                 self.offset_x = (new_tile.x - self.tile.x)/2
                 self.offset_y = (new_tile.y - self.tile.y)/2
             end
@@ -699,6 +701,11 @@ function signum(n)
     return n ~= 0 and sgn(n) or 0
 end
 
+function round(n)
+    return flr(n + 0.5)
+end
+
+
 -- setup for pr
 fdat = [[  0000.0000! 739c.e038" 5280.0000# 02be.afa8$ 23e8.e2f8% 0674.45cc& 6414.c934' 2100.0000( 3318.c618) 618c.6330* 012a.ea90+ 0109.f210, 0000.0230- 0000.e000. 0000.0030/ 3198.cc600 fef7.bdfc1 f18c.637c2 f8ff.8c7c3 f8de.31fc4 defe.318c5 fe3e.31fc6 fe3f.bdfc7 f8cc.c6308 feff.bdfc9 fefe.31fc: 0300.0600; 0300.0660< 0199.8618= 001c.0700> 030c.3330? f0c6.e030@ 746f.783ca 76f7.fdecb f6fd.bdf8c 76f1.8db8d f6f7.bdf8e 7e3d.8c3cf 7e3d.8c60g 7e31.bdbch deff.bdeci f318.c678j f98c.6370k def9.bdecl c631.8c7cm dfff.bdecn f6f7.bdeco 76f7.bdb8p f6f7.ec60q 76f7.bf3cr f6f7.cdecs 7e1c.31f8t fb18.c630u def7.bdb8v def7.b710w def7.ffecx dec9.bdecy defe.31f8z f8cc.cc7c[ 7318.c638\ 630c.618c] 718c.6338^ 2280.0000_ 0000.007c``4100.0000`a001f.bdf4`bc63d.bdfc`c001f.8c3c`d18df.bdbc`e001d.be3c`f3b19.f630`g7ef6.f1fa`hc63d.bdec`i6018.c618`j318c.6372`kc6f5.cd6c`l6318.c618`m0015.fdec`n003d.bdec`o001f.bdf8`pf6f7.ec62`q7ef6.f18e`r001d.bc60`s001f.c3f8`t633c.c618`u0037.bdbc`v0037.b510`w0037.bfa8`x0036.edec`ydef6.f1ba`z003e.667c{ 0188.c218| 0108.4210} 0184.3118~ 02a8.0000`*013e.e500]]
 cmap={}
@@ -766,6 +773,9 @@ starting_hp = 3
 num_levels = 6
 
 game_state = "title"
+shake_amount = 0
+shake_x = 0
+shake_y = 0
 
 function _init()
   cartdata("ryan1729_peek-brough-8_1")
@@ -780,6 +790,8 @@ function _draw()
     if (game_state == "running" or game_state == "dead") then
         cls(13)
 
+        screenshake()
+
         for i=0,numTiles do
             for j=0,numTiles do
                 get_tile(i, j):draw()
@@ -792,9 +804,20 @@ function _draw()
 
         player:draw()
 
+
         print("level: "..level, 8, 0, 2)
         print("score: "..score, 56, 0, 2)
     end
+end
+
+function screenshake()
+    if(shake_amount > 0) then
+        shake_amount -= 1
+    end
+    -- pico-8 uses angles in the range 0 to 1
+    local shake_angle = rnd(1)
+    shake_x = round(cos(shake_angle)*shake_amount)
+    shake_y = round(sin(shake_angle)*shake_amount)
 end
 
 function tick()
