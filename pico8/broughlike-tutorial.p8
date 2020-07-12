@@ -350,6 +350,7 @@ end
 function floor:step_on(monster)
     if(monster.is_player and self.treasure) then
         score += 1
+        sfx(treasure_sfx)
         self.treasure = false
         spawn_monster()
     end
@@ -369,6 +370,8 @@ end
 
 function exit:step_on(monster)
     if(monster.is_player) then
+        sfx(new_level_sfx)
+
         if(level == num_levels) then
             add_score(score, true)
             show_title()
@@ -488,6 +491,12 @@ function monster:hit(damage)
     self.hp -= damage
     if(self.hp <= 0) then
         self:die()
+    end
+
+    if self.is_player then
+        sfx(player_hit_sfx)
+    else
+        sfx(monster_hit_sfx)
     end
 end
 
@@ -772,6 +781,12 @@ max_hp=6
 starting_hp = 3
 num_levels = 6
 
+monster_hit_sfx = 0
+player_hit_sfx = 1
+treasure_sfx = 2
+new_level_sfx = 3
+spell_sfx = 4
+
 game_state = "title"
 shake_amount = 0
 shake_x = 0
@@ -986,3 +1001,9 @@ ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+__sfx__
+00010000336503365033650336501d6501d6501d6501d65028650286502865028650106501065010650106501a6501a6501a6501a6500b6500b6500b6500b6500465004650046500465004650046500465004650
+000200003265032650326503265032650326503265024650246502465024650246502465024650246501865018650186501865018650186501865018650186500565005650056500565005650056500565005650
+010100002035020350203502035020350203502035020350383503835038350383503835038350383503835022350223502235022350223502235022350223503735037350373503735037350373503735037350
+000100003555035550355503555022550225502255022550355503555035550355502255022550225502255035550355503555035550095500955009550095501b5501b5501b5501b55009550095500955009550
+00010000095500955009550095502a5502a5502a5502a5500e5500e5500e5500e5502a5502a5502a5502a55017550175501755017550375503755037550375502155021550215502155029550295502955029550
