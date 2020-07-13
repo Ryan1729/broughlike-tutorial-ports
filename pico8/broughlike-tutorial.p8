@@ -350,6 +350,11 @@ end
 function floor:step_on(monster)
     if(monster.is_player and self.treasure) then
         score += 1
+        if(score % 3 == 0 and num_spells < max_spell_index) then
+            num_spells += 1
+            player:add_spell()
+        end
+
         sfx(treasure_sfx)
         self.treasure = false
         spawn_monster()
@@ -525,11 +530,38 @@ function player_class:new(tile)
     player.is_player = true
     player.teleport_counter = 0
 
+    local shuffled_spells = shuffle(keys(spells))
+
+    player.spells = {}
+    for i=1,num_spells do
+        add(player.spells, shuffled_spells[i])
+    end
+
     return player
 end
 
 function player_class:try_move(dx, dy)
     if (monster.try_move(self, dx,dy)) then
+        tick()
+    end
+end
+
+function player_class:add_spell()
+    local new_spell = shuffle(keys(spells))[1]
+    for i=max_spell_index,1, -1 do
+        if (self.spells[i] ~= nil) then
+            self.spells[i + 1] = new_spell
+        end
+    end
+
+end
+
+function player_class:cast_spell(index)
+    local spell_name = self.spells[index]
+    if(spell_name ~= nil) then
+        self.spells[index] = nil
+        spells[spell_name]()
+        sfx(spell_sfx)
         tick()
     end
 end
@@ -714,6 +746,18 @@ function round(n)
     return flr(n + 0.5)
 end
 
+function keys(tbl)
+    local output = {}
+    for k, _ in pairs(tbl) do
+        add(output, k)
+    end
+
+    -- we sort here so we get a consistent key ordering, which helps to
+    -- ensure that all randomness is a function of the rng seed.
+    sort(output, function(a,b) return a < b end)
+
+    return output
+end
 
 -- setup for pr
 fdat = [[  0000.0000! 739c.e038" 5280.0000# 02be.afa8$ 23e8.e2f8% 0674.45cc& 6414.c934' 2100.0000( 3318.c618) 618c.6330* 012a.ea90+ 0109.f210, 0000.0230- 0000.e000. 0000.0030/ 3198.cc600 fef7.bdfc1 f18c.637c2 f8ff.8c7c3 f8de.31fc4 defe.318c5 fe3e.31fc6 fe3f.bdfc7 f8cc.c6308 feff.bdfc9 fefe.31fc: 0300.0600; 0300.0660< 0199.8618= 001c.0700> 030c.3330? f0c6.e030@ 746f.783ca 76f7.fdecb f6fd.bdf8c 76f1.8db8d f6f7.bdf8e 7e3d.8c3cf 7e3d.8c60g 7e31.bdbch deff.bdeci f318.c678j f98c.6370k def9.bdecl c631.8c7cm dfff.bdecn f6f7.bdeco 76f7.bdb8p f6f7.ec60q 76f7.bf3cr f6f7.cdecs 7e1c.31f8t fb18.c630u def7.bdb8v def7.b710w def7.ffecx dec9.bdecy defe.31f8z f8cc.cc7c[ 7318.c638\ 630c.618c] 718c.6338^ 2280.0000_ 0000.007c``4100.0000`a001f.bdf4`bc63d.bdfc`c001f.8c3c`d18df.bdbc`e001d.be3c`f3b19.f630`g7ef6.f1fa`hc63d.bdec`i6018.c618`j318c.6372`kc6f5.cd6c`l6318.c618`m0015.fdec`n003d.bdec`o001f.bdf8`pf6f7.ec62`q7ef6.f18e`r001d.bc60`s001f.c3f8`t633c.c618`u0037.bdbc`v0037.b510`w0037.bfa8`x0036.edec`ydef6.f1ba`z003e.667c{ 0188.c218| 0108.4210} 0184.3118~ 02a8.0000`*013e.e500]]
@@ -768,6 +812,14 @@ end
 -- spell
 --
 
+spells = {
+    woop = function()
+        player:move(random_passable_tile())
+    end
+}
+
+
+
 -->8
 
 --
@@ -780,6 +832,8 @@ level=1
 max_hp=6
 starting_hp = 3
 num_levels = 6
+max_spell_index = 9
+max_spell_label_width = 12
 
 monster_hit_sfx = 0
 player_hit_sfx = 1
@@ -791,6 +845,9 @@ game_state = "title"
 shake_amount = 0
 shake_x = 0
 shake_y = 0
+
+spell_index = 1
+num_spells = 1
 
 function _init()
   cartdata("ryan1729_peek-brough-8_1")
@@ -822,6 +879,23 @@ function _draw()
 
         print("level: "..level, 8, 0, 2)
         print("score: "..score, 56, 0, 2)
+
+        for i=1,max_spell_index do
+            local spell_text = i..") "..(player.spells[i] == nil and "" or player.spells[i])
+
+            local x = 8 + (i - spell_index) * (score_char_width + 1) * max_spell_label_width
+
+            print(
+                spell_text,
+                x,
+                screen_size - (score_char_height + 1),
+                12
+            )
+
+            if (i == spell_index) then
+                print("____________", x, screen_size - score_char_height, 10)
+            end
+        end
     end
 end
 
@@ -867,6 +941,14 @@ function _update60()
         if (btnp(1)) player:try_move(1, 0)
         if (btnp(2)) player:try_move(0, -1)
         if (btnp(3)) player:try_move(0, 1)
+
+        if (btnp(4)) player:cast_spell(spell_index)
+        if (btnp(5)) then
+            spell_index = spell_index + 1
+            if (spell_index > 9) spell_index = 1
+        end
+
+
     else
         assert(false, "unknown game_state ".. game_state)
     end
