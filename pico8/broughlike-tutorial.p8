@@ -216,9 +216,9 @@ function generate_tiles()
     local passable_tiles = 0
 
     tiles = {}
-    for i=0,numTiles do
+    for i=0,num_tiles do
         tiles[i] = {}
-        for j=0,numTiles do
+        for j=0,num_tiles do
             if (rnd(1) < 0.3 or not in_bounds(i, j)) then
                 tiles[i][j] = wall:new(i,j)
             else
@@ -233,7 +233,7 @@ function generate_tiles()
 end
 
 function in_bounds(x,y)
-    return x>0 and y>0 and x<numTiles-1 and y<numTiles-1
+    return x>0 and y>0 and x<num_tiles-1 and y<num_tiles-1
 end
 
 function get_tile(x, y)
@@ -247,8 +247,8 @@ end
 function random_passable_tile()
     local tile;
     try_to('get random passable tile', function()
-        local x = flr(rnd(numTiles))
-        local y = flr(rnd(numTiles))
+        local x = flr(rnd(num_tiles))
+        local y = flr(rnd(num_tiles))
         tile = get_tile(x, y);
         return tile.passable and not tile.monster;
     end);
@@ -815,6 +815,18 @@ end
 spells = {
     woop = function()
         player:move(random_passable_tile())
+    end,
+    quake = function()                  
+        for i=0,num_tiles do
+            for j=0,num_tiles do
+                local tile = get_tile(i,j)
+                if(tile.monster ~= nil) then
+                    local num_walls = 4 - #tile:get_adjacent_passable_neighbors()
+                    tile.monster:hit(num_walls*2)
+                end
+            end
+        end
+        shake_amount = 20;
     end
 }
 
@@ -826,7 +838,7 @@ spells = {
 -- main
 --
 
-numTiles=9
+num_tiles=9
 tilesize=16
 level=1
 max_hp=6
@@ -864,8 +876,8 @@ function _draw()
 
         screenshake()
 
-        for i=0,numTiles do
-            for j=0,numTiles do
+        for i=0,num_tiles do
+            for j=0,num_tiles do
                 get_tile(i, j):draw()
             end
         end
