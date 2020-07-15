@@ -59,7 +59,7 @@ function start_game()
     game_state = "running"
 end
 
-function start_level(player_hp)
+function start_level(player_hp, player_spells)
     spawn_rate = 15;
     spawn_counter = spawn_rate
 
@@ -67,6 +67,10 @@ function start_level(player_hp)
 
     player = player_class:new(random_passable_tile())
     player.hp = player_hp
+
+    if(player_spells ~= nil) then
+        player.spells = player_spells
+    end
 
     random_passable_tile():replace(exit)
 end
@@ -816,7 +820,7 @@ spells = {
     woop = function()
         player:move(random_passable_tile())
     end,
-    quake = function()                  
+    quake = function()
         for i=0,num_tiles do
             for j=0,num_tiles do
                 local tile = get_tile(i,j)
@@ -829,10 +833,13 @@ spells = {
         shake_amount = 20;
     end,
     maelstrom = function()
-        for i=1,#monsters do 
+        for i=1,#monsters do
             monsters[i]:move(random_passable_tile())
             monsters[i].teleport_counter = 2;
         end
+    end,
+    mulligan = function()
+        start_level(1, player.spells);
     end
 }
 
