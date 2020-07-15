@@ -12,6 +12,8 @@ A version of the code for the [pico-8 fantasy console](https://www.lexaloffle.co
 
 ![pico-8 png cartridge](./pico8/broughlike-tutorial.p8.png)
 
+[Web Version](https://ryan1729.github.io/broughlike-tutorial-ports/pico-8.html)
+
 
 
 
