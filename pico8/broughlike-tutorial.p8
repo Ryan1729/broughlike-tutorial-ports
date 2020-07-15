@@ -827,6 +827,12 @@ spells = {
             end
         end
         shake_amount = 20;
+    end,
+    maelstrom = function()
+        for i=1,#monsters do 
+            monsters[i]:move(random_passable_tile())
+            monsters[i].teleport_counter = 2;
+        end
     end
 }
 
