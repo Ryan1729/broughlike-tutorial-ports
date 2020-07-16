@@ -286,7 +286,8 @@ function tile:new(x, y, sprite, passable)
         x = x,
         y = y,
         sprite = sprite,
-        passable = passable
+        passable = passable,
+        effect_counter = 0
     }
     setmetatable(obj, self)
     self.__index = self
@@ -312,6 +313,15 @@ function tile:draw()
   if (self.treasure) then
     draw_sprite(12, self.x, self.y)
   end
+  if(self.effect_counter > 0) then
+    self.effect_counter -= 1
+    draw_sprite(self.effect, self.x, self.y)
+  end
+end
+
+function tile:set_effect(effect_sprite)
+    self.effect = effect_sprite
+    self.effect_counter = 30
 end
 
 function tile:get_neighbor(dx, dy)
@@ -840,6 +850,16 @@ spells = {
     end,
     mulligan = function()
         start_level(1, player.spells);
+    end,
+    aura = function()
+        for t in all(player.tile:get_adjacent_neighbors()) do
+            t:set_effect(13)
+            if(t.monster ~= nil) then
+                t.monster:heal(1)
+            end
+        end
+        player.tile:set_effect(13)
+        player:heal(1)
     end
 }
 
