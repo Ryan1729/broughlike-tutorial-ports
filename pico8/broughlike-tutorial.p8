@@ -8,20 +8,39 @@ __lua__
 -- game
 --
 
+num_tiles=9
+tile_size=16
+
+screen_size = 128
+spritesheet_pixel_width = 128
+pixels_per_byte = 2
+spritesheet_byte_width = spritesheet_pixel_width / pixels_per_byte
+tile_byte_width = tile_size / pixels_per_byte
+
+function sprite_tile_xy(sprite)
+    return (sprite % 8), flr(sprite / 8)
+end
+
 function draw_sprite(sprite, x, y)
+    local tx, ty = sprite_tile_xy(sprite)
     sspr(
-        (sprite % 8) * tilesize,
-        flr(sprite / 8) * tilesize,
-        tilesize,
-        tilesize,
+        tx * tile_size,
+        ty * tile_size,
+        tile_size,
+        tile_size,
         -- we offset the sprites by 8 so at least
         -- part of all the tiles can be seen
-        x * tilesize + shake_x - 8,
-        y * tilesize + shake_y - 8
+        x * tile_size + shake_x - 8,
+        y * tile_size + shake_y - 8
     )
 end
 
-screen_size = 128
+function sprite_to_i(sprite)
+    local tx, ty = sprite_tile_xy(sprite)
+    local i = ty * spritesheet_byte_width * tile_size + tx * tile_byte_width
+    return i
+end
+
 title_char_width = 5
 title_char_height = 6
 
@@ -308,6 +327,12 @@ function tile:dist(other)
   return abs(self.x-other.x)+abs(self.y-other.y);
 end
 
+effect_counter_start = 30
+filled_pixels_estimate = (tile_size * tile_size) * 7 / 8
+initial_remove_count = ceil(filled_pixels_estimate / effect_counter_start)
+
+first_free_slot = 17
+tile.free_effect_slot = first_free_slot
 
 function tile:draw()
   draw_sprite(self.sprite, self.x, self.y)
@@ -315,14 +340,59 @@ function tile:draw()
     draw_sprite(12, self.x, self.y)
   end
   if(self.effect_counter > 0) then
+    -- set some pixels from the (copied) effect sprite to the
+    -- transparent colour for a cheap fade out effect
+    local base_address = sprite_to_i(self.effect)
+    local remove_count = initial_remove_count
+    local timeout = remove_count * 6
+    while remove_count > 0 and timeout > 0 do
+        local x = flr(rnd(tile_byte_width))
+        local y = flr(rnd(tile_size))
+        local i = base_address + y * spritesheet_byte_width + x
+        local is_high_pixel = rnd(1) > 0.5
+        local peeked = peek(i)
+        local pixel = is_high_pixel and shr(band(peeked, 0xf0), 4) or band(peeked, 0x0f)
+        if (pixel ~= transparent_colour) then
+            local new_byte = is_high_pixel
+                and bor(band(peeked, 0x0f), shl(transparent_colour, 4))
+                or bor(band(peeked, 0xf0), transparent_colour)
+            poke(i, new_byte)
+
+            remove_count -= 1
+        end
+        timeout -= 1
+    end
+
     self.effect_counter -= 1
     draw_sprite(self.effect, self.x, self.y)
   end
 end
 
 function tile:set_effect(effect_sprite)
-    self.effect = effect_sprite
-    self.effect_counter = 30
+    local free_i = sprite_to_i(tile.free_effect_slot)
+    -- clear possibly re-used effect sprite
+    for y=0, tile_size-1 do
+        local offset = y * spritesheet_byte_width
+        memset(free_i + offset, transparent_colour, tile_byte_width)
+    end
+
+    -- copy sprite data to an unused part of the spritesheet
+    local i = sprite_to_i(effect_sprite)
+
+
+    for y=0, tile_size-1 do
+        local offset = y * spritesheet_byte_width
+        memcpy(free_i + offset, i + offset, tile_byte_width)
+    end
+
+    -- set the effect sprite to the slot we copied, so we can edit the
+    -- sprite and have the tile show the changes
+    self.effect = tile.free_effect_slot
+    tile.free_effect_slot += 1
+    if (tile.free_effect_slot >= 64) then
+        tile.free_effect_slot = first_free_slot
+    end
+    self.effect_counter = effect_counter_start
 end
 
 function tile:get_neighbor(dx, dy)
@@ -872,8 +942,6 @@ spells = {
 -- main
 --
 
-num_tiles=9
-tilesize=16
 level=1
 max_hp=6
 starting_hp = 3
@@ -895,11 +963,13 @@ shake_y = 0
 spell_index = 1
 num_spells = 1
 
+transparent_colour = 15
+
 function _init()
   cartdata("ryan1729_peek-brough-8_1")
 
   palt(0, false)
-  palt(15, true)
+  palt(transparent_colour, true)
 
   show_title()
 end
