@@ -71,6 +71,7 @@ function start_level(player_hp, player_spells)
     if(player_spells ~= nil) then
         player.spells = player_spells
     end
+    spell_index = 1
 
     random_passable_tile():replace(exit)
 end
