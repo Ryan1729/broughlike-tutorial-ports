@@ -486,7 +486,8 @@ function monster:new(tile, sprite, hp)
         hp = hp,
         teleport_counter = 2,
         offset_x = 0,
-        offset_y = 0
+        offset_y = 0,
+        last_move = {-1, 0}
     }
     setmetatable(obj, self)
     self.__index = self
@@ -557,6 +558,7 @@ end
 function monster:try_move(dx, dy)
     local new_tile = self.tile:get_neighbor(dx, dy)
     if(new_tile.passable) then
+        self.last_move = {dx, dy}
         if(new_tile.monster == nil) then
             self:move(new_tile)
         else
@@ -931,6 +933,27 @@ spells = {
         end
         player.tile:set_effect(13)
         player:heal(1)
+    end,
+    dash = function()
+        local new_tile = player.tile;
+        while(true) do
+            local test_tile = new_tile:get_neighbor(player.last_move[1],player.last_move[2])
+            if(test_tile.passable and not test_tile.monster) then
+                new_tile = test_tile
+            else
+                break
+            end
+        end
+        if(player.tile != new_tile) then
+            player:move(new_tile)
+            for t in all(new_tile:get_adjacent_neighbors()) do
+                if(t.monster) then
+                    t:set_effect(14)
+                    t.monster.stunned = true
+                    t.monster:hit(1)
+                end
+            end
+        end
     end
 }
 
