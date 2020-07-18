@@ -954,6 +954,18 @@ spells = {
                 end
             end
         end
+    end,
+    dig = function()
+        for i=0,num_tiles do
+            for j=0,num_tiles do
+                local tile = get_tile(i,j)
+                if(not tile.passable) then
+                    tile:replace(floor)
+                end
+            end
+        end
+        player.tile:set_effect(13)
+        player:heal(2)
     end
 }
 
