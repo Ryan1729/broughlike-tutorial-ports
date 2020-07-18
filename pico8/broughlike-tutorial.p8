@@ -966,6 +966,12 @@ spells = {
         end
         player.tile:set_effect(13)
         player:heal(2)
+    end,
+    kingmaker = function()
+        for i=1,#monsters do
+            monsters[i]:heal(1)
+            monsters[i].tile.treasure = true
+        end
     end
 }
 
