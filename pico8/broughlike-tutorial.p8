@@ -487,7 +487,8 @@ function monster:new(tile, sprite, hp)
         teleport_counter = 2,
         offset_x = 0,
         offset_y = 0,
-        last_move = {-1, 0}
+        last_move = {-1, 0},
+        bonus_attack = 0
     }
     setmetatable(obj, self)
     self.__index = self
@@ -565,7 +566,8 @@ function monster:try_move(dx, dy)
             if (self.is_player ~= new_tile.monster.is_player) then
                 self.attacked_this_turn = true
                 new_tile.monster.stunned = true
-                new_tile.monster:hit(1);
+                new_tile.monster:hit(1 + self.bonus_attack);
+                self.bonus_attack = 0
 
                 shake_amount = 5
 
@@ -979,6 +981,9 @@ spells = {
                 t:replace(floor).treasure = true
             end
         end
+    end,
+    power = function()
+        player.bonus_attack = 5
     end
 }
 
