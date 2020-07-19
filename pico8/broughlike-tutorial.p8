@@ -972,6 +972,13 @@ spells = {
             monsters[i]:heal(1)
             monsters[i].tile.treasure = true
         end
+    end,
+    alchemy = function()
+        for t in all(player.tile:get_adjacent_neighbors()) do
+            if(not t.passable and in_bounds(t.x, t.y)) then
+                t:replace(floor).treasure = true
+            end
+        end
     end
 }
 
