@@ -1005,10 +1005,27 @@ spells = {
         for i=1,#monsters do
             monsters[i].stunned = true
         end
+    end,
+    bolt = function()
+        bolt_travel(player.last_move, 15 + abs(player.last_move[2]), 4)
     end
 }
 
-
+function bolt_travel(direction, effect, damage)
+    local new_tile = player.tile;
+    while (true) do
+        local test_tile = new_tile:get_neighbor(direction[1], direction[2]);
+        if(test_tile.passable) then
+            new_tile = test_tile
+            if(new_tile.monster ~= nil) then
+                new_tile.monster:hit(damage)
+            end
+            new_tile:set_effect(effect)
+        else
+            break
+        end
+    end
+end
 
 -->8
 
