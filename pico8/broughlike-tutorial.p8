@@ -582,6 +582,9 @@ end
 
 
 function monster:hit(damage)
+   if(self.shield ~= nil and self.shield > 0) then
+        return
+    end
     self.hp -= damage
     if(self.hp <= 0) then
         self:die()
@@ -618,6 +621,7 @@ function player_class:new(tile)
 
     player.is_player = true
     player.teleport_counter = 0
+    player.shield = 0
 
     local shuffled_spells = shuffle(keys(spells))
 
@@ -627,6 +631,10 @@ function player_class:new(tile)
     end
 
     return player
+end
+
+function player_class:update()
+    self.shield -= 1
 end
 
 function player_class:try_move(dx, dy)
@@ -991,6 +999,12 @@ spells = {
                 player.spells[i] = player.spells[i-1]
             end
         end
+    end,
+    bravery = function()
+        player.shield = 2
+        for i=1,#monsters do
+            monsters[i].stunned = true
+        end
     end
 }
 
@@ -1093,6 +1107,8 @@ function tick()
             del(monsters, monsters[k])
         end
     end
+
+    player:update()
 
     if(player.dead) then
         add_score(score, false)
