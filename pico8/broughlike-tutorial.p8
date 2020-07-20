@@ -1019,6 +1019,17 @@ spells = {
         for k=1,#directions do
             bolt_travel(directions[k], 15 + abs(directions[k][2]), 2)
         end
+    end,
+    ex = function()
+        local directions = {
+            {-1, -1},
+            {-1, 1},
+            {1, -1},
+            {1, 1}
+        };
+        for k=1,#directions do
+            bolt_travel(directions[k], 14, 3)
+        end
     end
 }
 
