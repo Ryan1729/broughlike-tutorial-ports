@@ -1008,6 +1008,17 @@ spells = {
     end,
     bolt = function()
         bolt_travel(player.last_move, 15 + abs(player.last_move[2]), 4)
+    end,
+    cross = function()
+        local directions = {
+            {0, -1},
+            {0, 1},
+            {-1, 0},
+            {1, 0}
+        };
+        for k=1,#directions do
+            bolt_travel(directions[k], 15 + abs(directions[k][2]), 2)
+        end
     end
 }
 
