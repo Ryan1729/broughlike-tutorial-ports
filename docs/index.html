@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style type="text/css">body{
+margin:40px auto;
+max-width:650px;
+line-height:1.6;
+font-size:18px;
+color:#888;
+background-color:#111;
+padding:0 10px
+}
+h1,h2,h3{line-height:1.2}
+a:link {color: #999;}
+a:visited {color: #666;}
+</style></head>
+<body></body>
+<script>
+
+//
+//    Data
+//
+const links = [
+    ["./pico-8.html", "pico-8 version"],
+];
+
+document.title = "Versions";
+
+//
+//    Header
+//
+const headerTag = document.createElement("header");
+const h1Tag = document.createElement("h1");
+
+h1Tag.innerText = document.title;
+
+headerTag.appendChild(h1Tag);
+document.body.appendChild(headerTag);
+
+//
+//    List
+//
+
+const ulTag = document.createElement('ul');
+
+for (let i = 0; i < links.length; i += 1) {
+    const [url, linkText] = links[i];
+    const aTag = document.createElement('a');
+    aTag.setAttribute('href', url);
+    aTag.innerText = linkText || url;
+    const liTag = document.createElement('li');
+    liTag.appendChild(aTag);
+    ulTag.appendChild(liTag);
+}
+
+document.body.appendChild(ulTag);
+
+</script>
+</html>

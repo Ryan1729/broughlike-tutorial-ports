@@ -6,8 +6,12 @@ This repo consists of ports of the code from [this excellent tutorial](https://g
 
 A completed version of the code from the [original tutorial](https://github.com/nluqo/broughlike-tutorial).
 
-## pico8 (WIP)
+## pico8
 
 A version of the code for the [pico-8 fantasy console](https://www.lexaloffle.com/pico-8.php).
+
+![pico-8 png cartridge](./pico8/broughlike-tutorial.p8.png)
+
+
 
 
