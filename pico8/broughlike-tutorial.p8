@@ -984,6 +984,13 @@ spells = {
     end,
     power = function()
         player.bonus_attack = 5
+    end,
+    bubble = function()
+        for i=#player.spells,2,-1 do
+            if(player.spells[i] == nil) then
+                player.spells[i] = player.spells[i-1]
+            end
+        end
     end
 }
 
