@@ -1,0 +1,4 @@
+
+# we assume dragonruby is inside the PATH already, and that this script 
+# is called from the game's directory.
+dragonruby .
