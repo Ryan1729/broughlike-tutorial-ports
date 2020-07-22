@@ -1,3 +1,10 @@
+require 'app/game.rb'
+require 'app/map.rb'
+require 'app/tile.rb'
+require 'app/monster.rb'
+require 'app/util.rb'
+require 'app/spell.rb'
+
 def tick args
   s = args.state
   s.x ||= 0
@@ -8,7 +15,7 @@ def tick args
   if key_down.a then s.x -= 8 end
   if key_down.d then s.x += 8 end
 
-  draw(args)
+  draw args
 end
 
 TileSize = 80;
