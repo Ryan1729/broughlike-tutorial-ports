@@ -1,0 +1,6 @@
+devid=ryan1729
+devtitle=Ryan1729
+gameid=brough-gon-ruby
+gametitle=AWESOME BROUGHLIKE
+version=0.1
+#icon=metadata/icon.png
