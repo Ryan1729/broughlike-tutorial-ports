@@ -10,8 +10,8 @@ def tick args
   s.x ||= 0
   s.y ||= 0
   key_down = args.inputs.keyboard.key_down
-  if key_down.w then s.y += 1 end
-  if key_down.s then s.y -= 1 end
+  if key_down.w then s.y -= 1 end
+  if key_down.s then s.y += 1 end
   if key_down.a then s.x -= 1 end
   if key_down.d then s.x += 1 end
 
@@ -49,7 +49,7 @@ end
 def drawSprite args, sprite, x, y
   args.outputs.sprites << {
     x: PlayAreaMinX + x * TileSize,
-    y: PlayAreaMinY + y * TileSize,
+    y: PlayAreaMinY + (PlayAreaMaxY - (y * TileSize)),
     w: TileSize,
     h: TileSize,
     path: "sprites/spritesheet.png",
