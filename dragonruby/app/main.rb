@@ -7,8 +7,8 @@ require 'app/spell.rb'
 
 def tick args
   s = args.state
-  s.x ||= 0
-  s.y ||= 0
+  init s
+  
   key_down = args.inputs.keyboard.key_down
   if key_down.w or key_down.up then s.y -= 1 end
   if key_down.s or key_down.down then s.y += 1 end
@@ -16,6 +16,13 @@ def tick args
   if key_down.d or key_down.right then s.x += 1 end
 
   draw args
+end
+
+def init s
+  s.x ||= 0
+  s.y ||= 0
+
+  generateLevel s
 end
 
 TileSize = 80;
@@ -42,6 +49,12 @@ def draw args
     255,
     255
   ]
+  
+  (0...NumTiles).each{|i|
+    (0...NumTiles).each{|j|
+      s.tiles[i][j].draw args
+    }
+  }
 
   drawSprite args, 0, s.x, s.y
 end
