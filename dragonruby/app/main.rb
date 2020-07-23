@@ -49,7 +49,7 @@ end
 def drawSprite args, sprite, x, y
   args.outputs.sprites << {
     x: PlayAreaMinX + x * TileSize,
-    y: PlayAreaMinY + (PlayAreaMaxY - (y * TileSize)),
+    y: PlayAreaMinY + (PlayAreaMaxY - ((y + 1) * TileSize)),
     w: TileSize,
     h: TileSize,
     path: "sprites/spritesheet.png",
