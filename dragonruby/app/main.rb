@@ -10,10 +10,10 @@ def tick args
   s.x ||= 0
   s.y ||= 0
   key_down = args.inputs.keyboard.key_down
-  if key_down.w then s.y -= 1 end
-  if key_down.s then s.y += 1 end
-  if key_down.a then s.x -= 1 end
-  if key_down.d then s.x += 1 end
+  if key_down.w or key_down.up then s.y -= 1 end
+  if key_down.s or key_down.down then s.y += 1 end
+  if key_down.a or key_down.left then s.x -= 1 end
+  if key_down.d or key_down.right then s.x += 1 end
 
   draw args
 end
