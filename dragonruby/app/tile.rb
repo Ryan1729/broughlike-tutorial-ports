@@ -1,5 +1,5 @@
 class Tile
-  attr_accessor :x, :y, :sprite, :passable
+  attr_accessor :x, :y, :sprite, :passable, :monster
   
   def initialize(x, y, sprite, passable)
     @x = x

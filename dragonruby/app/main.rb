@@ -19,10 +19,13 @@ def tick args
 end
 
 def init s
-  s.x ||= 0
-  s.y ||= 0
-
   generateLevel s
+  
+  if s.x == nil || s.y == nil then
+    startingTile = randomPassableTile s
+    s.x = startingTile.x
+    s.y = startingTile.y
+  end
 end
 
 TileSize = 80;

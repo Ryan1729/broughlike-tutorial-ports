@@ -28,3 +28,14 @@ def getTile s, x, y
         Wall.new(x,y)
     end
 end
+
+def randomPassableTile s
+    tile = nil
+    tryTo 'get random passable tile', -> {
+        x = randomRange 0, NumTiles-1
+        y = randomRange 0, NumTiles-1
+        tile = getTile s, x, y
+        tile.passable && !tile.monster
+    }
+    tile
+end
