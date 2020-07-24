@@ -52,7 +52,7 @@ def draw args
   
   (0...NumTiles).each{|i|
     (0...NumTiles).each{|j|
-      s.tiles[i][j].draw args
+      (getTile s, i, j).draw args
     }
   }
 

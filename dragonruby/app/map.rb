@@ -17,13 +17,13 @@ def generateTiles
   tiles
 end
 
-def inBounds(x,y)
+def inBounds x, y
     x>0 and y>0 and x<NumTiles-1 and y<NumTiles-1
 end
 
-def getTile(x, y)
+def getTile s, x, y
     if inBounds(x,y) then
-        tiles[x][y]
+        s.tiles[x][y]
     else
         Wall.new(x,y)
     end
