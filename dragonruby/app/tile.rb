@@ -12,16 +12,45 @@ class Tile
     drawSprite args, sprite, x, y
   end
   
+  def getNeighbor tiles, dx, dy
+    tiles.get x + dx, y + dy
+  end
+
+  def getAdjacentNeighbors tiles
+    [
+        (getNeighbor tiles, 0, -1),
+        (getNeighbor tiles, 0, 1),
+        (getNeighbor tiles, -1, 0),
+        (getNeighbor tiles, 1, 0)
+    ].shuffle!
+  end
+
+  def getAdjacentPassableNeighbors tiles
+    (getAdjacentNeighbors tiles).select{|t| t.passable}
+  end
+
+  def getConnectedTiles tiles
+      connectedTiles = [self]
+      frontier = [self]
+      while frontier.length > 0 do
+        neighbors = (frontier.pop.getAdjacentPassableNeighbors tiles)
+            .select{|t| !connectedTiles.member? t}
+        connectedTiles = connectedTiles.concat neighbors
+        frontier = frontier.concat neighbors
+      end
+      connectedTiles
+  end
+  
   ## Dragonruby output these instructions to enable serialization on our
   ## class, so we complied.
   # 1. Create a serialize method that returns a hash with all of
   #    the values you care about.
   def serialize
     { 
-      x => x,
-      y => y,
-      sprite => sprite,
-      passable => passable
+      :x => x,
+      :y => y,
+      :sprite => sprite,
+      :passable => passable
     }
   end
 

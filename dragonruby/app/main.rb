@@ -8,7 +8,6 @@ require 'app/spell.rb'
 def tick args
   s = args.state
   init s
-  
   key_down = args.inputs.keyboard.key_down
   if key_down.w or key_down.up then s.y -= 1 end
   if key_down.s or key_down.down then s.y += 1 end
@@ -22,7 +21,7 @@ def init s
   generateLevel s
   
   if s.x == nil || s.y == nil then
-    startingTile = randomPassableTile s
+    startingTile = s.tiles.randomPassable
     s.x = startingTile.x
     s.y = startingTile.y
   end
@@ -55,7 +54,7 @@ def draw args
   
   (0...NumTiles).each{|i|
     (0...NumTiles).each{|j|
-      (getTile s, i, j).draw args
+      (s.tiles.get i, j).draw args
     }
   }
 
