@@ -40,7 +40,7 @@ class Tiles
   end
   
   def get x, y
-    if inBounds(x,y) then
+    if inBounds x, y then
         @tiles[x][y]
     else
         Wall.new(x,y)
