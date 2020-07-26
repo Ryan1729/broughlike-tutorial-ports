@@ -46,11 +46,27 @@ class Tile
   # 1. Create a serialize method that returns a hash with all of
   #    the values you care about.
   def serialize
+    # this way avoids an infinite recursive loop during printout
+    monster_hash = if monster then
+      {
+        :tile => if monster.tile then 
+          if monster.tile === self then "self" else "other" end +
+          "(" + monster.tile.x.to_s + ", " + monster.tile.y.to_s + ")"
+        else 
+          monster.tile
+        end,
+        :sprite => monster.sprite,
+        :hp => monster.hp
+      }
+    else
+      nil
+    end
     { 
       :x => x,
       :y => y,
       :sprite => sprite,
-      :passable => passable
+      :passable => passable,
+      :monster => monster_hash
     }
   end
 

@@ -9,10 +9,10 @@ def tick args
   s = args.state
   init s
   key_down = args.inputs.keyboard.key_down
-  if key_down.w or key_down.up then s.y -= 1 end
-  if key_down.s or key_down.down then s.y += 1 end
-  if key_down.a or key_down.left then s.x -= 1 end
-  if key_down.d or key_down.right then s.x += 1 end
+  if key_down.w or key_down.up then s.player.tryMove s.tiles, 0, -1 end
+  if key_down.s or key_down.down then s.player.tryMove s.tiles, 0, 1 end
+  if key_down.a or key_down.left then s.player.tryMove s.tiles, -1, 0 end
+  if key_down.d or key_down.right then s.player.tryMove s.tiles, 1, 0 end
 
   draw args
 end
@@ -20,11 +20,7 @@ end
 def init s
   generateLevel s
   
-  if s.x == nil || s.y == nil then
-    startingTile = s.tiles.randomPassable
-    s.x = startingTile.x
-    s.y = startingTile.y
-  end
+  s.player ||= Player.new s.tiles.randomPassable
 end
 
 TileSize = 80;
@@ -58,7 +54,7 @@ def draw args
     }
   }
 
-  drawSprite args, 0, s.x, s.y
+  s.player.draw args
 end
 
 def drawSprite args, sprite, x, y
