@@ -18,6 +18,8 @@ def tick args
 end
 
 def init s
+  s.level ||= 1
+
   generateLevel s
   
   s.player ||= Player.new s.tiles.randomPassable
@@ -52,6 +54,10 @@ def draw args
     (0...NumTiles).each{|j|
       (s.tiles.get i, j).draw args
     }
+  }
+  
+  s.monsters.each{|monster|
+    monster.draw args
   }
 
   s.player.draw args

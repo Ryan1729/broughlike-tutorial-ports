@@ -10,6 +10,8 @@ def generateLevel s
         end
         areAllConnected
     }
+    
+    s.monsters ||= generateMonsters s
 end
 
 def generateTiles
@@ -58,7 +60,7 @@ class Tiles
     tile
   end
   
-    ## Dragonruby output these instructions to enable serialization on our
+  ## Dragonruby output these instructions to enable serialization on our
   ## class, so we complied.
   # 1. Create a serialize method that returns a hash with all of
   #    the values you care about.
@@ -79,4 +81,16 @@ class Tiles
   end
 end
 
+def generateMonsters s
+    monsters = []
+    numMonsters = s.level + 1
+    (0...numMonsters).each{|_i|
+        monsters << (spawnMonster s)
+    }
+    monsters
+end
 
+def spawnMonster s
+    monsterType = [Bird, Snake, Tank, Eater, Jester].shuffle![0]
+    monsterType.new s.tiles.randomPassable
+end
