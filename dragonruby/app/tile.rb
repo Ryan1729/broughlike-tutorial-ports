@@ -1,6 +1,6 @@
 class Tile
   attr_accessor :x, :y, :sprite, :passable, :monster
-  
+
   def initialize x, y, sprite, passable
     @x = x
     @y = y;
@@ -8,10 +8,15 @@ class Tile
     @passable = passable;
   end
 
+  # manhattan distance
+  def dist other
+    (x-other.x).abs + (y-other.y).abs
+  end
+
   def draw args
     drawSprite args, sprite, x, y
   end
-  
+
   def getNeighbor tiles, dx, dy
     tiles.get x + dx, y + dy
   end
@@ -40,7 +45,7 @@ class Tile
       end
       connectedTiles
   end
-  
+
   ## Dragonruby output these instructions to enable serialization on our
   ## class, so we complied.
   # 1. Create a serialize method that returns a hash with all of
@@ -49,10 +54,10 @@ class Tile
     # this way avoids an infinite recursive loop during printout
     monster_hash = if monster then
       {
-        :tile => if monster.tile then 
+        :tile => if monster.tile then
           if monster.tile === self then "self" else "other" end +
           "(" + monster.tile.x.to_s + ", " + monster.tile.y.to_s + ")"
-        else 
+        else
           monster.tile
         end,
         :sprite => monster.sprite,
@@ -61,7 +66,7 @@ class Tile
     else
       nil
     end
-    { 
+    {
       :x => x,
       :y => y,
       :sprite => sprite,

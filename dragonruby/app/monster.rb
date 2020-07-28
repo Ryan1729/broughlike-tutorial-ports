@@ -1,5 +1,5 @@
 class Monster
-  attr_accessor :tile, :sprite, :hp
+  attr_accessor :tile, :sprite, :hp, :dead
 
   def initialize tile, sprite, hp
     move(tile)
@@ -7,11 +7,31 @@ class Monster
     @hp = hp
   end
 
+  def update s
+    doStuff s
+  end
+
+  def doStuff s
+    neighbors = tile.getAdjacentPassableNeighbors s.tiles
+
+    neighbors = neighbors.select{|t| !t.monster || t.monster.isPlayer}
+
+    if neighbors.length > 0 then
+      playerTile = s.player.tile
+      neighbors.sort!{|a,b|
+        a.dist(playerTile) - b.dist(playerTile)
+      }
+      newTile = neighbors[0]
+      tryMove s, newTile.x - tile.x, newTile.y - tile.y
+    end
+  end
+
   def draw args
     drawSprite args, sprite, tile.x, tile.y
   end
-  
-  def tryMove tiles, dx, dy
+
+  def tryMove s, dx, dy
+    tiles = s.tiles
     newTile = tile.getNeighbor tiles, dx, dy
     if newTile.passable then
       if !newTile.monster then
@@ -28,13 +48,17 @@ class Monster
     @tile = to_tile
     tile.monster = self
   end
-  
+
+  def isPlayer
+    false
+  end
+
   ## Dragonruby output these instructions to enable serialization on our
   ## class, so we complied.
   # 1. Create a serialize method that returns a hash with all of
   #    the values you care about.
   def serialize
-    { 
+    {
       :tile => tile,
       :sprite => sprite,
       :hp => hp
@@ -56,9 +80,15 @@ class Player < Monster
   def initialize tile
       super tile, 0, 3
   end
-  
+
   def isPlayer
     true
+  end
+
+  def tryMove s, dx, dy
+    if super s, dx, dy then
+      game_tick s
+    end
   end
 end
 
