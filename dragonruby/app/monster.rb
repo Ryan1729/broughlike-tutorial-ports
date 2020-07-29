@@ -28,6 +28,19 @@ class Monster
 
   def draw args
     drawSprite args, sprite, tile.x, tile.y
+    
+    drawHP args
+  end
+  
+  def drawHP args
+    (0...hp).each{|i|
+        drawSprite(
+            args,
+            9,
+            tile.x + (i%3)*(5/16),
+            tile.y - (i/3).floor*(5/16)
+        )
+    }
   end
 
   def tryMove s, dx, dy
