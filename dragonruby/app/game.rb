@@ -53,9 +53,9 @@ def game_tick s
   monsters = s.monsters
   (0...monsters.length).reverse_each{|k|
     if !monsters[k].dead then
-        monsters[k].update s
+      monsters[k].update s
     else
-        monsters.delete_at k
+      monsters.delete_at k
     end
   }
 end

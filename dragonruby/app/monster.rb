@@ -5,6 +5,7 @@ class Monster
     move(tile)
     @sprite = sprite
     @hp = hp
+    @dead = false
   end
 
   def update s
@@ -28,10 +29,10 @@ class Monster
 
   def draw args
     drawSprite args, sprite, tile.x, tile.y
-    
+
     drawHP args
   end
-  
+
   def drawHP args
     (0...hp).each{|i|
         drawSprite(
@@ -49,9 +50,26 @@ class Monster
     if newTile.passable then
       if !newTile.monster then
         move(newTile)
+      else
+        if isPlayer != newTile.monster.isPlayer then
+            newTile.monster.hit 1
+        end
       end
       true
     end
+  end
+
+  def hit damage
+    @hp -= damage
+    if @hp <= 0 then
+        die
+    end
+  end
+
+  def die
+    @dead = true
+    @tile.monster = nil
+    @sprite = 1
   end
 
   def move to_tile
@@ -59,7 +77,7 @@ class Monster
       @tile.monster = nil
     end
     @tile = to_tile
-    tile.monster = self
+    @tile.monster = self
   end
 
   def isPlayer
