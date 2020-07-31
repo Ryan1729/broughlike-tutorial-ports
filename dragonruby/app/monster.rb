@@ -6,6 +6,7 @@ class Monster
     @sprite = sprite
     @hp = hp
     @dead = false
+    @attackedThisTurn = false
   end
 
   def update s
@@ -52,7 +53,8 @@ class Monster
         move(newTile)
       else
         if isPlayer != newTile.monster.isPlayer then
-            newTile.monster.hit 1
+          @attackedThisTurn = true
+          newTile.monster.hit 1
         end
       end
       true
@@ -132,6 +134,16 @@ end
 class Snake < Monster
   def initialize tile
       super tile, 5, 1
+  end
+  
+    
+  def doStuff s
+      @attackedThisTurn = false
+      super s
+
+      if !@attackedThisTurn then
+          super s
+      end
   end
 end
 
