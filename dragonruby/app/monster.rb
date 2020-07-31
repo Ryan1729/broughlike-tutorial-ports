@@ -124,31 +124,31 @@ class Player < Monster
 end
 
 class Bird < Monster
-    def initialize tile
-        super tile, 4, 3
-    end
+  def initialize tile
+      super tile, 4, 3
+  end
 end
 
 class Snake < Monster
-    def initialize tile
-        super tile, 5, 1
-    end
+  def initialize tile
+      super tile, 5, 1
+  end
 end
 
 class Tank < Monster
-    def initialize tile
-        super tile, 6, 2
-    end
+  def initialize tile
+      super tile, 6, 2
+  end
 end
 
 class Eater < Monster
-    def initialize tile
-        super tile, 7, 1
-    end
+  def initialize tile
+      super tile, 7, 1
+  end
 end
 
 class Jester < Monster
-    def initialize tile
-        super tile, 8, 2
-    end
+  def initialize tile
+      super tile, 8, 2
+  end
 end
