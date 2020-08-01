@@ -1,7 +1,7 @@
 class Monster
   attr_accessor :tile, :sprite, :hp, :dead, :stunned
 
-  def initialize tile, sprite, hp
+  def initialize(tile, sprite, hp)
     move(tile)
     @sprite = sprite
     @hp = hp
@@ -10,55 +10,55 @@ class Monster
     @stunned = false
   end
 
-  def update s
-    if @stunned then
-        @stunned = false
-        return
+  def update(s)
+    if @stunned
+      @stunned = false
+      return
     end
 
     doStuff s
   end
 
-  def doStuff s
+  def doStuff(s)
     neighbors = tile.getAdjacentPassableNeighbors s.tiles
 
-    neighbors = neighbors.select{|t| !t.monster || t.monster.isPlayer}
+    neighbors = neighbors.select { |t| !t.monster || t.monster.isPlayer }
 
-    if neighbors.length > 0 then
+    if neighbors.length > 0
       playerTile = s.player.tile
-      neighbors.sort!{|a,b|
+      neighbors.sort! do |a, b|
         a.dist(playerTile) - b.dist(playerTile)
-      }
+      end
       newTile = neighbors[0]
       tryMove s, newTile.x - tile.x, newTile.y - tile.y
     end
   end
 
-  def draw args
+  def draw(args)
     drawSprite args, sprite, tile.x, tile.y
 
     drawHP args
   end
 
-  def drawHP args
-    (0...hp).each{|i|
-        drawSprite(
-            args,
-            9,
-            tile.x + (i%3)*(5/16),
-            tile.y - (i/3).floor*(5/16)
-        )
-    }
+  def drawHP(args)
+    (0...hp).each do |i|
+      drawSprite(
+        args,
+        9,
+        tile.x + (i % 3) * (5 / 16),
+        tile.y - (i / 3).floor * (5 / 16)
+      )
+    end
   end
 
-  def tryMove s, dx, dy
+  def tryMove(s, dx, dy)
     tiles = s.tiles
     newTile = tile.getNeighbor tiles, dx, dy
-    if newTile.passable then
-      if !newTile.monster then
+    if newTile.passable
+      if !newTile.monster
         move(newTile)
       else
-        if isPlayer != newTile.monster.isPlayer then
+        if isPlayer != newTile.monster.isPlayer
           @attackedThisTurn = true
           newTile.monster.stunned = true
           newTile.monster.hit 1
@@ -68,11 +68,9 @@ class Monster
     end
   end
 
-  def hit damage
+  def hit(damage)
     @hp -= damage
-    if @hp <= 0 then
-        die
-    end
+    die if @hp <= 0
   end
 
   def die
@@ -81,10 +79,8 @@ class Monster
     @sprite = 1
   end
 
-  def move to_tile
-    if @tile then
-      @tile.monster = nil
-    end
+  def move(to_tile)
+    @tile.monster = nil if @tile
     @tile = to_tile
     @tile.monster = self
   end
@@ -99,9 +95,9 @@ class Monster
   #    the values you care about.
   def serialize
     {
-      :tile => tile,
-      :sprite => sprite,
-      :hp => hp
+      tile: tile,
+      sprite: sprite,
+      hp: hp
     }
   end
 
@@ -117,65 +113,58 @@ class Monster
 end
 
 class Player < Monster
-  def initialize tile
-      super tile, 0, 3
+  def initialize(tile)
+    super tile, 0, 3
   end
 
   def isPlayer
     true
   end
 
-  def tryMove s, dx, dy
-    if super s, dx, dy then
-      game_tick s
-    end
+  def tryMove(s, dx, dy)
+    game_tick s if super s, dx, dy
   end
 end
 
 class Bird < Monster
-  def initialize tile
-      super tile, 4, 3
+  def initialize(tile)
+    super tile, 4, 3
   end
 end
 
 class Snake < Monster
-  def initialize tile
+  def initialize(tile)
     super tile, 5, 1
   end
-  
-    
-  def doStuff s
-      @attackedThisTurn = false
-      super s
 
-      if !@attackedThisTurn then
-          super s
-      end
+  def doStuff(s)
+    @attackedThisTurn = false
+    super s
+
+    super s unless @attackedThisTurn
   end
 end
 
 class Tank < Monster
-  def initialize tile
+  def initialize(tile)
     super tile, 6, 2
   end
-  
-  def update s
+
+  def update(s)
     started_stunned = @stunned
     super s
-    if !started_stunned then
-        @stunned = true
-    end
+    @stunned = true unless started_stunned
   end
 end
 
 class Eater < Monster
-  def initialize tile
+  def initialize(tile)
     super tile, 7, 1
   end
 end
 
 class Jester < Monster
-  def initialize tile
+  def initialize(tile)
     super tile, 8, 2
   end
 end
