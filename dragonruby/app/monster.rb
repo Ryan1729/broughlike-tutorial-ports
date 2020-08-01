@@ -1,5 +1,5 @@
 class Monster
-  attr_accessor :tile, :sprite, :hp, :dead
+  attr_accessor :tile, :sprite, :hp, :dead, :stunned
 
   def initialize tile, sprite, hp
     move(tile)
@@ -7,9 +7,15 @@ class Monster
     @hp = hp
     @dead = false
     @attackedThisTurn = false
+    @stunned = false
   end
 
   def update s
+    if @stunned then
+        @stunned = false
+        return
+    end
+
     doStuff s
   end
 
@@ -54,6 +60,7 @@ class Monster
       else
         if isPlayer != newTile.monster.isPlayer then
           @attackedThisTurn = true
+          newTile.monster.stunned = true
           newTile.monster.hit 1
         end
       end
@@ -133,7 +140,7 @@ end
 
 class Snake < Monster
   def initialize tile
-      super tile, 5, 1
+    super tile, 5, 1
   end
   
     
@@ -149,18 +156,26 @@ end
 
 class Tank < Monster
   def initialize tile
-      super tile, 6, 2
+    super tile, 6, 2
+  end
+  
+  def update s
+    started_stunned = @stunned
+    super s
+    if !started_stunned then
+        @stunned = true
+    end
   end
 end
 
 class Eater < Monster
   def initialize tile
-      super tile, 7, 1
+    super tile, 7, 1
   end
 end
 
 class Jester < Monster
   def initialize tile
-      super tile, 8, 2
+    super tile, 8, 2
   end
 end
