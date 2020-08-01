@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class Monster
   attr_accessor :tile, :sprite, :hp, :dead, :stunned
 

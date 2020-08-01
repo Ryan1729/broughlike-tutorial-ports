@@ -1,3 +1,6 @@
+# frozen_string_literal: true
+
+# a (possibly inaccessible) location in the dungeon
 class Tile
   attr_accessor :x, :y, :sprite, :passable, :monster
 
@@ -56,7 +59,7 @@ class Tile
     if monster
       monster_tile = monster.tile
       if monster.tile
-        (monster.tile === self ? 'self' : 'other') +
+        (monster.tile.equal? self ? 'self' : 'other') +
           '(' + monster.tile.x.to_s + ', ' + monster.tile.y.to_s + ')'
       end
       {
@@ -86,12 +89,14 @@ class Tile
   end
 end
 
+# a walkable tile
 class Floor < Tile
   def initialize(x, y)
     super x, y, 2, true
   end
 end
 
+# a non-walkable tile
 class Wall < Tile
   def initialize(x, y)
     super x, y, 3, false

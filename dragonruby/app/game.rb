@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 TileSize = 80
 NumTiles = 9
 UIWidth = 4

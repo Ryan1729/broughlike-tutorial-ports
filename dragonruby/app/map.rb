@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 def generateLevel(s)
   tryTo 'generate map', lambda {
     pair = generateTiles

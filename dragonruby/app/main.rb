@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'app/game.rb'
 require 'app/map.rb'
 require 'app/tile.rb'
