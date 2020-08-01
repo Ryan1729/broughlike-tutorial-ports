@@ -52,18 +52,22 @@ class Tile
   #    the values you care about.
   def serialize
     # this way avoids an infinite recursive loop during printout
-    monster_hash = if monster
-                     {
-                       tile: if monster.tile
-                               (monster.tile === self ? 'self' : 'other') +
-                                 '(' + monster.tile.x.to_s + ', ' + monster.tile.y.to_s + ')'
-                             else
-                               monster.tile
-                       end,
-                       sprite: monster.sprite,
-                       hp: monster.hp
-                     }
-                   end
+    monster_hash = nil
+    if monster
+      monster_tile = nil
+      if monster.tile
+        (monster.tile === self ? 'self' : 'other') +
+          '(' + monster.tile.x.to_s + ', ' + monster.tile.y.to_s + ')'
+      else
+        monster.tile
+      end
+      {
+        tile: monster_tile,
+        sprite: monster.sprite,
+        hp: monster.hp
+      }
+    end
+
     {
       x: x,
       y: y,
