@@ -54,12 +54,10 @@ class Tile
     # this way avoids an infinite recursive loop during printout
     monster_hash = nil
     if monster
-      monster_tile = nil
+      monster_tile = monster.tile
       if monster.tile
         (monster.tile === self ? 'self' : 'other') +
           '(' + monster.tile.x.to_s + ', ' + monster.tile.y.to_s + ')'
-      else
-        monster.tile
       end
       {
         tile: monster_tile,
