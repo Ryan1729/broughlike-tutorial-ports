@@ -26,7 +26,7 @@ class Monster
 
     neighbors = neighbors.select { |t| !t.monster || t.monster.isPlayer }
 
-    if neighbors.length > 0
+    unless neighbors.empty?
       playerTile = s.player.tile
       neighbors.sort! do |a, b|
         a.dist(playerTile) - b.dist(playerTile)

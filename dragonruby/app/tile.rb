@@ -34,15 +34,15 @@ class Tile
   end
 
   def getAdjacentPassableNeighbors(tiles)
-    (getAdjacentNeighbors tiles).select { |t| t.passable }
+    (getAdjacentNeighbors tiles).select(&:passable)
   end
 
   def getConnectedTiles(tiles)
     connectedTiles = [self]
     frontier = [self]
-    while frontier.length > 0
+    until frontier.empty?
       neighbors = (frontier.pop.getAdjacentPassableNeighbors tiles)
-                  .select { |t| !connectedTiles.member? t }
+                  .reject { |t| connectedTiles.member? t }
       connectedTiles = connectedTiles.concat neighbors
       frontier = frontier.concat neighbors
     end
