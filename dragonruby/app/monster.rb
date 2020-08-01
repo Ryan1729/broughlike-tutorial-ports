@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# An entitiy that can move about the dungeon
 class Monster
   attr_accessor :tile, :sprite, :hp, :dead, :stunned
 
@@ -26,14 +27,14 @@ class Monster
 
     neighbors = neighbors.select { |t| !t.monster || t.monster.isPlayer }
 
-    unless neighbors.empty?
-      playerTile = s.player.tile
-      neighbors.sort! do |a, b|
-        a.dist(playerTile) - b.dist(playerTile)
-      end
-      newTile = neighbors[0]
-      tryMove s, newTile.x - tile.x, newTile.y - tile.y
+    return if neighbors.empty?
+    
+    playerTile = s.player.tile
+    neighbors.sort! do |a, b|
+      a.dist(playerTile) - b.dist(playerTile)
     end
+    newTile = neighbors[0]
+    tryMove s, newTile.x - tile.x, newTile.y - tile.y
   end
 
   def draw(args)
@@ -56,18 +57,16 @@ class Monster
   def tryMove(s, dx, dy)
     tiles = s.tiles
     newTile = tile.getNeighbor tiles, dx, dy
-    if newTile.passable
-      if !newTile.monster
-        move(newTile)
-      else
-        if isPlayer != newTile.monster.isPlayer
-          @attackedThisTurn = true
-          newTile.monster.stunned = true
-          newTile.monster.hit 1
-        end
-      end
-      true
+    return false unless newTile.passable
+    
+    if !newTile.monster
+      move(newTile)
+    elsif isPlayer != newTile.monster.isPlayer
+      @attackedThisTurn = true
+      newTile.monster.stunned = true
+      newTile.monster.hit 1
     end
+    true
   end
 
   def hit(damage)
@@ -114,6 +113,7 @@ class Monster
   end
 end
 
+# the monster the player controls
 class Player < Monster
   def initialize(tile)
     super tile, 0, 3
@@ -128,12 +128,14 @@ class Player < Monster
   end
 end
 
+# a basic monster with lots of health
 class Bird < Monster
   def initialize(tile)
     super tile, 4, 3
   end
 end
 
+# a fast monster
 class Snake < Monster
   def initialize(tile)
     super tile, 5, 1
@@ -147,6 +149,7 @@ class Snake < Monster
   end
 end
 
+# a slow-moving monster
 class Tank < Monster
   def initialize(tile)
     super tile, 6, 2
@@ -159,12 +162,14 @@ class Tank < Monster
   end
 end
 
+# a monster that eats walls
 class Eater < Monster
   def initialize(tile)
     super tile, 7, 1
   end
 end
 
+# a monster that moves randomly
 class Jester < Monster
   def initialize(tile)
     super tile, 8, 2

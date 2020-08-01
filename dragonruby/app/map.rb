@@ -33,9 +33,10 @@ def generateTiles
 end
 
 def inBounds(x, y)
-  x > 0 and y > 0 and x < NumTiles - 1 and y < NumTiles - 1
+  x.positive? and y.positive? and x < NumTiles - 1 and y < NumTiles - 1
 end
 
+# provides intermeadiated access to a collection of tiles
 class Tiles
   def initialize(tiles)
     @tiles = tiles
