@@ -192,4 +192,11 @@ class Jester < Monster
   def initialize(tile)
     super tile, 8, 2
   end
+
+  def doStuff(s)
+    neighbors = tile.getAdjacentPassableNeighbors s.tiles
+    return unless neighbors.length.positive?
+
+    tryMove s, neighbors[0].x - tile.x, neighbors[0].y - tile.y
+  end
 end
