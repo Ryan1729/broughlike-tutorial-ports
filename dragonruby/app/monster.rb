@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+MaxHp = 6
+
 # An entitiy that can move about the dungeon
 class Monster
   attr_accessor :tile, :sprite, :hp, :dead, :stunned
@@ -11,6 +13,10 @@ class Monster
     @dead = false
     @attackedThisTurn = false
     @stunned = false
+  end
+
+  def heal(damage)
+    @hp = [MaxHp, hp + damage].min
   end
 
   def update(s)
@@ -28,7 +34,7 @@ class Monster
     neighbors = neighbors.select { |t| !t.monster || t.monster.isPlayer }
 
     return if neighbors.empty?
-    
+
     playerTile = s.player.tile
     neighbors.sort! do |a, b|
       a.dist(playerTile) - b.dist(playerTile)
@@ -58,7 +64,7 @@ class Monster
     tiles = s.tiles
     newTile = tile.getNeighbor tiles, dx, dy
     return false unless newTile.passable
-    
+
     if !newTile.monster
       move(newTile)
     elsif isPlayer != newTile.monster.isPlayer
@@ -166,6 +172,18 @@ end
 class Eater < Monster
   def initialize(tile)
     super tile, 7, 1
+  end
+
+  def doStuff(s)
+    neighbors = tile
+      .getAdjacentNeighbors(s.tiles)
+      .select{ |t| !t.passable && inBounds(t.x,t.y)}
+    if neighbors.length.positive?
+      s.tiles.replace neighbors[0], Floor
+      heal(0.5)
+    else
+      super s
+    end
   end
 end
 

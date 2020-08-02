@@ -61,6 +61,11 @@ class Tiles
     tile
   end
 
+  def replace(tile, newTileType)
+    @tiles[tile.x][tile.y] = newTileType.new(tile.x, tile.y)
+    @tiles[tile.x][tile.y]
+  end
+
   ## Dragonruby output these instructions to enable serialization on our
   ## class, so we complied.
   # 1. Create a serialize method that returns a hash with all of
