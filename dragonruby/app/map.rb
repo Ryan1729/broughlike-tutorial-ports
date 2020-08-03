@@ -7,11 +7,11 @@ def generateLevel(s)
     passableCount = pair[1]
     connectedTiles = tiles.randomPassable.getConnectedTiles tiles
     areAllConnected = passableCount == connectedTiles.length
-    s.tiles ||= tiles if areAllConnected
+    s.tiles = tiles if areAllConnected
     areAllConnected
   }
 
-  s.monsters ||= generateMonsters s
+  s.monsters = generateMonsters s
 end
 
 def generateTiles
