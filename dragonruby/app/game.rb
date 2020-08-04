@@ -66,6 +66,13 @@ def game_tick(s)
   end
 
   s.state = :dead if s.player.dead
+
+  s.spawnCounter -= 1
+  return if s.spawnCounter.positive?
+
+  monsters << (spawnMonster s)
+  s.spawnCounter = s.spawnRate
+  s.spawnRate -= 1
 end
 
 def drawTitle(args)
@@ -85,12 +92,16 @@ end
 
 def startGame(s)
   s.level = 1
-  startLevel(s, StartingHp)
+  startLevel s, StartingHp
 
   s.state = :running
 end
 
 def startLevel(s, playerHp)
+  s.spawnRate = 15
+
+  s.spawnCounter = s.spawnRate
+
   generateLevel s
 
   s.player = Player.new s.tiles.randomPassable
