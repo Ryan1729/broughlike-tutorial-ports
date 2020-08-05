@@ -13,6 +13,7 @@ class Monster
     @dead = false
     @attackedThisTurn = false
     @stunned = false
+    @teleportCounter = 2
   end
 
   def heal(damage)
@@ -20,7 +21,8 @@ class Monster
   end
 
   def update(s)
-    if @stunned
+    @teleportCounter -= 1
+    if @stunned || @teleportCounter.positive?
       @stunned = false
       return
     end
@@ -44,9 +46,13 @@ class Monster
   end
 
   def draw(args)
-    drawSprite args, sprite, tile.x, tile.y
+    if @teleportCounter.positive?
+      drawSprite args, 10, tile.x, tile.y
+    else
+      drawSprite args, sprite, tile.x, tile.y
 
-    drawHP args
+      drawHP args
+    end
   end
 
   def drawHP(args)
@@ -123,6 +129,7 @@ end
 class Player < Monster
   def initialize(tile)
     super tile, 0, 3
+    @teleportCounter = 0
   end
 
   def isPlayer
