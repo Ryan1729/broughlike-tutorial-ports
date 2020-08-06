@@ -104,6 +104,10 @@ def startLevel(s, playerHp)
 
   generateLevel s
 
-  s.player = Player.new s.tiles.randomPassable
+  tiles = s.tiles
+
+  s.player = Player.new tiles.randomPassable
   s.player.hp = playerHp
+
+  tiles.replace tiles.randomPassable, Exit
 end

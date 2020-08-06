@@ -94,11 +94,33 @@ class Floor < Tile
   def initialize(x, y)
     super x, y, 2, true
   end
+
+  def stepOn(s, monster)
+    #TODO: complete
+  end
 end
 
 # a non-walkable tile
 class Wall < Tile
   def initialize(x, y)
     super x, y, 3, false
+  end
+end
+
+# a tile that starts the next level
+class Exit < Tile
+  def initialize(x, y)
+    super x, y, 11, true
+  end
+
+  def stepOn(s, monster)
+    return unless monster.isPlayer
+
+    if s.level == NumLevels
+        s.state = :title
+    else
+        s.level += 1
+        startLevel(s, [MaxHp, s.player.hp+1].min)
+    end
   end
 end

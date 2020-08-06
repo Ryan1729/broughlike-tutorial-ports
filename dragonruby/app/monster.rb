@@ -7,7 +7,7 @@ class Monster
   attr_accessor :tile, :sprite, :hp, :dead, :stunned
 
   def initialize(tile, sprite, hp)
-    move(tile)
+    move({}, tile)
     @sprite = sprite
     @hp = hp
     @dead = false
@@ -72,7 +72,7 @@ class Monster
     return false unless newTile.passable
 
     if !newTile.monster
-      move(newTile)
+      move(s, newTile)
     elsif isPlayer != newTile.monster.isPlayer
       @attackedThisTurn = true
       newTile.monster.stunned = true
@@ -92,10 +92,11 @@ class Monster
     @sprite = 1
   end
 
-  def move(to_tile)
+  def move(s, to_tile)
     @tile.monster = nil if @tile
     @tile = to_tile
     @tile.monster = self
+    @tile.stepOn(s, self)
   end
 
   def isPlayer
