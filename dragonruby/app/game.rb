@@ -5,8 +5,12 @@ NumTiles = 9
 UIWidth = 4
 PlayAreaX = 1.5 * TileSize
 PlayAreaY = 0
+# includes the UI section
 PlayAreaW = (NumTiles + UIWidth) * TileSize
 PlayAreaH = NumTiles * TileSize
+# center of the screen, which is currently also the center of the play area
+CenterX = 1280 / 2
+CenterY = 768 / 2
 StartingHp = 3
 NumLevels = 6
 
@@ -40,6 +44,8 @@ def draw(args)
   end
 
   s.player.draw args
+
+  drawText(args, 'Level: ' + s.level.to_s, 30, :ui, 40, [238, 130, 238])
 end
 
 def drawSprite(args, sprite, x, y)
@@ -53,6 +59,31 @@ def drawSprite(args, sprite, x, y)
     source_y: 0,
     source_w: 16
   }
+end
+
+def drawText(args, text, size, centered, textY, color)
+  textX = CenterX
+  align = 1 # centered
+  if centered != :centered
+    textX = PlayAreaX + PlayAreaW - UIWidth*TileSize + 25
+    align = 0
+  end
+
+  args.outputs.labels << [
+    textX,
+    768 - textY,
+    text,
+    size,
+    align,
+    color[0],
+    color[1],
+    color[2],
+    if color[3].nil?
+      255
+    else
+      color[3]
+    end
+  ]
 end
 
 def game_tick(s)
@@ -88,6 +119,9 @@ def drawTitle(args)
     source_w: 16,
     a: 192
   }
+
+  drawText(args, 'BROUGH-UN', 70, :centered, CenterY - 190, [255, 255, 255])
+  drawText(args, 'RUBY', 40, :centered, CenterY - 50, [255, 255, 255])
 end
 
 def startGame(s)
