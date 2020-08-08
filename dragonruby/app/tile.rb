@@ -101,7 +101,11 @@ class Floor < Tile
   end
 
   def stepOn(s, monster)
-    #TODO: complete
+    return unless monster.isPlayer && @treasure
+    
+    s.score += 1
+    @treasure = false
+    s.monsters << (spawnMonster s)
   end
 end
 

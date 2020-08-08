@@ -45,7 +45,8 @@ def draw(args)
 
   s.player.draw args
 
-  drawText(args, 'Level: ' + s.level.to_s, 30, :ui, 40, [238, 130, 238])
+  drawText(args, 'Level: ' + s.level.to_s, 20, :ui, 50, [238, 130, 238])
+  drawText(args, 'Score: ' + s.score.to_s, 20, :ui, 100, [238, 130, 238])
 end
 
 def drawSprite(args, sprite, x, y)
@@ -126,6 +127,8 @@ end
 
 def startGame(s)
   s.level = 1
+  s.score = 0
+
   startLevel s, StartingHp
 
   s.state = :running
