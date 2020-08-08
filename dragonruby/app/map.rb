@@ -12,6 +12,10 @@ def generateLevel(s)
   }
 
   s.monsters = generateMonsters s
+
+  (0...3).each do |_|
+    s.tiles.randomPassable.treasure = true
+  end
 end
 
 def generateTiles

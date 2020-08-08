@@ -2,13 +2,14 @@
 
 # a (possibly inaccessible) location in the dungeon
 class Tile
-  attr_accessor :x, :y, :sprite, :passable, :monster
+  attr_accessor :x, :y, :sprite, :passable, :monster, :treasure
 
   def initialize(x, y, sprite, passable)
     @x = x
     @y = y
     @sprite = sprite
     @passable = passable
+    @treasure = false
   end
 
   # manhattan distance
@@ -18,6 +19,10 @@ class Tile
 
   def draw(args)
     drawSprite args, sprite, x, y
+    
+    return unless @treasure
+    
+    drawSprite args, 12, x, y
   end
 
   def getNeighbor(tiles, dx, dy)
