@@ -127,6 +127,7 @@ class Exit < Tile
 
     if s.level == NumLevels
         s.state = :title
+        addScore(s, :won)
     else
         s.level += 1
         startLevel(s, [MaxHp, s.player.hp+1].min)

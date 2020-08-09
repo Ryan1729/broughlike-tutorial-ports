@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+SCORE_SAVE_PATH = './app/score_save.rb'
+
 TileSize = 80
 NumTiles = 9
 UIWidth = 4
@@ -97,7 +99,11 @@ def game_tick(s)
     end
   end
 
-  s.state = :dead if s.player.dead
+
+  if s.player.dead
+    addScore(s, :lost)
+    s.state = :dead
+  end
 
   s.spawnCounter -= 1
   return if s.spawnCounter.positive?
@@ -147,4 +153,49 @@ def startLevel(s, playerHp)
   s.player.hp = playerHp
 
   tiles.replace tiles.randomPassable, Exit
+end
+
+def getScores(s)
+  current_text = (s.read_file || proc{}).call(SCORE_SAVE_PATH) || ''
+  if current_text.length.positive?
+    deserialize_scores current_text
+  else
+    []
+  end
+end
+
+def addScore(s, won)
+  scores = getScores s
+  scoreObject = {
+    score: s.score,
+    run: 1,
+    totalScore: s.score,
+    active: won == :won
+  }
+  lastScore = scores.pop
+
+  if lastScore
+    if lastScore.active
+      scoreObject.run = lastScore.run + 1
+      scoreObject.totalScore += lastScore.totalScore
+    else
+      scores.push lastScore
+    end
+  end
+  scores.push scoreObject
+
+  (s.write_file || proc{}).call(
+    SCORE_SAVE_PATH,
+    serialize_scores(scores)
+  )
+end
+
+def serialize_scores(scores)
+  # TODO
+  ''
+end
+
+def deserialize_scores(string)
+  # TODO
+  []
 end
