@@ -101,7 +101,8 @@ class Floor < Tile
   end
 
   def stepOn(s, monster)
-    return unless monster.isPlayer && @treasure
+    # we pass nil as s when placing the player initially
+    return unless !s.nil? && monster.isPlayer && @treasure
     
     s.score += 1
     @treasure = false

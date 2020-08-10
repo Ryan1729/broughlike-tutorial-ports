@@ -7,7 +7,7 @@ class Monster
   attr_accessor :tile, :sprite, :hp, :dead, :stunned
 
   def initialize(tile, sprite, hp)
-    move({}, tile)
+    move(nil, tile)
     @sprite = sprite
     @hp = hp
     @dead = false
