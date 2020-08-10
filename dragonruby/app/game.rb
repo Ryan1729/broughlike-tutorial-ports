@@ -199,6 +199,8 @@ def serialize_scores(scores)
   scores.to_s
 end
 
+# we did this ourselves becasue dragonruby does not currently support
+# Marshal or JSON
 def deserialize_scores(string)
   output = []
 
