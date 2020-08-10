@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-SCORE_SAVE_PATH = './app/score_save.rb'
+SCORE_SAVE_PATH = 'score_save.rb'
 
 TileSize = 80
 NumTiles = 9
@@ -46,6 +46,9 @@ def draw(args)
   end
 
   s.player.draw args
+
+  # skip drawing the text since we can't draw text behind the title overlay
+  return if s.state == :title
 
   drawText(args, 'Level: ' + s.level.to_s, 20, :ui, 50, [238, 130, 238])
   drawText(args, 'Score: ' + s.score.to_s, 20, :ui, 100, [238, 130, 238])
@@ -170,16 +173,18 @@ def addScore(s, won)
     score: s.score,
     run: 1,
     totalScore: s.score,
-    active: won == :won
+    # since we have to parse this ourselves, let's use a number instead
+    # of a boolean, so all the values are numbers.
+    active: won == :won ? 1 : 0
   }
   lastScore = scores.pop
 
   if lastScore
-    if lastScore.active
-      scoreObject.run = lastScore.run + 1
-      scoreObject.totalScore += lastScore.totalScore
-    else
+    if lastScore[:active].zero?
       scores.push lastScore
+    else
+      scoreObject[:run] = lastScore[:run] + 1
+      scoreObject[:totalScore] += lastScore[:totalScore]
     end
   end
   scores.push scoreObject
@@ -191,11 +196,59 @@ def addScore(s, won)
 end
 
 def serialize_scores(scores)
-  # TODO
-  ''
+  scores.to_s
 end
 
 def deserialize_scores(string)
-  # TODO
-  []
+  output = []
+
+  state = :start
+  last_hash = nil
+  last_key = nil
+  last_value = nil
+
+  string.each_char do |c|
+    case state
+    when :start
+      if c == '{'
+        state = :key_start
+        last_hash = {}
+      end
+      when :key_start
+      if c == ':'
+        state = :key
+        last_key = ''
+      end
+    when :key
+      if c == ' '
+        state = :hash_rocket_start
+      elsif c == '='
+        state = :hash_rocket_end
+      else
+        last_key += c
+      end
+    when :hash_rocket_start
+      state = :hash_rocket_end if c == '='
+    when :hash_rocket_end
+      if c == '>'
+        state = :value_start
+        last_value = ''
+      end
+    when :value_start
+      if c == ','
+        state = :key_start
+        last_hash[last_key.to_sym] = last_value.to_i
+      elsif c == '}'
+        state = :start
+        last_hash[last_key.to_sym] = last_value.to_i
+        output.push(last_hash)
+      else
+        last_value += c
+      end
+    else
+      throw 'Unknown state ' + state
+    end
+  end
+
+  output
 end
