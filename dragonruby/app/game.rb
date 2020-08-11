@@ -13,11 +13,18 @@ PlayAreaH = NumTiles * TileSize
 # center of the screen, which is currently also the center of the play area
 CenterX = 1280 / 2
 CenterY = 768 / 2
+
 StartingHp = 3
 NumLevels = 6
 
+Aqua = [0, 255, 255].freeze
+Indigo = [75, 0, 130].freeze
+Violet = [238, 130, 238].freeze
+White = [255, 255, 255].freeze
+
+
 def draw(args)
-  args.outputs.background_color = [75, 0, 130]
+  args.outputs.background_color = Indigo
 
   # the -1 and +2 business makes the border lie just outside the actual
   # play area
@@ -50,8 +57,8 @@ def draw(args)
   # skip drawing the text since we can't draw text behind the title overlay
   return if s.state == :title
 
-  drawText(args, 'Level: ' + s.level.to_s, 20, :ui, 50, [238, 130, 238])
-  drawText(args, 'Score: ' + s.score.to_s, 20, :ui, 100, [238, 130, 238])
+  drawText(args, 'Level: ' + s.level.to_s, 20, :ui, 50, Violet)
+  drawText(args, 'Score: ' + s.score.to_s, 20, :ui, 100, Violet)
 end
 
 def drawSprite(args, sprite, x, y)
@@ -130,8 +137,46 @@ def drawTitle(args)
     a: 192
   }
 
-  drawText(args, 'BROUGH-UN', 70, :centered, CenterY - 190, [255, 255, 255])
-  drawText(args, 'RUBY', 40, :centered, CenterY - 50, [255, 255, 255])
+  drawText(args, 'BROUGH-UN', 70, :centered, CenterY - 190, White)
+  drawText(args, 'RUBY', 40, :centered, CenterY - 50, White)
+  
+  drawScores args
+end
+
+ScoreOffset = 30
+
+def drawScores(args)
+  scores = getScores args.state
+  return unless scores.length.positive?
+  
+  drawText(
+    args,
+    rightPad(%w[RUN SCORE TOTAL]),
+    4,
+    :centered,
+    CenterY + 24 + ScoreOffset,
+    White
+  )
+
+  newestScore = scores.pop
+  scores.sort! do |a, b|
+      b[:totalScore] - a[:totalScore]
+  end
+  
+  scores.unshift newestScore
+
+  (0...[10, scores.length].min).each do |i|
+    score = scores[i]
+    scoreText = rightPad([score[:run], score[:score], score[:totalScore]])
+    drawText(
+        args,
+        scoreText,
+        4,
+        :centered,
+        CenterY + 24 + (i + 2) * ScoreOffset,
+        i.zero? ? Aqua : Violet
+    )
+  end
 end
 
 def startGame(s)
