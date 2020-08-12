@@ -14,6 +14,8 @@ class Monster
     @attackedThisTurn = false
     @stunned = false
     @teleportCounter = 2
+    @offsetX = 0
+    @offsetY = 0
   end
 
   def heal(damage)
@@ -45,14 +47,26 @@ class Monster
     tryMove s, newTile.x - tile.x, newTile.y - tile.y
   end
 
+  def display_x
+    @tile.x + @offsetX
+  end
+
+  def display_y
+    @tile.y + @offsetY
+  end
+
   def draw(args)
     if @teleportCounter.positive?
-      drawSprite args, 10, tile.x, tile.y
+      drawSprite args, 10, display_x, display_y
     else
-      drawSprite args, sprite, tile.x, tile.y
+      drawSprite args, sprite, display_x, display_y
 
       drawHP args
     end
+
+    # x <=> 0 computes the signum of a real number x
+    @offsetX -= (@offsetX <=> 0)*(1/8)
+    @offsetY -= (@offsetY <=> 0)*(1/8)
   end
 
   def drawHP(args)
@@ -60,8 +74,8 @@ class Monster
       drawSprite(
         args,
         9,
-        tile.x + (i % 3) * (5 / 16),
-        tile.y - (i / 3).floor * (5 / 16)
+        display_x + (i % 3) * (5 / 16),
+        display_y - (i / 3).floor * (5 / 16)
       )
     end
   end
@@ -77,6 +91,9 @@ class Monster
       @attackedThisTurn = true
       newTile.monster.stunned = true
       newTile.monster.hit 1
+
+      @offsetX = (newTile.x - @tile.x)/2
+      @offsetY = (newTile.y - @tile.y)/2
     end
     true
   end
@@ -93,7 +110,11 @@ class Monster
   end
 
   def move(s, to_tile)
-    @tile.monster = nil if @tile
+    if @tile
+      @tile.monster = nil
+      @offsetX = @tile.x - to_tile.x
+      @offsetY = @tile.y - to_tile.y
+    end
     @tile = to_tile
     @tile.monster = self
     @tile.stepOn(s, self)
