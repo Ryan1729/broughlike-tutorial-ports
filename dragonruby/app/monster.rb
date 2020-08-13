@@ -92,6 +92,8 @@ class Monster
       newTile.monster.stunned = true
       newTile.monster.hit 1
 
+      s.shakeAmount = 5
+
       @offsetX = (newTile.x - @tile.x)/2
       @offsetY = (newTile.y - @tile.y)/2
     end

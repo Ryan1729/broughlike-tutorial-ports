@@ -42,6 +42,8 @@ def draw(args)
 
   return unless s.tiles
 
+  screen_shake s
+
   (0...NumTiles).each do |i|
     (0...NumTiles).each  do |j|
       (s.tiles.get i, j).draw args
@@ -62,9 +64,10 @@ def draw(args)
 end
 
 def drawSprite(args, sprite, x, y)
+  s = args.state
   args.outputs.sprites << {
-    x: PlayAreaX + x * TileSize,
-    y: PlayAreaY + (PlayAreaH - ((y + 1) * TileSize)),
+    x: PlayAreaX + x * TileSize + s.shakeX,
+    y: PlayAreaY + (PlayAreaH - ((y + 1) * TileSize)) + s.shakeY,
     w: TileSize,
     h: TileSize,
     path: 'sprites/spritesheet.png',
@@ -139,7 +142,7 @@ def drawTitle(args)
 
   drawText(args, 'BROUGH-UN', 70, :centered, CenterY - 190, White)
   drawText(args, 'RUBY', 40, :centered, CenterY - 50, White)
-  
+
   drawScores args
 end
 
@@ -148,7 +151,7 @@ ScoreOffset = 30
 def drawScores(args)
   scores = getScores args.state
   return unless scores.length.positive?
-  
+
   drawText(
     args,
     rightPad(%w[RUN SCORE TOTAL]),
@@ -162,7 +165,7 @@ def drawScores(args)
   scores.sort! do |a, b|
       b[:totalScore] - a[:totalScore]
   end
-  
+
   scores.unshift newestScore
 
   (0...[10, scores.length].min).each do |i|
@@ -182,6 +185,10 @@ end
 def startGame(s)
   s.level = 1
   s.score = 0
+
+  s.shakeAmount = 0
+  s.shakeX = 0
+  s.shakeY = 0
 
   startLevel s, StartingHp
 
@@ -298,4 +305,13 @@ def deserialize_scores(string)
   end
 
   output
+end
+
+def screen_shake(s)
+  s.shakeAmount -= 1 if s.shakeAmount.positive?
+
+  shake_angle = rand * Math::PI * 2
+
+  s.shakeX = (Math.cos(shake_angle)*s.shakeAmount).round
+  s.shakeY = (Math.sin(shake_angle)*s.shakeAmount).round
 end
