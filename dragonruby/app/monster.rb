@@ -90,7 +90,7 @@ class Monster
     elsif isPlayer != newTile.monster.isPlayer
       @attackedThisTurn = true
       newTile.monster.stunned = true
-      newTile.monster.hit 1
+      newTile.monster.hit s, 1
 
       s.shakeAmount = 5
 
@@ -100,9 +100,15 @@ class Monster
     true
   end
 
-  def hit(damage)
+  def hit(s, damage)
     @hp -= damage
     die if @hp <= 0
+
+    if @isPlayer
+      playSound s, :hit1
+    else
+      playSound s, :hit2
+    end
   end
 
   def die

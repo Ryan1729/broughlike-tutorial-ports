@@ -104,6 +104,7 @@ class Floor < Tile
     # we pass nil as s when placing the player initially
     return unless !s.nil? && monster.isPlayer && @treasure
     
+    playSound s, :treasure
     s.score += 1
     @treasure = false
     s.monsters << (spawnMonster s)
@@ -126,6 +127,7 @@ class Exit < Tile
   def stepOn(s, monster)
     return unless monster.isPlayer
 
+    playSound s, :newLevel
     if s.level == NumLevels
         s.state = :title
         addScore(s, :won)

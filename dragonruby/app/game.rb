@@ -315,3 +315,18 @@ def screen_shake(s)
   s.shakeX = (Math.cos(shake_angle)*s.shakeAmount).round
   s.shakeY = (Math.sin(shake_angle)*s.shakeAmount).round
 end
+
+def initSounds(s)
+  # TODO: can we actually preload the sounds?
+  s.sound_names ||= {
+    hit1: 'sounds/hit1.wav',
+    hit2: 'sounds/hit2.wav',
+    treasure: 'sounds/treasure.wav',
+    newLevel: 'sounds/newLevel.wav',
+    spell: 'sounds/spell.wav'
+  }
+end
+
+def playSound(s, symbol)
+  (s.append_sound || proc{}).call(s.sound_names[symbol])
+end

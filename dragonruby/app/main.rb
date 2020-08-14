@@ -13,6 +13,8 @@ def tick(args)
   s.state ||= :title
   s.read_file ||= -> (file_name){ args.gtk.read_file file_name }
   s.write_file ||= -> (file_name, text){ args.gtk.write_file file_name, text }
+  s.append_sound ||= -> (file_name){ args.outputs.sounds << file_name }
+  initSounds s
 
   draw args
 
