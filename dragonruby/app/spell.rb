@@ -21,5 +21,8 @@ Spells = {
         m.move(s, s.tiles.randomPassable)
         m.teleportCounter = 2
     end
+  },
+  MULLIGAN: lambda {|s|
+    startLevel(s, 1, s.player.spells)
   }
 }.freeze

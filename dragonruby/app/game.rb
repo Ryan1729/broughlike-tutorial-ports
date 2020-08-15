@@ -202,7 +202,7 @@ def startGame(s)
   s.state = :running
 end
 
-def startLevel(s, playerHp)
+def startLevel(s, playerHp, playerSpells = nil)
   s.spawnRate = 15
 
   s.spawnCounter = s.spawnRate
@@ -213,6 +213,7 @@ def startLevel(s, playerHp)
 
   s.player = Player.new tiles.randomPassable, s.numSpells
   s.player.hp = playerHp
+  s.player.spells = playerSpells unless playerSpells.nil?
 
   tiles.replace tiles.randomPassable, Exit
 end
