@@ -157,9 +157,12 @@ end
 
 # the monster the player controls
 class Player < Monster
-  def initialize(tile)
+  attr_accessor :spells
+
+  def initialize(tile, numSpells)
     super tile, 0, 3
     @teleportCounter = 0
+    @spells = Spells.keys.shuffle.take numSpells
   end
 
   def isPlayer
@@ -168,6 +171,21 @@ class Player < Monster
 
   def tryMove(s, dx, dy)
     game_tick s if super s, dx, dy
+  end
+
+  def addSpell
+    newSpell = Spells.keys.sample
+    @spells.push(newSpell)
+  end
+
+  def castSpell(s, index)
+    spellName = @spells[index]
+    return unless spellName
+
+    @spells[index] = nil
+    Spells[spellName].call s
+    playSound s, :spell
+    game_tick s
   end
 end
 

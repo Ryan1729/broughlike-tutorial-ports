@@ -16,6 +16,7 @@ CenterY = 768 / 2
 
 StartingHp = 3
 NumLevels = 6
+MaxSpellCount = 9
 
 Aqua = [0, 255, 255].freeze
 Indigo = [75, 0, 130].freeze
@@ -61,6 +62,11 @@ def draw(args)
 
   drawText(args, 'Level: ' + s.level.to_s, 20, :ui, 50, Violet)
   drawText(args, 'Score: ' + s.score.to_s, 20, :ui, 100, Violet)
+
+  (0...s.player.spells.length).each do|i|
+    spellText = (i+1).to_s + ') ' + (s.player.spells[i] || '').to_s
+    drawText(args, spellText, 12, :ui, 160+i*48, Aqua)
+  end
 end
 
 def drawSprite(args, sprite, x, y)
@@ -185,6 +191,7 @@ end
 def startGame(s)
   s.level = 1
   s.score = 0
+  s.numSpells = 1
 
   s.shakeAmount = 0
   s.shakeX = 0
@@ -204,7 +211,7 @@ def startLevel(s, playerHp)
 
   tiles = s.tiles
 
-  s.player = Player.new tiles.randomPassable
+  s.player = Player.new tiles.randomPassable, s.numSpells
   s.player.hp = playerHp
 
   tiles.replace tiles.randomPassable, Exit

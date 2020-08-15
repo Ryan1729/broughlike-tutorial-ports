@@ -19,9 +19,9 @@ class Tile
 
   def draw(args)
     drawSprite args, sprite, x, y
-    
+
     return unless @treasure
-    
+
     drawSprite args, 12, x, y
   end
 
@@ -103,9 +103,15 @@ class Floor < Tile
   def stepOn(s, monster)
     # we pass nil as s when placing the player initially
     return unless !s.nil? && monster.isPlayer && @treasure
-    
+
     playSound s, :treasure
     s.score += 1
+
+    if (s.score % 3).zero? && s.numSpells < MaxSpellCount
+      s.numSpells += 1
+      s.player.addSpell
+    end
+
     @treasure = false
     s.monsters << (spawnMonster s)
   end
