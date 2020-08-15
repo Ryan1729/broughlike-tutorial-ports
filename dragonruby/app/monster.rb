@@ -4,7 +4,7 @@ MaxHp = 6
 
 # An entitiy that can move about the dungeon
 class Monster
-  attr_accessor :tile, :sprite, :hp, :dead, :stunned
+  attr_accessor :tile, :sprite, :hp, :dead, :stunned, :teleportCounter
 
   def initialize(tile, sprite, hp)
     move(nil, tile)

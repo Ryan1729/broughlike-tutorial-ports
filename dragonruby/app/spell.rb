@@ -15,5 +15,11 @@ Spells = {
       end
     end
     s.shakeAmount = 20
+  },
+  MAELSTROM: lambda {|s|
+    s.monsters.each do |m|
+        m.move(s, s.tiles.randomPassable)
+        m.teleportCounter = 2
+    end
   }
 }.freeze
