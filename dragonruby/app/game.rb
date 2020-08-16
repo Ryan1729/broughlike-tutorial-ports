@@ -69,13 +69,14 @@ def draw(args)
   end
 end
 
-def drawSprite(args, sprite, x, y)
+def drawSprite(args, sprite, x, y, alpha=255)
   s = args.state
   args.outputs.sprites << {
     x: PlayAreaX + x * TileSize + s.shakeX,
     y: PlayAreaY + (PlayAreaH - ((y + 1) * TileSize)) + s.shakeY,
     w: TileSize,
     h: TileSize,
+    a: alpha,
     path: 'sprites/spritesheet.png',
     source_x: sprite * 16,
     source_y: 0,

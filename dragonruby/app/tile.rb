@@ -10,6 +10,8 @@ class Tile
     @sprite = sprite
     @passable = passable
     @treasure = false
+    @effect = nil
+    @effectCounter = 0
   end
 
   # manhattan distance
@@ -20,9 +22,17 @@ class Tile
   def draw(args)
     drawSprite args, sprite, x, y
 
-    return unless @treasure
+    drawSprite args, 12, x, y if @treasure
 
-    drawSprite args, 12, x, y
+    return unless @effectCounter.positive?
+
+    @effectCounter -= 1
+    drawSprite args, @effect, @x, @y, @effectCounter / 30 * 255
+  end
+
+  def setEffect(effectSprite)
+    @effect = effectSprite
+    @effectCounter = 30
   end
 
   def getNeighbor(tiles, dx, dy)

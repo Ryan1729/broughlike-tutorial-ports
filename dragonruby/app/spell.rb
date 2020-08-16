@@ -24,5 +24,14 @@ Spells = {
   },
   MULLIGAN: lambda {|s|
     startLevel(s, 1, s.player.spells)
+  },
+  AURA: lambda {|s|
+    s.player.tile.getAdjacentNeighbors(s.tiles).each do |t|
+      t.setEffect(13)
+      t.monster.heal(1) unless t.monster.nil?
+    end
+    s.player.tile.setEffect(13)
+    s.player.heal(1)
+    puts "AURA"
   }
 }.freeze
