@@ -32,6 +32,28 @@ Spells = {
     end
     s.player.tile.setEffect(13)
     s.player.heal(1)
-    puts "AURA"
+  },
+  DASH: lambda {|s|
+    player  = s.player
+    newTile = player.tile
+    loop do
+      lastMove = s.player.lastMove
+      testTile = newTile.getNeighbor s.tiles, lastMove[0], lastMove[1]
+
+      break unless testTile.passable && !testTile.monster
+
+      newTile = testTile
+    end
+
+    return if player.tile == newTile
+
+    player.move s, newTile
+    newTile.getAdjacentNeighbors(s.tiles).each do |t|
+      next if t.monster.nil?
+
+      t.setEffect(14)
+      t.monster.stunned = true
+      t.monster.hit s, 1
+    end
   }
 }.freeze
