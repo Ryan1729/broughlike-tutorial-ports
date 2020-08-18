@@ -55,5 +55,17 @@ Spells = {
       t.monster.stunned = true
       t.monster.hit s, 1
     end
+  },
+  DIG: lambda {|s|
+    (0...NumTiles).each do |i|
+      (0...NumTiles).each do |j|
+        tile = s.tiles.get i, j
+        next if tile.passable
+
+        s.tiles.replace tile, Floor
+      end
+    end
+    s.player.tile.setEffect(13)
+    s.player.heal(2)
   }
 }.freeze
