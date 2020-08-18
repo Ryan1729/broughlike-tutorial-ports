@@ -67,5 +67,11 @@ Spells = {
     end
     s.player.tile.setEffect(13)
     s.player.heal(2)
+  },
+  KINGMAKER: lambda {|s|
+    s.monsters.each do |m|
+      m.heal(1)
+      m.tile.treasure = true
+    end
   }
 }.freeze
