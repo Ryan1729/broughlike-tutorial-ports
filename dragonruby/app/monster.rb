@@ -4,7 +4,7 @@ MaxHp = 6
 
 # An entitiy that can move about the dungeon
 class Monster
-  attr_accessor :tile, :sprite, :hp, :dead, :lastMove, :stunned, :teleportCounter
+  attr_accessor :tile, :sprite, :hp, :dead, :lastMove, :stunned, :teleportCounter, :bonusAttack
 
   def initialize(tile, sprite, hp)
     move(nil, tile)
@@ -17,6 +17,7 @@ class Monster
     @offsetX = 0
     @offsetY = 0
     @lastMove = [-1,0]
+    @bonusAttack = 0
   end
 
   def heal(damage)
@@ -93,7 +94,8 @@ class Monster
     elsif isPlayer != newTile.monster.isPlayer
       @attackedThisTurn = true
       newTile.monster.stunned = true
-      newTile.monster.hit s, 1
+      newTile.monster.hit(s, 1 + @bonusAttack)
+      @bonusAttack = 0
 
       s.shakeAmount = 5
 

@@ -78,5 +78,8 @@ Spells = {
     s.player.tile.getAdjacentNeighbors(s.tiles).each do |t|
       s.tiles.replace(t, Floor).treasure = true if !t.passable && inBounds(t.x, t.y)
     end
+  },
+  POWER: lambda {|s|
+    s.player.bonusAttack = 5
   }
 }.freeze
