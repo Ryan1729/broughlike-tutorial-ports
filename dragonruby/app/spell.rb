@@ -73,5 +73,10 @@ Spells = {
       m.heal(1)
       m.tile.treasure = true
     end
+  },
+  ALCHEMY: lambda {|s|
+    s.player.tile.getAdjacentNeighbors(s.tiles).each do |t|
+      s.tiles.replace(t, Floor).treasure = true if !t.passable && inBounds(t.x, t.y)
+    end
   }
 }.freeze
