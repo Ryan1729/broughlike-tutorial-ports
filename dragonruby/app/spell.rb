@@ -81,5 +81,11 @@ Spells = {
   },
   POWER: lambda {|s|
     s.player.bonusAttack = 5
+  },
+  BUBBLE: lambda {|s|
+    spells = s.player.spells
+    (1...spells.length).reverse_each do |i|
+      spells[i] = spells[i-1] if spells[i].nil?
+    end
   }
 }.freeze
