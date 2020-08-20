@@ -119,6 +119,7 @@ def game_tick(s)
     end
   end
 
+  s.player.update
 
   if s.player.dead
     addScore(s, :lost)

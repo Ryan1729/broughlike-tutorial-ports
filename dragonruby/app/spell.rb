@@ -87,5 +87,11 @@ Spells = {
     (1...spells.length).reverse_each do |i|
       spells[i] = spells[i-1] if spells[i].nil?
     end
+  },
+  BRAVERY: lambda {|s|
+    s.player.shield = 2
+    s.monsters.each do |m|
+      m.stunned = true
+    end
   }
 }.freeze

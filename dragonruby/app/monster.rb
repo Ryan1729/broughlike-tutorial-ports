@@ -4,7 +4,7 @@ MaxHp = 6
 
 # An entitiy that can move about the dungeon
 class Monster
-  attr_accessor :tile, :sprite, :hp, :dead, :lastMove, :stunned, :teleportCounter, :bonusAttack
+  attr_accessor :tile, :sprite, :hp, :dead, :lastMove, :stunned, :teleportCounter, :bonusAttack, :shield
 
   def initialize(tile, sprite, hp)
     move(nil, tile)
@@ -18,6 +18,7 @@ class Monster
     @offsetY = 0
     @lastMove = [-1,0]
     @bonusAttack = 0
+    @shield = 0
   end
 
   def heal(damage)
@@ -106,6 +107,8 @@ class Monster
   end
 
   def hit(s, damage)
+    return if @shield.positive?
+
     @hp -= damage
     die if @hp <= 0
 
@@ -168,6 +171,11 @@ class Player < Monster
     super tile, 0, 3
     @teleportCounter = 0
     @spells = Spells.keys.shuffle.take numSpells
+  end
+
+  def update(_s = nil)
+    # we intentionally do not call the super method.
+    @shield -= 1
   end
 
   def isPlayer
