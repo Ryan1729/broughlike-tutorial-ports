@@ -97,6 +97,17 @@ Spells = {
   BOLT: lambda {|s|
     lastMove = s.player.lastMove
     boltTravel(s, lastMove, 15 + lastMove[1].abs, 4)
+  },  
+  CROSS: lambda {|s|
+    directions = [
+        [0, -1],
+        [0, 1],
+        [-1, 0],
+        [1, 0]
+    ]
+    (0...directions.length).each do |k|
+      boltTravel(s, directions[k], 15 + directions[k][1].abs, 2)
+    end
   }
 }.freeze
 
