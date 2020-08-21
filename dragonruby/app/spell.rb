@@ -93,5 +93,25 @@ Spells = {
     s.monsters.each do |m|
       m.stunned = true
     end
+  },
+  BOLT: lambda {|s|
+    lastMove = s.player.lastMove
+    boltTravel(s, lastMove, 15 + lastMove[1].abs, 4)
   }
 }.freeze
+
+def boltTravel(s, direction, effect, damage)
+  newTile = s.player.tile
+  tiles = s.tiles
+  loop do
+    testTile = newTile.getNeighbor(tiles, direction[0], direction[1])
+
+    break unless testTile.passable
+
+    newTile = testTile
+
+    newTile.monster&.hit(s, damage)
+
+    newTile.setEffect(effect)
+  end
+end
