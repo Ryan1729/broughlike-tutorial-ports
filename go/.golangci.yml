@@ -1,0 +1,63 @@
+linters:
+  # The intent here is to enable everything available and then later 
+  # disable whatever doesn't make sense.
+  enable:
+    - govet
+    - errcheck
+    - staticcheck
+    - unused
+    - gosimple
+    - structcheck
+    - varcheck
+    - ineffassign
+    - deadcode
+    - typecheck
+    - bodyclose
+    - noctx
+    - golint
+    - rowserrcheck
+    - stylecheck
+    - gosec
+    - interfacer
+    - unconvert
+    - dupl
+    - goconst
+    - gocyclo
+    - gocognit
+    - asciicheck
+    - gofmt
+    - gofumpt
+    - goimports
+    - goheader
+    - gci
+    - maligned
+    - depguard
+    - misspell
+    - lll
+    - unparam
+    - dogsled
+    - nakedret
+    - prealloc
+    - scopelint
+    - gocritic
+    - gochecknoinits
+    - gochecknoglobals
+    - godox
+    - funlen
+    - whitespace
+    - goprintffuncname
+    - gomnd
+    - goerr113
+    - gomodguard
+    - godot
+    - testpackage
+    - nestif
+    - exportloopref
+    - exhaustive
+    - sqlclosecheck
+    - nlreturn
+    - nolintlint
+  # disabled
+    # this one is too annoying without an auto-fix. A fixer is currently
+    # in progress at https://github.com/bombsimon/wsl/pull/72
+    #- wsl
