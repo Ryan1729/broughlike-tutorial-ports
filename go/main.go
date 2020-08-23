@@ -5,9 +5,7 @@ import (
 )
 
 func main() {
-	if err := sdl.Init(sdl.INIT_AUDIO | sdl.INIT_VIDEO); err != nil {
-		die(err)
-	}
+	dieIfErr(sdl.Init(sdl.INIT_AUDIO | sdl.INIT_VIDEO))
 	defer sdl.Quit()
 
 	window, err := sdl.CreateWindow(
@@ -15,15 +13,12 @@ func main() {
 		sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
 		800, 600,
 		sdl.WINDOW_FULLSCREEN_DESKTOP|sdl.WINDOW_INPUT_GRABBED)
-	if err != nil {
-		die(err)
-	}
+	dieIfErr(err)
+
 	defer func() { dieIfErr(window.Destroy()) }()
 
 	surface, err := window.GetSurface()
-	if err != nil {
-		die(err)
-	}
+	dieIfErr(err)
 	dieIfErr(surface.FillRect(nil, 0xffffffff))
 
 	const size = 20
