@@ -39,7 +39,8 @@ func main() {
 
 	for {
 		start := time.Now()
-		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
+		// We only want to allow at most a single input per frame.
+		if event := sdl.PollEvent(); event != nil {
 			switch e := event.(type) {
 			case *sdl.QuitEvent:
 				return
