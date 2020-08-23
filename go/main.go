@@ -30,9 +30,8 @@ func main() {
 	var x int32 = 0
 	var y int32 = 0
 
-	dieIfErr(surface.FillRect(nil, 0xffffffff))
-
 	draw := func() {
+		dieIfErr(surface.FillRect(nil, 0xffffffff))
 		dieIfErr(surface.FillRect(&sdl.Rect{X: x * size, Y: y * size, W: size, H: size}, 0xff000000))
 		dieIfErr(window.UpdateSurface())
 	}
