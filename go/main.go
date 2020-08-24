@@ -52,23 +52,25 @@ func main() {
 			case *sdl.QuitEvent:
 				return
 			case *sdl.KeyboardEvent:
-				switch e.Keysym.Sym {
-				case sdl.K_w:
-					fallthrough
-				case sdl.K_UP:
-					y--
-				case sdl.K_a:
-					fallthrough
-				case sdl.K_LEFT:
-					x--
-				case sdl.K_s:
-					fallthrough
-				case sdl.K_DOWN:
-					y++
-				case sdl.K_d:
-					fallthrough
-				case sdl.K_RIGHT:
-					x++
+				if e.State == sdl.PRESSED {
+					switch e.Keysym.Sym {
+					case sdl.K_w:
+						fallthrough
+					case sdl.K_UP:
+						y--
+					case sdl.K_a:
+						fallthrough
+					case sdl.K_LEFT:
+						x--
+					case sdl.K_s:
+						fallthrough
+					case sdl.K_DOWN:
+						y++
+					case sdl.K_d:
+						fallthrough
+					case sdl.K_RIGHT:
+						x++
+					}
 				}
 			}
 		}
