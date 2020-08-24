@@ -13,13 +13,12 @@ const (
 	UIWidth  = 4
 
 	// Aqua             = 0xff00ffff.
-	// Violet           = 0xffee82ee
-	// White            = 0xffffffff.
+	// Violet           = 0xffee82ee.
 )
 
 type State struct {
-	x, y     int32
-	tileSize int32
+	x, y  int32
+	sizes Sizes
 }
 
 func main() {
@@ -41,7 +40,7 @@ func main() {
 	dieIfErr(err)
 
 	var s State = State{
-		tileSize: calcTileSize(w, h),
+		sizes: NewSizes(w, h),
 	}
 
 	for {
@@ -84,17 +83,53 @@ func main() {
 func draw(renderer *sdl.Renderer, s *State) {
 	dieIfErr(renderer.SetDrawColor(0x4b, 0, 0x82, 0xff))
 	dieIfErr(renderer.Clear())
+
+	sizes := s.sizes
+
+	dieIfErr(renderer.SetDrawColor(0xff, 0xff, 0xff, 0xff))
+	// the -1 and +2 business makes the border lie just outside the actual
+	// play area
+	dieIfErr(renderer.DrawRect(
+		&sdl.Rect{
+			X: sizes.playAreaX - 1,
+			Y: sizes.playAreaY - 1,
+			W: sizes.playAreaW + 2,
+			H: sizes.playAreaH + 2,
+		}))
+
 	dieIfErr(renderer.SetDrawColor(0, 0, 0, 0xff))
 	dieIfErr(renderer.FillRect(
-		&sdl.Rect{X: s.x * s.tileSize, Y: s.y * s.tileSize, W: s.tileSize, H: s.tileSize}))
+		&sdl.Rect{
+			X: sizes.playAreaX + s.x*sizes.tile,
+			Y: sizes.playAreaY + s.y*sizes.tile,
+			W: sizes.tile,
+			H: sizes.tile,
+		}))
 	renderer.Present()
 }
 
-func calcTileSize(w, h int32) int32 {
-	return min(
+type Sizes struct {
+	playAreaX,
+	playAreaY,
+	playAreaW,
+	playAreaH, tile int32
+}
+
+func NewSizes(w, h int32) Sizes {
+	tile := min(
 		w/(NumTiles+UIWidth),
 		h/NumTiles,
 	)
+	playAreaW, playAreaH := tile*(NumTiles+UIWidth), tile*NumTiles
+	playAreaX, playAreaY := (w-playAreaW)/2, (h-playAreaH)/2
+
+	return Sizes{
+		playAreaX,
+		playAreaY,
+		playAreaW,
+		playAreaH,
+		tile,
+	}
 }
 
 func min(a, b int32) int32 {
