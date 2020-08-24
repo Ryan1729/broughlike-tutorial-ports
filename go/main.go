@@ -9,9 +9,8 @@ import (
 const (
 	PerFrameDuration = time.Second / 60
 
-	TileSize = 80
-	// NumTiles = 9
-	// UIWidth = 4.
+	NumTiles = 9
+	UIWidth  = 4
 
 	// Aqua             = 0xff00ffff.
 	Indigo = 0xff4b0082
@@ -32,7 +31,7 @@ func main() {
 		"AWESOME BROUGHLIKE",
 		sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
 		800, 600,
-		sdl.WINDOW_FULLSCREEN_DESKTOP|sdl.WINDOW_INPUT_GRABBED)
+		sdl.WINDOW_FULLSCREEN_DESKTOP|sdl.WINDOW_ALLOW_HIGHDPI|sdl.WINDOW_INPUT_GRABBED)
 	dieIfErr(err)
 
 	defer func() { dieIfErr(window.Destroy()) }()
@@ -41,7 +40,9 @@ func main() {
 	dieIfErr(err)
 
 	var s State = State{
-		tileSize: TileSize,
+		// Reminder: use func (*Renderer) GetOutputSize once we switch
+		// to rendering textures.
+		tileSize: calcTileSize(window.GetSize()),
 	}
 
 	draw := func() {
@@ -86,6 +87,21 @@ func main() {
 
 		time.Sleep(time.Until(start.Add(PerFrameDuration)))
 	}
+}
+
+func calcTileSize(w, h int32) int32 {
+	return min(
+		w/(NumTiles+UIWidth),
+		h/NumTiles,
+	)
+}
+
+func min(a, b int32) int32 {
+	if a < b {
+		return a
+	}
+
+	return b
 }
 
 func dieIfErr(err error) {
