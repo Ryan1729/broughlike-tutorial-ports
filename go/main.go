@@ -9,14 +9,14 @@ import (
 const (
 	PerFrameDuration = time.Second / 60
 
-        TileSize = 80
-        //NumTiles = 9
-        //UIWidth = 4
-        
-	//Aqua             = 0xff00ffff
-	Indigo           = 0xff4b0082
-	//Violet           = 0xffee82ee
-	//White            = 0xffffffff
+	TileSize = 80
+	// NumTiles = 9
+	// UIWidth = 4
+
+	// Aqua             = 0xff00ffff.
+	Indigo = 0xff4b0082
+	// Violet           = 0xffee82ee
+	// White            = 0xffffffff.
 )
 
 func main() {
@@ -35,8 +35,7 @@ func main() {
 	surface, err := window.GetSurface()
 	dieIfErr(err)
 
-	var x int32 = 0
-	var y int32 = 0
+	var x, y int32 = 0, 0
 
 	draw := func() {
 		dieIfErr(surface.FillRect(nil, Indigo))
