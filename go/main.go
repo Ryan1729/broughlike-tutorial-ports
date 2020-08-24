@@ -13,10 +13,6 @@ const (
 	UIWidth  = 4
 
 	// Aqua             = 0xff00ffff.
-	// Indigo = 0xff4b0082.
-	IndigoR = 0x4b
-	IndigoG = 0
-	IndigoB = 0x82
 	// Violet           = 0xffee82ee
 	// White            = 0xffffffff.
 )
@@ -86,7 +82,7 @@ func main() {
 }
 
 func draw(renderer *sdl.Renderer, s *State) {
-	dieIfErr(renderer.SetDrawColor(IndigoR, IndigoG, IndigoB, 0xff))
+	dieIfErr(renderer.SetDrawColor(0x4b, 0, 0x82, 0xff))
 	dieIfErr(renderer.Clear())
 	dieIfErr(renderer.SetDrawColor(0, 0, 0, 0xff))
 	dieIfErr(renderer.FillRect(
