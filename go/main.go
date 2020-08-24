@@ -13,7 +13,10 @@ const (
 	UIWidth  = 4
 
 	// Aqua             = 0xff00ffff.
-	Indigo = 0xff4b0082
+	// Indigo = 0xff4b0082.
+	IndigoR = 0x4b
+	IndigoG = 0
+	IndigoB = 0x82
 	// Violet           = 0xffee82ee
 	// White            = 0xffffffff.
 )
@@ -33,23 +36,16 @@ func main() {
 		800, 600,
 		sdl.WINDOW_FULLSCREEN_DESKTOP|sdl.WINDOW_ALLOW_HIGHDPI|sdl.WINDOW_INPUT_GRABBED)
 	dieIfErr(err)
-
 	defer func() { dieIfErr(window.Destroy()) }()
 
-	surface, err := window.GetSurface()
+	renderer, err := sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED)
+	dieIfErr(err)
+
+	w, h, err := renderer.GetOutputSize()
 	dieIfErr(err)
 
 	var s State = State{
-		// Reminder: use func (*Renderer) GetOutputSize once we switch
-		// to rendering textures.
-		tileSize: calcTileSize(window.GetSize()),
-	}
-
-	draw := func() {
-		dieIfErr(surface.FillRect(nil, Indigo))
-		dieIfErr(surface.FillRect(
-			&sdl.Rect{X: s.x * s.tileSize, Y: s.y * s.tileSize, W: s.tileSize, H: s.tileSize}, 0xff000000))
-		dieIfErr(window.UpdateSurface())
+		tileSize: calcTileSize(w, h),
 	}
 
 	for {
@@ -83,10 +79,19 @@ func main() {
 			}
 		}
 
-		draw()
+		draw(renderer, &s)
 
 		time.Sleep(time.Until(start.Add(PerFrameDuration)))
 	}
+}
+
+func draw(renderer *sdl.Renderer, s *State) {
+	dieIfErr(renderer.SetDrawColor(IndigoR, IndigoG, IndigoB, 0xff))
+	dieIfErr(renderer.Clear())
+	dieIfErr(renderer.SetDrawColor(0, 0, 0, 0xff))
+	dieIfErr(renderer.FillRect(
+		&sdl.Rect{X: s.x * s.tileSize, Y: s.y * s.tileSize, W: s.tileSize, H: s.tileSize}))
+	renderer.Present()
 }
 
 func calcTileSize(w, h int32) int32 {
