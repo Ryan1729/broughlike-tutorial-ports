@@ -11,13 +11,18 @@ const (
 
 	TileSize = 80
 	// NumTiles = 9
-	// UIWidth = 4
+	// UIWidth = 4.
 
 	// Aqua             = 0xff00ffff.
 	Indigo = 0xff4b0082
 	// Violet           = 0xffee82ee
 	// White            = 0xffffffff.
 )
+
+type State struct {
+	x, y     int32
+	tileSize int32
+}
 
 func main() {
 	dieIfErr(sdl.Init(sdl.INIT_AUDIO | sdl.INIT_VIDEO))
@@ -35,11 +40,14 @@ func main() {
 	surface, err := window.GetSurface()
 	dieIfErr(err)
 
-	var x, y int32 = 0, 0
+	var s State = State{
+		tileSize: TileSize,
+	}
 
 	draw := func() {
 		dieIfErr(surface.FillRect(nil, Indigo))
-		dieIfErr(surface.FillRect(&sdl.Rect{X: x * TileSize, Y: y * TileSize, W: TileSize, H: TileSize}, 0xff000000))
+		dieIfErr(surface.FillRect(
+			&sdl.Rect{X: s.x * s.tileSize, Y: s.y * s.tileSize, W: s.tileSize, H: s.tileSize}, 0xff000000))
 		dieIfErr(window.UpdateSurface())
 	}
 
@@ -56,19 +64,19 @@ func main() {
 					case sdl.K_w:
 						fallthrough
 					case sdl.K_UP:
-						y--
+						s.y--
 					case sdl.K_a:
 						fallthrough
 					case sdl.K_LEFT:
-						x--
+						s.x--
 					case sdl.K_s:
 						fallthrough
 					case sdl.K_DOWN:
-						y++
+						s.y++
 					case sdl.K_d:
 						fallthrough
 					case sdl.K_RIGHT:
-						x++
+						s.x++
 					}
 				}
 			}
