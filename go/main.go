@@ -8,7 +8,11 @@ import (
 
 const (
 	PerFrameDuration = time.Second / 60
-	size             = 20
+
+        TileSize = 80
+        //NumTiles = 9
+        //UIWidth = 4
+        
 	//Aqua             = 0xff00ffff
 	Indigo           = 0xff4b0082
 	//Violet           = 0xffee82ee
@@ -36,7 +40,7 @@ func main() {
 
 	draw := func() {
 		dieIfErr(surface.FillRect(nil, Indigo))
-		dieIfErr(surface.FillRect(&sdl.Rect{X: x * size, Y: y * size, W: size, H: size}, 0xff000000))
+		dieIfErr(surface.FillRect(&sdl.Rect{X: x * TileSize, Y: y * TileSize, W: TileSize, H: TileSize}, 0xff000000))
 		dieIfErr(window.UpdateSurface())
 	}
 
