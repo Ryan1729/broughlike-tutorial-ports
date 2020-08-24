@@ -46,7 +46,6 @@ linters:
     - funlen
     - whitespace
     - goprintffuncname
-    - gomnd
     - goerr113
     - gomodguard
     - godot
@@ -58,9 +57,19 @@ linters:
     - nlreturn
     - nolintlint
   # disabled
-    # this one is too annoying without an auto-fix. A fixer is currently
+    # This one is too annoying without an auto-fix. A fixer is currently
     # in progress at https://github.com/bombsimon/wsl/pull/72
     #- wsl
+    # This one has what I consider to be false positives:
+    # https://github.com/tommy-muehle/go-mnd/issues/12
+    # and false negatives:
+    # https://github.com/tommy-muehle/go-mnd/issues/11
+    # Additionally, it would be very hard for a lint to tell whether the
+    # comments around some code explain why some constants are used here and
+    # only here or not, leading to needing to add potentially several //nolint
+    # directives
+    #- gomnd
+
 
 linters-settings:
   funlen:
