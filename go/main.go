@@ -9,6 +9,10 @@ import (
 const (
 	PerFrameDuration = time.Second / 60
 	size             = 20
+	//Aqua             = 0xff00ffff
+	Indigo           = 0xff4b0082
+	//Violet           = 0xffee82ee
+	//White            = 0xffffffff
 )
 
 func main() {
@@ -31,7 +35,7 @@ func main() {
 	var y int32 = 0
 
 	draw := func() {
-		dieIfErr(surface.FillRect(nil, 0xffffffff))
+		dieIfErr(surface.FillRect(nil, Indigo))
 		dieIfErr(surface.FillRect(&sdl.Rect{X: x * size, Y: y * size, W: size, H: size}, 0xff000000))
 		dieIfErr(window.UpdateSurface())
 	}
