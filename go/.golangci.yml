@@ -61,3 +61,12 @@ linters:
     # this one is too annoying without an auto-fix. A fixer is currently
     # in progress at https://github.com/bombsimon/wsl/pull/72
     #- wsl
+
+linters-settings:
+  funlen:
+    # The amount of statements in a func measures how many things one named unit
+    # of code does, which may actually be useful to reduce. Measuring lines just
+    # tracks at best, how much someone has to scroll to see all the code, and
+    # given the statement limit exists, basically only measures how big
+    # statements are in the code, which is more or less a non-issue.
+    lines: 9223372036854775807 # 2^63 - 1
