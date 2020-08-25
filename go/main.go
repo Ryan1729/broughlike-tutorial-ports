@@ -3,6 +3,8 @@ package main
 import (
 	"time"
 
+	"github.com/Ryan1729/broughlike-tutorial-ports/go/assets"
+	"github.com/veandco/go-sdl2/img"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -39,6 +41,8 @@ func main() {
 	w, h, err := renderer.GetOutputSize()
 	dieIfErr(err)
 
+	assets := loadAssets(renderer)
+
 	var s State = State{
 		sizes: NewSizes(w, h),
 	}
@@ -74,13 +78,13 @@ func main() {
 			}
 		}
 
-		draw(renderer, &s)
+		draw(renderer, &assets, &s)
 
 		time.Sleep(time.Until(start.Add(PerFrameDuration)))
 	}
 }
 
-func draw(renderer *sdl.Renderer, s *State) {
+func draw(renderer *sdl.Renderer, assets *Assets, s *State) {
 	dieIfErr(renderer.SetDrawColor(0x4b, 0, 0x82, 0xff))
 	dieIfErr(renderer.Clear())
 
@@ -98,14 +102,26 @@ func draw(renderer *sdl.Renderer, s *State) {
 		}))
 
 	dieIfErr(renderer.SetDrawColor(0, 0, 0, 0xff))
-	dieIfErr(renderer.FillRect(
+	drawSprite(renderer, assets.spritesheet, &s.sizes, 0, s.x, s.y)
+
+	renderer.Present()
+}
+
+func drawSprite(renderer *sdl.Renderer, spritesheet *sdl.Texture, sizes *Sizes, sprite uint8, x, y int32) {
+	dieIfErr(renderer.Copy(
+		spritesheet,
 		&sdl.Rect{
-			X: sizes.playAreaX + s.x*sizes.tile,
-			Y: sizes.playAreaY + s.y*sizes.tile,
+			X: int32(sprite) * 16,
+			Y: 0,
+			W: 16,
+			H: 16,
+		},
+		&sdl.Rect{
+			X: sizes.playAreaX + x*sizes.tile,
+			Y: sizes.playAreaY + y*sizes.tile,
 			W: sizes.tile,
 			H: sizes.tile,
 		}))
-	renderer.Present()
 }
 
 type Sizes struct {
@@ -138,6 +154,23 @@ func min(a, b int32) int32 {
 	}
 
 	return b
+}
+
+type Assets struct {
+	spritesheet *sdl.Texture
+	// Eventually we can add the sounds to this struct as well.
+}
+
+func loadAssets(renderer *sdl.Renderer) Assets {
+	spritesheetRW, err := sdl.RWFromMem(assets.Spritesheet)
+	dieIfErr(err)
+
+	spritesheet, err := img.LoadTextureRW(renderer, spritesheetRW, false)
+	dieIfErr(err)
+
+	return Assets{
+		spritesheet,
+	}
 }
 
 func dieIfErr(err error) {
