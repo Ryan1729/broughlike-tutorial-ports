@@ -13,6 +13,8 @@ func main() {
 	// average, ("128, ").
 	output.Grow(5 * 90_000 * 5)
 
+	output.Write([]byte("//nolint "))
+	output.Write([]byte("// This generated code, and besides reading this file is slowing down the linting.\n"))
 	output.Write([]byte("package assets\n\n"))
 
 	appendFileAsByteArray(Spec{output: &output, fileName: "../assets/spritesheet.png", arrayName: "Spritesheet"})
