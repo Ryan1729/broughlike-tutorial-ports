@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/Ryan1729/broughlike-tutorial-ports/go/assets"
+	"github.com/Ryan1729/broughlike-tutorial-ports/go/game"
 	"github.com/veandco/go-sdl2/img"
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -18,11 +19,6 @@ const (
 	// Violet           = 0xffee82ee.
 )
 
-type State struct {
-	x, y  int32
-	sizes Sizes
-}
-
 func main() {
 	dieIfErr(sdl.Init(sdl.INIT_AUDIO | sdl.INIT_VIDEO))
 	defer sdl.Quit()
@@ -35,17 +31,9 @@ func main() {
 	dieIfErr(err)
 	defer func() { dieIfErr(window.Destroy()) }()
 
-	renderer, err := sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED)
-	dieIfErr(err)
+	platform := NewSDL2Platform(window)
 
-	w, h, err := renderer.GetOutputSize()
-	dieIfErr(err)
-
-	assets := loadAssets(renderer)
-
-	var s State = State{
-		sizes: NewSizes(w, h),
-	}
+	s := game.State{}
 
 	for {
 		start := time.Now()
@@ -60,35 +48,59 @@ func main() {
 					case sdl.K_w:
 						fallthrough
 					case sdl.K_UP:
-						s.y--
+						s.Y--
 					case sdl.K_a:
 						fallthrough
 					case sdl.K_LEFT:
-						s.x--
+						s.X--
 					case sdl.K_s:
 						fallthrough
 					case sdl.K_DOWN:
-						s.y++
+						s.Y++
 					case sdl.K_d:
 						fallthrough
 					case sdl.K_RIGHT:
-						s.x++
+						s.X++
 					}
 				}
 			}
 		}
 
-		draw(renderer, &assets, &s)
+		platform.Clear()
+		game.Draw(&platform, &s)
+		platform.renderer.Present()
 
 		time.Sleep(time.Until(start.Add(PerFrameDuration)))
 	}
 }
 
-func draw(renderer *sdl.Renderer, assets *Assets, s *State) {
+// SDL2Platform implements the game.Platform interface.
+type SDL2Platform struct {
+	renderer *sdl.Renderer
+	assets   Assets
+	sizes    Sizes
+}
+
+func NewSDL2Platform(window *sdl.Window) SDL2Platform {
+	renderer, err := sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED)
+	dieIfErr(err)
+
+	w, h, err := renderer.GetOutputSize()
+	dieIfErr(err)
+
+	return SDL2Platform{
+		renderer: renderer,
+		assets:   loadAssets(renderer),
+		sizes:    NewSizes(w, h),
+	}
+}
+
+func (p *SDL2Platform) Clear() {
+	renderer := p.renderer
+	sizes := &p.sizes
+
 	dieIfErr(renderer.SetDrawColor(0x4b, 0, 0x82, 0xff))
 	dieIfErr(renderer.Clear())
-
-	sizes := s.sizes
 
 	dieIfErr(renderer.SetDrawColor(0xff, 0xff, 0xff, 0xff))
 	// the -1 and +2 business makes the border lie just outside the actual
@@ -100,16 +112,13 @@ func draw(renderer *sdl.Renderer, assets *Assets, s *State) {
 			W: sizes.playAreaW + 2,
 			H: sizes.playAreaH + 2,
 		}))
-
-	dieIfErr(renderer.SetDrawColor(0, 0, 0, 0xff))
-	drawSprite(renderer, assets.spritesheet, &s.sizes, 0, s.x, s.y)
-
-	renderer.Present()
 }
 
-func drawSprite(renderer *sdl.Renderer, spritesheet *sdl.Texture, sizes *Sizes, sprite uint8, x, y int32) {
-	dieIfErr(renderer.Copy(
-		spritesheet,
+func (p *SDL2Platform) Sprite(sprite game.SpriteIndex, x, y game.Position) {
+	sizes := &p.sizes
+
+	dieIfErr(p.renderer.Copy(
+		p.assets.spritesheet,
 		&sdl.Rect{
 			X: int32(sprite) * 16,
 			Y: 0,
