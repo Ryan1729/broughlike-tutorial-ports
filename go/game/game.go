@@ -21,5 +21,12 @@ type Platform interface {
 }
 
 func Draw(p Platform, s *State) {
+	var i, j Position
+	for j = 0; j < NumTiles; j++ {
+		for i = 0; i < NumTiles; i++ {
+			s.tiles.get(i, j).draw(p)
+		}
+	}
+
 	p.Sprite(0, s.X, s.Y)
 }

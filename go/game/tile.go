@@ -1,6 +1,7 @@
 package game
 
 type Tileish interface {
+	draw(p Platform)
 	// We can add a StepOn method here later
 }
 
@@ -26,8 +27,8 @@ type Floor struct {
 	Tile
 }
 
-func NewFloor(x, y Position) Floor {
-	return Floor{
+func NewFloor(x, y Position) *Floor {
+	return &Floor{
 		Tile: NewTile(2, x, y, true),
 	}
 }
@@ -36,8 +37,8 @@ type Wall struct {
 	Tile
 }
 
-func NewWall(x, y Position) Wall {
-	return Wall{
+func NewWall(x, y Position) *Wall {
+	return &Wall{
 		Tile: NewTile(3, x, y, false),
 	}
 }

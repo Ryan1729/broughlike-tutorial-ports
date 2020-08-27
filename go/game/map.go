@@ -24,6 +24,18 @@ func generateTiles() Tiles {
 	return Tiles{tiles}
 }
 
+func inBounds(x, y Position) bool {
+	return x > 0 && y > 0 && x < NumTiles-1 && y < NumTiles-1
+}
+
 type Tiles struct {
 	tiles [NumTiles][NumTiles]Tileish
+}
+
+func (ts *Tiles) get(x, y Position) Tileish {
+	if inBounds(x, y) {
+		return ts.tiles[x][y]
+	}
+
+	return NewWall(x, y)
 }
