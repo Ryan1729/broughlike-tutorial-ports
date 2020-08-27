@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math/rand"
 	"time"
 
 	"github.com/Ryan1729/broughlike-tutorial-ports/go/assets"
@@ -11,9 +12,6 @@ import (
 
 const (
 	PerFrameDuration = time.Second / 60
-
-	NumTiles = 9
-	UIWidth  = 4
 
 	// Aqua             = 0xff00ffff.
 	// Violet           = 0xffee82ee.
@@ -33,7 +31,11 @@ func main() {
 
 	platform := NewSDL2Platform(window)
 
+	seedRNG()
+
 	s := game.State{}
+
+	game.GenerateLevel(&s)
 
 	for {
 		start := time.Now()
@@ -133,6 +135,12 @@ func (p *SDL2Platform) Sprite(sprite game.SpriteIndex, x, y game.Position) {
 		}))
 }
 
+func seedRNG() {
+	seed := time.Now().UnixNano()
+	println(seed)
+	rand.Seed(seed)
+}
+
 type Sizes struct {
 	playAreaX,
 	playAreaY,
@@ -142,10 +150,10 @@ type Sizes struct {
 
 func NewSizes(w, h int32) Sizes {
 	tile := min(
-		w/(NumTiles+UIWidth),
-		h/NumTiles,
+		w/(game.NumTiles+game.UIWidth),
+		h/game.NumTiles,
 	)
-	playAreaW, playAreaH := tile*(NumTiles+UIWidth), tile*NumTiles
+	playAreaW, playAreaH := tile*(game.NumTiles+game.UIWidth), tile*game.NumTiles
 	playAreaX, playAreaY := (w-playAreaW)/2, (h-playAreaH)/2
 
 	return Sizes{

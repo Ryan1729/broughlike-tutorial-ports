@@ -1,12 +1,18 @@
 package game
 
+const (
+	NumTiles = 9
+	UIWidth  = 4
+)
+
 type (
 	SpriteIndex = uint8
 	Position    = int32
 )
 
 type State struct {
-	X, Y Position
+	X, Y  Position
+	tiles Tiles
 }
 
 type Platform interface {

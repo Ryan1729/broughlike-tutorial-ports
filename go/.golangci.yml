@@ -79,3 +79,11 @@ linters-settings:
     # given the statement limit exists, basically only measures how big
     # statements are in the code, which is more or less a non-issue.
     lines: 9223372036854775807 # 2^63 - 1
+
+issues:
+  exclude-rules:
+    - linters:
+        - gosec
+      # We don't care if someone manipulates the RNG, since this is a single
+      # player game.
+      text: "G404:"

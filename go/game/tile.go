@@ -1,5 +1,9 @@
 package game
 
+type Tileish interface {
+	// We can add a StepOn method here later
+}
+
 type Tile struct {
 	x, y     Position
 	sprite   SpriteIndex
