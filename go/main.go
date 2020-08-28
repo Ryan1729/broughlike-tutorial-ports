@@ -35,7 +35,7 @@ func main() {
 
 	s := game.State{}
 
-	game.GenerateLevel(&s)
+	dieIfErr(game.GenerateLevel(&s))
 
 	for {
 		start := time.Now()

@@ -9,6 +9,7 @@ type Tile struct {
 	x, y     Position
 	sprite   SpriteIndex
 	passable bool
+	monster  *struct{}
 }
 
 func NewTile(sprite SpriteIndex, x, y Position, passable bool) Tile {
@@ -16,6 +17,7 @@ func NewTile(sprite SpriteIndex, x, y Position, passable bool) Tile {
 		x, y,
 		sprite,
 		passable,
+		nil,
 	}
 }
 

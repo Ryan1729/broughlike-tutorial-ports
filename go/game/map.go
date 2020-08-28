@@ -4,8 +4,18 @@ import (
 	"math/rand"
 )
 
-func GenerateLevel(s *State) {
+func GenerateLevel(s *State) error {
 	s.tiles = generateTiles()
+
+	startingTileish, err := s.tiles.randomPassable()
+	if err != nil {
+		return err
+	}
+	startingTile := startingTileish.tile()
+
+	s.X, s.Y = startingTile.x, startingTile.y
+
+	return nil
 }
 
 func generateTiles() Tiles {
@@ -38,4 +48,21 @@ func (ts *Tiles) get(x, y Position) Tileish {
 	}
 
 	return NewWall(x, y)
+}
+
+func (ts *Tiles) randomPassable() (Tileish, error) {
+	var tileish Tileish
+
+	err := tryTo("get random passable tile", func() bool {
+		x, y := randomRange(0, NumTiles-1), randomRange(0, NumTiles-1)
+		tileish = ts.get(x, y)
+		tile := tileish.tile()
+
+		return tile.passable && tile.monster == nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return tileish, nil
 }
