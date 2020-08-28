@@ -1,7 +1,7 @@
 package game
 
 type Tileish interface {
-	draw(p Platform)
+	tile() *Tile
 	// We can add a StepOn method here later
 }
 
@@ -21,6 +21,10 @@ func NewTile(sprite SpriteIndex, x, y Position, passable bool) Tile {
 
 func (t *Tile) draw(p Platform) {
 	p.Sprite(t.sprite, t.x, t.y)
+}
+
+func (t *Tile) tile() *Tile {
+	return t
 }
 
 type Floor struct {

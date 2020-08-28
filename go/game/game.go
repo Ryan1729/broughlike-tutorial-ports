@@ -24,7 +24,7 @@ func Draw(p Platform, s *State) {
 	var i, j Position
 	for j = 0; j < NumTiles; j++ {
 		for i = 0; i < NumTiles; i++ {
-			s.tiles.get(i, j).draw(p)
+			s.tiles.get(i, j).tile().draw(p)
 		}
 	}
 
