@@ -22,6 +22,10 @@ func tryTo(description string, callback func() bool) error {
 	return tryToError{description: "Timeout while trying to " + description}
 }
 
-func randomRange(min, max Position) Position {
+func randomRangePosition(min, max Position) Position {
 	return rand.Int31n(max-min+1) + min
+}
+
+func randomRangeInt(min, max int) int {
+	return rand.Intn(max-min+1) + min
 }

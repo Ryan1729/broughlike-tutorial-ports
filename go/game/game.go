@@ -8,6 +8,9 @@ const (
 type (
 	SpriteIndex = uint8
 	Position    = int32
+	// type Delta should only ever be -1, 0, or 1. When added with
+	// a Position, produces another Position.
+	Delta = Position
 )
 
 type State struct {
