@@ -29,9 +29,8 @@ func GenerateLevel(s *State) error {
 	if err != nil {
 		return err
 	}
-	startingTile := startingTileish.tile()
 
-	s.X, s.Y = startingTile.x, startingTile.y
+	s.player = *NewPlayer(startingTileish)
 
 	return nil
 }

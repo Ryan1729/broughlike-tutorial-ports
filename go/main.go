@@ -50,19 +50,19 @@ func main() {
 					case sdl.K_w:
 						fallthrough
 					case sdl.K_UP:
-						s.Y--
+						s.TryMovePlayer(0, -1)
 					case sdl.K_a:
 						fallthrough
 					case sdl.K_LEFT:
-						s.X--
+						s.TryMovePlayer(-1, 0)
 					case sdl.K_s:
 						fallthrough
 					case sdl.K_DOWN:
-						s.Y++
+						s.TryMovePlayer(0, 1)
 					case sdl.K_d:
 						fallthrough
 					case sdl.K_RIGHT:
-						s.X++
+						s.TryMovePlayer(1, 0)
 					}
 				}
 			}

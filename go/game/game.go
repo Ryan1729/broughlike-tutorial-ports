@@ -11,11 +11,16 @@ type (
 	// type Delta should only ever be -1, 0, or 1. When added with
 	// a Position, produces another Position.
 	Delta = Position
+	HP    = uint8
 )
 
 type State struct {
-	X, Y  Position
-	tiles Tiles
+	player Player
+	tiles  Tiles
+}
+
+func (s *State) TryMovePlayer(dx, dy Delta) {
+	s.player.tryMove(&s.tiles, dx, dy)
 }
 
 type Platform interface {
@@ -31,5 +36,5 @@ func Draw(p Platform, s *State) {
 		}
 	}
 
-	p.Sprite(0, s.X, s.Y)
+	s.player.draw(p)
 }
