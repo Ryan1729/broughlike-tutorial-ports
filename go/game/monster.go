@@ -11,11 +11,15 @@ type Monster struct {
 }
 
 func NewMonster(tileish Tileish, sprite SpriteIndex, hp HP) Monster {
-	return Monster{
+	m := Monster{
 		tileish,
 		sprite,
 		hp,
 	}
+
+	m.move(tileish)
+
+	return m
 }
 
 func (m *Monster) draw(p Platform) {
