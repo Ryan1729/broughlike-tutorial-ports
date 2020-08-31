@@ -1,6 +1,7 @@
 package game
 
 type Monstrous interface {
+	draw(p Platform)
 }
 
 type Monster struct {
@@ -43,12 +44,68 @@ func (m *Monster) move(tileish Tileish) {
 	m.tileish.tile().monster = m
 }
 
+type MonsterMaker = func(tileish Tileish) Monstrous
+
 type Player struct {
 	Monster
 }
 
-func NewPlayer(tileish Tileish) *Player {
+func NewPlayer(tileish Tileish) Monstrous {
+	return NewPlayerStruct(tileish)
+}
+
+func NewPlayerStruct(tileish Tileish) *Player {
 	return &Player{
 		Monster: NewMonster(tileish, 0, 3),
+	}
+}
+
+type Bird struct {
+	Monster
+}
+
+func NewBird(tileish Tileish) Monstrous {
+	return &Bird{
+		Monster: NewMonster(tileish, 4, 3),
+	}
+}
+
+type Snake struct {
+	Monster
+}
+
+func NewSnake(tileish Tileish) Monstrous {
+	return &Snake{
+		Monster: NewMonster(tileish, 5, 1),
+	}
+}
+
+type Tank struct {
+	Monster
+}
+
+func NewTank(tileish Tileish) Monstrous {
+	return &Tank{
+		Monster: NewMonster(tileish, 6, 2),
+	}
+}
+
+type Eater struct {
+	Monster
+}
+
+func NewEater(tileish Tileish) Monstrous {
+	return &Eater{
+		Monster: NewMonster(tileish, 7, 1),
+	}
+}
+
+type Jester struct {
+	Monster
+}
+
+func NewJester(tileish Tileish) Monstrous {
+	return &Jester{
+		Monster: NewMonster(tileish, 8, 2),
 	}
 }

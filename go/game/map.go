@@ -25,12 +25,17 @@ func GenerateLevel(s *State) error {
 		return err
 	}
 
+	err = generateMonsters(s)
+	if err != nil {
+		return err
+	}
+
 	startingTileish, err := s.tiles.randomPassable()
 	if err != nil {
 		return err
 	}
 
-	s.player = *NewPlayer(startingTileish)
+	s.player = *NewPlayerStruct(startingTileish)
 
 	return nil
 }
@@ -74,7 +79,7 @@ func (ts *Tiles) getNeighbor(tileish Tileish, dx, dy Delta) Tileish {
 }
 
 func (ts *Tiles) getAdjacentNeighbors(tileish Tileish) []Tileish {
-	return shuffleInPlace([]Tileish{
+	return shuffleTileishInPlace([]Tileish{
 		ts.getNeighbor(tileish, 0, -1),
 		ts.getNeighbor(tileish, 0, 1),
 		ts.getNeighbor(tileish, -1, 0),
@@ -136,7 +141,18 @@ func (ts *Tiles) getConnected(tileish Tileish) []Tileish {
 }
 
 // Mutates the passed in slice, but also returns it to be convenient.
-func shuffleInPlace(slice []Tileish) []Tileish {
+func shuffleTileishInPlace(slice []Tileish) []Tileish {
+	length := len(slice)
+	for i := 1; i < length; i++ {
+		r := randomRangeInt(0, i)
+		slice[i], slice[r] = slice[r], slice[i]
+	}
+
+	return slice
+}
+
+// Mutates the passed in slice, but also returns it to be convenient.
+func shuffleMonsterMakerInPlace(slice []MonsterMaker) []MonsterMaker {
 	length := len(slice)
 	for i := 1; i < length; i++ {
 		r := randomRangeInt(0, i)
@@ -156,4 +172,33 @@ func filter(slice []Tileish, predicate func(Tileish) bool) []Tileish {
 	}
 
 	return output
+}
+
+func generateMonsters(s *State) error {
+	numMonsters := s.level + 1
+	s.monsters = make([]Monstrous, 0, numMonsters)
+
+	for i := 0; i < int(numMonsters); i++ {
+		m, err := spawnMonster(s)
+		if err != nil {
+			return err
+		}
+
+		s.monsters = append(s.monsters, m)
+	}
+
+	return nil
+}
+
+func spawnMonster(s *State) (Monstrous, error) {
+	monsterType := shuffleMonsterMakerInPlace(
+		[]MonsterMaker{NewBird, NewSnake, NewTank, NewEater, NewJester},
+	)[0]
+
+	startingTileish, err := s.tiles.randomPassable()
+	if err != nil {
+		return nil, err
+	}
+
+	return monsterType(startingTileish), nil
 }

@@ -12,11 +12,14 @@ type (
 	// a Position, produces another Position.
 	Delta = Position
 	HP    = uint8
+	Level = uint8
 )
 
 type State struct {
-	player Player
-	tiles  Tiles
+	player   Player
+	tiles    Tiles
+	level    Level
+	monsters []Monstrous
 }
 
 func (s *State) TryMovePlayer(dx, dy Delta) {
@@ -34,6 +37,10 @@ func Draw(p Platform, s *State) {
 		for i = 0; i < NumTiles; i++ {
 			s.tiles.get(i, j).tile().draw(p)
 		}
+	}
+
+	for _, m := range s.monsters {
+		m.draw(p)
 	}
 
 	s.player.draw(p)
