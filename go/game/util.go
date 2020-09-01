@@ -23,7 +23,7 @@ func tryTo(description string, callback func() bool) error {
 }
 
 func randomRangePosition(min, max Position) Position {
-	return rand.Int31n(max-min+1) + min
+	return Position(rand.Int31n(int32(max-min+1))) + min
 }
 
 func randomRangeInt(min, max int) int {

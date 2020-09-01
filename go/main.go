@@ -128,8 +128,8 @@ func (p *SDL2Platform) Sprite(sprite game.SpriteIndex, x, y game.Position) {
 			H: 16,
 		},
 		&sdl.Rect{
-			X: sizes.playAreaX + x*sizes.tile,
-			Y: sizes.playAreaY + y*sizes.tile,
+			X: sizes.playAreaX + int32(x)*sizes.tile,
+			Y: sizes.playAreaY + int32(y)*sizes.tile,
 			W: sizes.tile,
 			H: sizes.tile,
 		}))
