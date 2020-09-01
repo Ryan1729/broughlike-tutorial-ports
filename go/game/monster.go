@@ -1,8 +1,11 @@
 package game
 
+import "sort"
+
 type Monstrous interface {
 	monster() *Monster
 	draw(p Platform)
+	update(s *State)
 }
 
 // It's important that this is implemented as is, instead of say a metho on
@@ -34,6 +37,7 @@ type Monster struct {
 	tileish Tileish
 	sprite  SpriteIndex
 	hp      HP
+	dead    bool
 }
 
 func NewMonster(tileish Tileish, sprite SpriteIndex, hp HP) Monster {
@@ -41,6 +45,7 @@ func NewMonster(tileish Tileish, sprite SpriteIndex, hp HP) Monster {
 		tileish,
 		sprite,
 		hp,
+		false,
 	}
 
 	move(&m, tileish)
@@ -52,7 +57,32 @@ func (m *Monster) monster() *Monster {
 	return m
 }
 
+func (m *Monster) update(s *State) {
+	m.doStuff(s)
+}
+
+func (m *Monster) doStuff(s *State) {
+	neighbors := s.tiles.getAdjacentPassableNeighbors(m.tileish)
+
+	neighbors = filter(neighbors, func(t Tileish) bool {
+		switch t.tile().monster.(type) {
+		case nil:
+			return true
+		case *Player:
+			return true
+		default:
+			return false
 		}
+	})
+
+	if len(neighbors) > 0 {
+		playerTile := s.player.Monster.tileish
+		sort.Slice(neighbors, func(aIndex, bIndex int) bool {
+			return neighbors[aIndex].dist(playerTile) < neighbors[bIndex].dist(playerTile)
+		})
+		newTile := neighbors[0].tile()
+		tile := m.tileish.tile()
+		tryMove(m, &s.tiles, Delta(newTile.x)-Delta(tile.x), Delta(newTile.y)-Delta(tile.y))
 	}
 }
 
@@ -74,6 +104,12 @@ func NewPlayer(tileish Tileish) Monstrous {
 func NewPlayerStruct(tileish Tileish) *Player {
 	return &Player{
 		Monster: NewMonster(tileish, 0, 3),
+	}
+}
+
+func (p *Player) tryMove(s *State, dx, dy Delta) {
+	if tryMove(p, &s.tiles, dx, dy) {
+		tick(s)
 	}
 }
 

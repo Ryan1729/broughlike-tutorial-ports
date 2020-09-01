@@ -2,6 +2,7 @@ package game
 
 type Tileish interface {
 	tile() *Tile
+	dist(tileish Tileish) Distance
 	// We can add a StepOn method here later
 }
 
@@ -19,6 +20,21 @@ func NewTile(sprite SpriteIndex, x, y Position, passable bool) Tile {
 		passable,
 		nil,
 	}
+}
+
+func (t *Tile) dist(tileish Tileish) Distance {
+	tile := tileish.tile()
+
+	return abs(Distance(t.x)-Distance(tile.x)) + abs(Distance(t.y)-Distance(tile.y))
+}
+
+// passes the minimum value (-2^N) through unchanged.
+func abs(d Distance) Distance {
+	if d < 0 {
+		return -d
+	}
+
+	return d
 }
 
 func (t *Tile) draw(p Platform) {

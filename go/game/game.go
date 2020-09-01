@@ -28,7 +28,7 @@ type State struct {
 }
 
 func (s *State) TryMovePlayer(dx, dy Delta) {
-	s.player.tryMove(&s.tiles, dx, dy)
+	s.player.tryMove(s, dx, dy)
 }
 
 type Platform interface {
@@ -49,4 +49,17 @@ func Draw(p Platform, s *State) {
 	}
 
 	s.player.draw(p)
+}
+
+func tick(s *State) {
+	monsters := s.monsters
+	for i := len(monsters) - 1; i >= 0; i-- {
+		if monsters[i].monster().dead {
+			// Remove the dead monster
+			copy(monsters[i:], monsters[i+1:])
+			monsters = monsters[:len(monsters)-1]
+		} else {
+			monsters[i].update(s)
+		}
+	}
 }
