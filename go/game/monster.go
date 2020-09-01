@@ -1,7 +1,33 @@
 package game
 
 type Monstrous interface {
+	monster() *Monster
 	draw(p Platform)
+}
+
+// It's important that this is implemented as is, instead of say a metho on
+// *Monster, because we assign the "this" to the passed in tile's monster
+// property, and we want to store the entire Monstrous implementor there.
+func move(monstrous Monstrous, tileish Tileish) {
+	m := monstrous.monster()
+	if m.tileish != nil {
+		m.tileish.tile().monster = nil
+	}
+	m.tileish = tileish
+	m.tileish.tile().monster = monstrous
+}
+
+func tryMove(monstrous Monstrous, tiles *Tiles, dx, dy Delta) (moved bool) {
+	newTileish := tiles.getNeighbor(monstrous.monster().tileish, dx, dy)
+	newTile := newTileish.tile()
+	if newTile.passable {
+		if newTile.monster == nil {
+			move(monstrous, newTile)
+		}
+		moved = true
+	}
+
+	return
 }
 
 type Monster struct {
@@ -17,35 +43,22 @@ func NewMonster(tileish Tileish, sprite SpriteIndex, hp HP) Monster {
 		hp,
 	}
 
-	m.move(tileish)
+	move(&m, tileish)
 
 	return m
+}
+
+func (m *Monster) monster() *Monster {
+	return m
+}
+
+		}
+	}
 }
 
 func (m *Monster) draw(p Platform) {
 	t := m.tileish.tile()
 	p.Sprite(m.sprite, t.x, t.y)
-}
-
-func (m *Monster) tryMove(tiles *Tiles, dx, dy Delta) (moved bool) {
-	newTileish := tiles.getNeighbor(m.tileish, dx, dy)
-	newTile := newTileish.tile()
-	if newTile.passable {
-		if newTile.monster == nil {
-			m.move(newTile)
-		}
-		moved = true
-	}
-
-	return
-}
-
-func (m *Monster) move(tileish Tileish) {
-	if m.tileish != nil {
-		m.tileish.tile().monster = nil
-	}
-	m.tileish = tileish
-	m.tileish.tile().monster = m
 }
 
 type MonsterMaker = func(tileish Tileish) Monstrous
