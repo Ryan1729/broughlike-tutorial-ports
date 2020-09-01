@@ -8,13 +8,13 @@ const (
 type (
 	SpriteIndex = uint8
 	// type Position is the one-dimensional position of something on the map
-	// The type should only ever hold values inside [0, Numtiles - 1]
-	Position = int8
+	// The type should only ever hold values inside [0, Numtiles - 1].
+	Position = uint8
 	// type Delta should only ever be -1, 0, or 1. When added with
 	// a Position, produces another Position.
-	Delta = Position
+	Delta = int8
 	// type Distance is the manhattan distance from (Position, Position) to
-	// another. At most this can be NumTiles * 2
+	// another. At most this can be NumTiles * 2.
 	Distance = int8
 	HP       = uint8
 	Level    = uint8

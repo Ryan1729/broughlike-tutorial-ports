@@ -75,7 +75,7 @@ func (ts *Tiles) get(x, y Position) Tileish {
 func (ts *Tiles) getNeighbor(tileish Tileish, dx, dy Delta) Tileish {
 	tile := tileish.tile()
 
-	return ts.get(tile.x+dx, tile.y+dy)
+	return ts.get(Position(Delta(tile.x)+dx), Position(Delta(tile.y)+dy))
 }
 
 func (ts *Tiles) getAdjacentNeighbors(tileish Tileish) []Tileish {
