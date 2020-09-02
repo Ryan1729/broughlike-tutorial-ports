@@ -135,6 +135,25 @@ func (p *SDL2Platform) Sprite(sprite game.SpriteIndex, x, y game.Position) {
 		}))
 }
 
+func (p *SDL2Platform) SubTileSprite(sprite game.SpriteIndex, x, y game.SubTilePosition) {
+	sizes := &p.sizes
+
+	dieIfErr(p.renderer.Copy(
+		p.assets.spritesheet,
+		&sdl.Rect{
+			X: int32(sprite) * 16,
+			Y: 0,
+			W: 16,
+			H: 16,
+		},
+		&sdl.Rect{
+			X: sizes.playAreaX + int32(x*game.SubTilePosition(sizes.tile)),
+			Y: sizes.playAreaY + int32(y*game.SubTilePosition(sizes.tile)),
+			W: sizes.tile,
+			H: sizes.tile,
+		}))
+}
+
 func seedRNG() {
 	seed := time.Now().UnixNano()
 	println(seed)

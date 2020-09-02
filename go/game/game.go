@@ -15,9 +15,10 @@ type (
 	Delta = int8
 	// type Distance is the manhattan distance from (Position, Position) to
 	// another. At most this can be NumTiles * 2.
-	Distance = int8
-	HP       = uint8
-	Level    = uint8
+	Distance        = int8
+	HP              = uint8
+	Level           = uint8
+	SubTilePosition = float32
 )
 
 type State struct {
@@ -33,6 +34,7 @@ func (s *State) TryMovePlayer(dx, dy Delta) {
 
 type Platform interface {
 	Sprite(sprite SpriteIndex, x, y Position)
+	SubTileSprite(sprite SpriteIndex, x, y SubTilePosition)
 	// Later we can add a Text and a Sound method here
 }
 

@@ -1,6 +1,9 @@
 package game
 
-import "sort"
+import (
+	"math"
+	"sort"
+)
 
 type Monstrous interface {
 	monster() *Monster
@@ -89,6 +92,19 @@ func (m *Monster) doStuff(s *State) {
 func (m *Monster) draw(p Platform) {
 	t := m.tileish.tile()
 	p.Sprite(m.sprite, t.x, t.y)
+
+	m.drawHp(p)
+}
+
+func (m *Monster) drawHp(p Platform) {
+	tile := m.tileish.tile()
+	for i := 0.0; i < float64(m.hp); i += 1.0 {
+		p.SubTileSprite(
+			9,
+			SubTilePosition(tile.x)+SubTilePosition(math.Mod(i, 3.0)*(5.0/16.0)),
+			SubTilePosition(tile.y)-SubTilePosition(math.Floor(i/3.0)*(5.0/16.0)),
+		)
+	}
 }
 
 type MonsterMaker = func(tileish Tileish) Monstrous
