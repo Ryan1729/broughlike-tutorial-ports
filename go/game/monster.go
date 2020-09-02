@@ -1,8 +1,11 @@
 package game
 
 import (
-	"math"
 	"sort"
+)
+
+const (
+	healthSize = 5.0 / 16.0
 )
 
 type Monstrous interface {
@@ -98,11 +101,12 @@ func (m *Monster) draw(p Platform) {
 
 func (m *Monster) drawHp(p Platform) {
 	tile := m.tileish.tile()
-	for i := 0.0; i < float64(m.hp); i += 1.0 {
+	var i HP
+	for ; i < m.hp; i++ {
 		p.SubTileSprite(
 			9,
-			SubTilePosition(tile.x)+SubTilePosition(math.Mod(i, 3.0)*(5.0/16.0)),
-			SubTilePosition(tile.y)-SubTilePosition(math.Floor(i/3.0)*(5.0/16.0)),
+			SubTilePosition(tile.x)+SubTilePosition(i%3)*healthSize,
+			SubTilePosition(tile.y)-SubTilePosition(i/3)*healthSize,
 		)
 	}
 }
