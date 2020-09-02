@@ -33,9 +33,12 @@ func (s *State) TryMovePlayer(dx, dy Delta) {
 }
 
 type Platform interface {
-	Sprite(sprite SpriteIndex, x, y Position)
 	SubTileSprite(sprite SpriteIndex, x, y SubTilePosition)
 	// Later we can add a Text and a Sound method here
+}
+
+func sprite(p Platform, sprite SpriteIndex, x, y Position) {
+	p.SubTileSprite(sprite, SubTilePosition(x), SubTilePosition(y))
 }
 
 func Draw(p Platform, s *State) {

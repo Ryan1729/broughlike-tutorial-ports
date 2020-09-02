@@ -116,25 +116,6 @@ func (p *SDL2Platform) Clear() {
 		}))
 }
 
-func (p *SDL2Platform) Sprite(sprite game.SpriteIndex, x, y game.Position) {
-	sizes := &p.sizes
-
-	dieIfErr(p.renderer.Copy(
-		p.assets.spritesheet,
-		&sdl.Rect{
-			X: int32(sprite) * 16,
-			Y: 0,
-			W: 16,
-			H: 16,
-		},
-		&sdl.Rect{
-			X: sizes.playAreaX + int32(x)*sizes.tile,
-			Y: sizes.playAreaY + int32(y)*sizes.tile,
-			W: sizes.tile,
-			H: sizes.tile,
-		}))
-}
-
 func (p *SDL2Platform) SubTileSprite(sprite game.SpriteIndex, x, y game.SubTilePosition) {
 	sizes := &p.sizes
 

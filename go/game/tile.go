@@ -38,7 +38,7 @@ func abs(d Distance) Distance {
 }
 
 func (t *Tile) draw(p Platform) {
-	p.Sprite(t.sprite, t.x, t.y)
+	sprite(p, t.sprite, t.x, t.y)
 }
 
 func (t *Tile) tile() *Tile {

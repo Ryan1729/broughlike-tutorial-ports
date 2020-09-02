@@ -91,7 +91,7 @@ func (m *Monster) doStuff(s *State) {
 
 func (m *Monster) draw(p Platform) {
 	t := m.tileish.tile()
-	p.Sprite(m.sprite, t.x, t.y)
+	sprite(p, m.sprite, t.x, t.y)
 
 	m.drawHp(p)
 }
