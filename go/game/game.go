@@ -57,14 +57,13 @@ func Draw(p Platform, s *State) {
 }
 
 func tick(s *State) {
-	monsters := s.monsters
-	for i := len(monsters) - 1; i >= 0; i-- {
-		if monsters[i].monster().dead {
+	for i := len(s.monsters) - 1; i >= 0; i-- {
+		if s.monsters[i].monster().dead {
 			// Remove the dead monster
-			copy(monsters[i:], monsters[i+1:])
-			monsters = monsters[:len(monsters)-1]
+			copy(s.monsters[i:], s.monsters[i+1:])
+			s.monsters = s.monsters[:len(s.monsters)-1]
 		} else {
-			monsters[i].update(s)
+			s.monsters[i].update(s)
 		}
 	}
 }
