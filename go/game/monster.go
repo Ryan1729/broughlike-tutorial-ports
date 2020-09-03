@@ -14,7 +14,7 @@ type Monstrous interface {
 	update(s *State)
 }
 
-// It's important that this is implemented as is, instead of say a metho on
+// It's important that this is implemented as is, instead of say a method on
 // *Monster, because we assign the "this" to the passed in tile's monster
 // property, and we want to store the entire Monstrous implementor there.
 func move(monstrous Monstrous, tileish Tileish) {
@@ -32,6 +32,12 @@ func tryMove(monstrous Monstrous, tiles *Tiles, dx, dy Delta) (moved bool) {
 	if newTile.passable {
 		if newTile.monster == nil {
 			move(monstrous, newTile)
+		} else {
+			_, mIsPlayer := monstrous.(*Player)
+			_, nTIsPlayer := newTile.monster.(*Player)
+			if mIsPlayer != nTIsPlayer {
+				newTile.monster.monster().hit(1)
+			}
 		}
 		moved = true
 	}
@@ -90,6 +96,19 @@ func (m *Monster) doStuff(s *State) {
 		tile := m.tileish.tile()
 		tryMove(m, &s.tiles, Delta(newTile.x)-Delta(tile.x), Delta(newTile.y)-Delta(tile.y))
 	}
+}
+
+func (m *Monster) hit(damage HP) {
+	m.hp -= damage
+	if m.hp <= 0 {
+		m.die()
+	}
+}
+
+func (m *Monster) die() {
+	m.dead = true
+	m.tileish.tile().monster = nil
+	m.sprite = 1
 }
 
 func (m *Monster) draw(p Platform) {
