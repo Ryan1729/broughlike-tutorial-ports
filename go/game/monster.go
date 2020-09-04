@@ -12,6 +12,7 @@ type Monstrous interface {
 	monster() *Monster
 	draw(p Platform)
 	update(s *State)
+	doStuff(s *State)
 }
 
 // It's important that this is implemented as is, instead of say a method on
@@ -36,6 +37,7 @@ func tryMove(monstrous Monstrous, tiles *Tiles, dx, dy Delta) (moved bool) {
 			_, mIsPlayer := monstrous.(*Player)
 			_, nTIsPlayer := newTile.monster.(*Player)
 			if mIsPlayer != nTIsPlayer {
+				monstrous.monster().attackedThisTurn = true
 				newTile.monster.monster().hit(1)
 			}
 		}
@@ -46,10 +48,11 @@ func tryMove(monstrous Monstrous, tiles *Tiles, dx, dy Delta) (moved bool) {
 }
 
 type Monster struct {
-	tileish Tileish
-	sprite  SpriteIndex
-	hp      HP
-	dead    bool
+	tileish          Tileish
+	sprite           SpriteIndex
+	hp               HP
+	dead             bool
+	attackedThisTurn bool
 }
 
 func NewMonster(tileish Tileish, sprite SpriteIndex, hp HP) Monster {
@@ -57,6 +60,7 @@ func NewMonster(tileish Tileish, sprite SpriteIndex, hp HP) Monster {
 		tileish,
 		sprite,
 		hp,
+		false,
 		false,
 	}
 
@@ -169,6 +173,19 @@ type Snake struct {
 func NewSnake(tileish Tileish) Monstrous {
 	return &Snake{
 		Monster: NewMonster(tileish, 5, 1),
+	}
+}
+
+func (m *Snake) update(s *State) {
+	m.doStuff(s)
+}
+
+func (m *Snake) doStuff(s *State) {
+	m.Monster.attackedThisTurn = false
+	m.Monster.doStuff(s)
+
+	if !m.Monster.attackedThisTurn {
+		m.Monster.doStuff(s)
 	}
 }
 
