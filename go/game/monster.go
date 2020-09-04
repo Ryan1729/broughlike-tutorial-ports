@@ -38,7 +38,9 @@ func tryMove(monstrous Monstrous, tiles *Tiles, dx, dy Delta) (moved bool) {
 			_, nTIsPlayer := newTile.monster.(*Player)
 			if mIsPlayer != nTIsPlayer {
 				monstrous.monster().attackedThisTurn = true
-				newTile.monster.monster().hit(1)
+				nTM := newTile.monster.monster()
+				nTM.stunned = true
+				nTM.hit(1)
 			}
 		}
 		moved = true
@@ -47,12 +49,24 @@ func tryMove(monstrous Monstrous, tiles *Tiles, dx, dy Delta) (moved bool) {
 	return
 }
 
+func doStuffUnlessStunned(monstrous Monstrous, s *State) {
+	m := monstrous.monster()
+	if m.stunned {
+		m.stunned = false
+
+		return
+	}
+
+	monstrous.doStuff(s)
+}
+
 type Monster struct {
 	tileish          Tileish
 	sprite           SpriteIndex
 	hp               HP
 	dead             bool
 	attackedThisTurn bool
+	stunned          bool
 }
 
 func NewMonster(tileish Tileish, sprite SpriteIndex, hp HP) Monster {
@@ -60,6 +74,7 @@ func NewMonster(tileish Tileish, sprite SpriteIndex, hp HP) Monster {
 		tileish,
 		sprite,
 		hp,
+		false,
 		false,
 		false,
 	}
@@ -74,7 +89,7 @@ func (m *Monster) monster() *Monster {
 }
 
 func (m *Monster) update(s *State) {
-	m.doStuff(s)
+	doStuffUnlessStunned(m, s)
 }
 
 func (m *Monster) doStuff(s *State) {
@@ -177,7 +192,7 @@ func NewSnake(tileish Tileish) Monstrous {
 }
 
 func (m *Snake) update(s *State) {
-	m.doStuff(s)
+	doStuffUnlessStunned(m, s)
 }
 
 func (m *Snake) doStuff(s *State) {
@@ -196,6 +211,16 @@ type Tank struct {
 func NewTank(tileish Tileish) Monstrous {
 	return &Tank{
 		Monster: NewMonster(tileish, 6, 2),
+	}
+}
+
+func (m *Tank) update(s *State) {
+	startedStunned := m.monster().stunned
+
+	doStuffUnlessStunned(m, s)
+
+	if !startedStunned {
+		m.monster().stunned = true
 	}
 }
 
