@@ -140,6 +140,13 @@ func (ts *Tiles) getConnected(tileish Tileish) []Tileish {
 	return connected
 }
 
+func (ts *Tiles) replace(tileish Tileish, newTileType TileMaker) Tileish {
+	t := tileish.tile()
+	ts.tiles[t.x][t.y] = newTileType(t.x, t.y)
+
+	return ts.tiles[t.x][t.y]
+}
+
 // Mutates the passed in slice, but also returns it to be convenient.
 func shuffleTileishInPlace(slice []Tileish) []Tileish {
 	length := len(slice)

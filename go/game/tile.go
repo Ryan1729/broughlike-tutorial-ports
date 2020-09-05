@@ -45,11 +45,13 @@ func (t *Tile) tile() *Tile {
 	return t
 }
 
+type TileMaker = func(x, y Position) Tileish
+
 type Floor struct {
 	Tile
 }
 
-func NewFloor(x, y Position) *Floor {
+func NewFloor(x, y Position) Tileish {
 	return &Floor{
 		Tile: NewTile(2, x, y, true),
 	}
@@ -59,7 +61,7 @@ type Wall struct {
 	Tile
 }
 
-func NewWall(x, y Position) *Wall {
+func NewWall(x, y Position) Tileish {
 	return &Wall{
 		Tile: NewTile(3, x, y, false),
 	}

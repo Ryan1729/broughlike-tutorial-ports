@@ -3,6 +3,7 @@ package game
 const (
 	NumTiles = 9
 	UIWidth  = 4
+	maxHP    = 6
 )
 
 type (
@@ -15,8 +16,12 @@ type (
 	Delta = int8
 	// type Distance is the manhattan distance from (Position, Position) to
 	// another. At most this can be NumTiles * 2.
-	Distance        = int8
-	HP              = uint8
+	Distance = int8
+	// Effectively only takes on the following values:
+	// [0, 0.5, 1.0, ..., maxHP - 0.5, maxHP]
+	// So we could represent it in a uint8 by interpreting 2 as 1.0 etc., if
+	// we wanted to.
+	HP              = float32
 	Level           = uint8
 	SubTilePosition = float32
 )

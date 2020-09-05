@@ -1,6 +1,7 @@
 package game
 
 import (
+	"math"
 	"sort"
 )
 
@@ -62,8 +63,8 @@ func doStuffUnlessStunned(monstrous Monstrous, s *State) {
 
 type Monster struct {
 	tileish          Tileish
-	sprite           SpriteIndex
 	hp               HP
+	sprite           SpriteIndex
 	dead             bool
 	attackedThisTurn bool
 	stunned          bool
@@ -72,8 +73,8 @@ type Monster struct {
 func NewMonster(tileish Tileish, sprite SpriteIndex, hp HP) Monster {
 	m := Monster{
 		tileish,
-		sprite,
 		hp,
+		sprite,
 		false,
 		false,
 		false,
@@ -117,6 +118,13 @@ func (m *Monster) doStuff(s *State) {
 	}
 }
 
+func (m *Monster) heal(damage HP) {
+	m.hp += damage
+	if m.hp > maxHP {
+		m.hp = maxHP
+	}
+}
+
 func (m *Monster) hit(damage HP) {
 	m.hp -= damage
 	if m.hp <= 0 {
@@ -143,8 +151,8 @@ func (m *Monster) drawHp(p Platform) {
 	for ; i < m.hp; i++ {
 		p.SubTileSprite(
 			9,
-			SubTilePosition(tile.x)+SubTilePosition(i%3)*healthSize,
-			SubTilePosition(tile.y)-SubTilePosition(i/3)*healthSize,
+			SubTilePosition(tile.x)+SubTilePosition(math.Mod(float64(i), 3.0))*healthSize,
+			SubTilePosition(tile.y)-SubTilePosition(math.Floor(float64(i)/3.0))*healthSize,
 		)
 	}
 }
@@ -231,6 +239,27 @@ type Eater struct {
 func NewEater(tileish Tileish) Monstrous {
 	return &Eater{
 		Monster: NewMonster(tileish, 7, 1),
+	}
+}
+
+func (m *Eater) update(s *State) {
+	doStuffUnlessStunned(m, s)
+}
+
+func (m *Eater) doStuff(s *State) {
+	neighbors := filter(
+		s.tiles.getAdjacentNeighbors(m.monster().tileish),
+		func(tileish Tileish) bool {
+			t := tileish.tile()
+
+			return !t.passable && inBounds(t.x, t.y)
+		},
+	)
+	if len(neighbors) > 0 {
+		s.tiles.replace(neighbors[0], NewFloor)
+		m.heal(0.5)
+	} else {
+		m.Monster.doStuff(s)
 	}
 }
 
