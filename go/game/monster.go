@@ -272,3 +272,21 @@ func NewJester(tileish Tileish) Monstrous {
 		Monster: NewMonster(tileish, 8, 2),
 	}
 }
+
+func (m *Jester) update(s *State) {
+	doStuffUnlessStunned(m, s)
+}
+
+func (m *Jester) doStuff(s *State) {
+	tileish := m.monster().tileish
+	neighbors := s.tiles.getAdjacentPassableNeighbors(tileish)
+	if len(neighbors) > 0 {
+		t := tileish.tile()
+		tryMove(
+			m,
+			&s.tiles,
+			Delta(neighbors[0].tile().x-t.x),
+			Delta(neighbors[0].tile().y-t.y),
+		)
+	}
+}
