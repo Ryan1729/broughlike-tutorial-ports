@@ -4,7 +4,7 @@ import (
 	"math/rand"
 )
 
-func GenerateLevel(s *State) error {
+func generateLevel(s *State) error {
 	err := tryTo("generate map", func() bool {
 		tiles, connectedCount := generateTiles()
 
@@ -29,13 +29,6 @@ func GenerateLevel(s *State) error {
 	if err != nil {
 		return err
 	}
-
-	startingTileish, err := s.tiles.randomPassable()
-	if err != nil {
-		return err
-	}
-
-	s.player = *NewPlayerStruct(startingTileish)
 
 	return nil
 }

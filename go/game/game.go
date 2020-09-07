@@ -1,9 +1,10 @@
 package game
 
 const (
-	NumTiles = 9
-	UIWidth  = 4
-	maxHP    = 6
+	NumTiles   = 9
+	UIWidth    = 4
+	maxHP      = 6
+	startingHp = 3
 )
 
 const (
@@ -33,33 +34,83 @@ type (
 	Level           = uint8
 	SubTilePosition = float32
 	KeyType         uint8
+	gameState       uint8
+)
+
+const (
+	title   gameState = iota
+	running gameState = iota
+	dead    gameState = iota
 )
 
 type State struct {
 	player   Player
 	tiles    Tiles
-	level    Level
 	monsters []Monstrous
+	level    Level
+	state    gameState
 }
 
-func (s *State) Input(keyType KeyType) {
-	switch keyType {
-	case Up:
-		s.player.tryMove(s, 0, -1)
-	case Left:
-		s.player.tryMove(s, -1, 0)
-	case Down:
-		s.player.tryMove(s, 0, 1)
-	case Right:
-		s.player.tryMove(s, 1, 0)
-	case Other:
-		fallthrough
-	default:
+func (s *State) Input(keyType KeyType) error {
+	var err error = nil
+	switch s.state {
+	case title:
+		err = startGame(s)
+	case dead:
+		s.state = title
+	case running:
+		switch keyType {
+		case Up:
+			s.player.tryMove(s, 0, -1)
+		case Left:
+			s.player.tryMove(s, -1, 0)
+		case Down:
+			s.player.tryMove(s, 0, 1)
+		case Right:
+			s.player.tryMove(s, 1, 0)
+		case Other:
+			fallthrough
+		default:
+		}
 	}
+
+	return err
+}
+
+func startGame(s *State) error {
+	s.level = 1
+
+	err := startLevel(s, startingHp)
+	if err != nil {
+		return err
+	}
+
+	s.state = running
+
+	return nil
+}
+
+func startLevel(s *State, playerHp HP) error {
+	err := generateLevel(s)
+	if err != nil {
+		return err
+	}
+
+	startingTileish, err := s.tiles.randomPassable()
+	if err != nil {
+		return err
+	}
+
+	s.player = *NewPlayerStruct(startingTileish)
+
+	s.player.monster().hp = playerHp
+
+	return nil
 }
 
 type Platform interface {
 	SubTileSprite(sprite SpriteIndex, x, y SubTilePosition)
+	Overlay()
 	// Later we can add a Text and a Sound method here
 }
 
@@ -68,6 +119,18 @@ func sprite(p Platform, sprite SpriteIndex, x, y Position) {
 }
 
 func Draw(p Platform, s *State) {
+	drawGameScreen(p, s)
+
+	if s.state == title {
+		p.Overlay()
+	}
+}
+
+func drawGameScreen(p Platform, s *State) {
+	if s.monsters == nil {
+		return
+	}
+
 	var i, j Position
 	for j = 0; j < NumTiles; j++ {
 		for i = 0; i < NumTiles; i++ {
@@ -91,5 +154,9 @@ func tick(s *State) {
 		} else {
 			s.monsters[i].update(s)
 		}
+	}
+
+	if s.player.monster().dead {
+		s.state = dead
 	}
 }

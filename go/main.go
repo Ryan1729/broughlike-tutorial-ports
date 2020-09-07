@@ -33,8 +33,6 @@ func main() {
 
 	seedRNG()
 
-	dieIfErr(game.GenerateLevel(&s))
-
 	for {
 		start := time.Now()
 		// We only want to allow at most a single input per frame.
@@ -64,7 +62,7 @@ func main() {
 						keyType = game.Right
 					}
 
-					s.Input(keyType)
+					dieIfErr(s.Input(keyType))
 				}
 			}
 		}
@@ -86,6 +84,7 @@ type SDL2Platform struct {
 
 func NewSDL2Platform(window *sdl.Window) SDL2Platform {
 	renderer, err := sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED)
+	dieIfErr(renderer.SetDrawBlendMode(sdl.BLENDMODE_BLEND))
 	dieIfErr(err)
 
 	w, h, err := renderer.GetOutputSize()
@@ -133,6 +132,20 @@ func (p *SDL2Platform) SubTileSprite(sprite game.SpriteIndex, x, y game.SubTileP
 			Y: sizes.playAreaY + int32(y*game.SubTilePosition(sizes.tile)),
 			W: sizes.tile,
 			H: sizes.tile,
+		}))
+}
+
+func (p *SDL2Platform) Overlay() {
+	renderer := p.renderer
+	sizes := &p.sizes
+
+	dieIfErr(renderer.SetDrawColor(0, 0, 0, 0xbf))
+	dieIfErr(renderer.FillRect(
+		&sdl.Rect{
+			X: sizes.playAreaX,
+			Y: sizes.playAreaY,
+			W: sizes.playAreaW,
+			H: sizes.playAreaH,
 		}))
 }
 
