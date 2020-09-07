@@ -29,11 +29,9 @@ func main() {
 	dieIfErr(err)
 	defer func() { dieIfErr(window.Destroy()) }()
 
-	platform := NewSDL2Platform(window)
+	platform, s := NewSDL2Platform(window), game.State{}
 
 	seedRNG()
-
-	s := game.State{}
 
 	dieIfErr(game.GenerateLevel(&s))
 
@@ -46,24 +44,27 @@ func main() {
 				return
 			case *sdl.KeyboardEvent:
 				if e.State == sdl.PRESSED {
+					var keyType game.KeyType
 					switch e.Keysym.Sym {
 					case sdl.K_w:
 						fallthrough
 					case sdl.K_UP:
-						s.TryMovePlayer(0, -1)
+						keyType = game.Up
 					case sdl.K_a:
 						fallthrough
 					case sdl.K_LEFT:
-						s.TryMovePlayer(-1, 0)
+						keyType = game.Left
 					case sdl.K_s:
 						fallthrough
 					case sdl.K_DOWN:
-						s.TryMovePlayer(0, 1)
+						keyType = game.Down
 					case sdl.K_d:
 						fallthrough
 					case sdl.K_RIGHT:
-						s.TryMovePlayer(1, 0)
+						keyType = game.Right
 					}
+
+					s.Input(keyType)
 				}
 			}
 		}

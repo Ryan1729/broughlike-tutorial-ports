@@ -6,6 +6,14 @@ const (
 	maxHP    = 6
 )
 
+const (
+	Other KeyType = iota
+	Up    KeyType = iota
+	Down  KeyType = iota
+	Left  KeyType = iota
+	Right KeyType = iota
+)
+
 type (
 	SpriteIndex = uint8
 	// type Position is the one-dimensional position of something on the map
@@ -24,6 +32,7 @@ type (
 	HP              = float32
 	Level           = uint8
 	SubTilePosition = float32
+	KeyType         uint8
 )
 
 type State struct {
@@ -33,8 +42,20 @@ type State struct {
 	monsters []Monstrous
 }
 
-func (s *State) TryMovePlayer(dx, dy Delta) {
-	s.player.tryMove(s, dx, dy)
+func (s *State) Input(keyType KeyType) {
+	switch keyType {
+	case Up:
+		s.player.tryMove(s, 0, -1)
+	case Left:
+		s.player.tryMove(s, -1, 0)
+	case Down:
+		s.player.tryMove(s, 0, 1)
+	case Right:
+		s.player.tryMove(s, 1, 0)
+	case Other:
+		fallthrough
+	default:
+	}
 }
 
 type Platform interface {
