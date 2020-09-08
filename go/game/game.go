@@ -44,11 +44,13 @@ const (
 )
 
 type State struct {
-	player   Player
-	tiles    Tiles
-	monsters []Monstrous
-	level    Level
-	state    gameState
+	player       Player
+	tiles        Tiles
+	monsters     []Monstrous
+	spawnRate    uint8
+	spawnCounter uint8
+	level        Level
+	state        gameState
 }
 
 func (s *State) Input(keyType KeyType) error {
@@ -61,13 +63,13 @@ func (s *State) Input(keyType KeyType) error {
 	case running:
 		switch keyType {
 		case Up:
-			s.player.tryMove(s, 0, -1)
+			err = s.player.tryMove(s, 0, -1)
 		case Left:
-			s.player.tryMove(s, -1, 0)
+			err = s.player.tryMove(s, -1, 0)
 		case Down:
-			s.player.tryMove(s, 0, 1)
+			err = s.player.tryMove(s, 0, 1)
 		case Right:
-			s.player.tryMove(s, 1, 0)
+			err = s.player.tryMove(s, 1, 0)
 		case Other:
 			fallthrough
 		default:
@@ -91,6 +93,10 @@ func startGame(s *State) error {
 }
 
 func startLevel(s *State, playerHp HP) error {
+	s.spawnRate = 15
+
+	s.spawnCounter = s.spawnRate
+
 	err := generateLevel(s)
 	if err != nil {
 		return err
@@ -145,7 +151,7 @@ func drawGameScreen(p Platform, s *State) {
 	s.player.draw(p)
 }
 
-func tick(s *State) {
+func tick(s *State) error {
 	for i := len(s.monsters) - 1; i >= 0; i-- {
 		if s.monsters[i].monster().dead {
 			// Remove the dead monster
@@ -159,4 +165,22 @@ func tick(s *State) {
 	if s.player.monster().dead {
 		s.state = dead
 	}
+
+	if s.spawnCounter > 0 {
+		s.spawnCounter--
+	}
+	if s.spawnCounter <= 0 {
+		m, err := spawnMonster(s)
+		if err != nil {
+			return err
+		}
+		s.monsters = append(s.monsters, m)
+
+		s.spawnCounter = s.spawnRate
+		if s.spawnRate > 0 {
+			s.spawnRate--
+		}
+	}
+
+	return nil
 }

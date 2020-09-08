@@ -173,10 +173,12 @@ func NewPlayerStruct(tileish Tileish) *Player {
 	}
 }
 
-func (p *Player) tryMove(s *State, dx, dy Delta) {
+func (p *Player) tryMove(s *State, dx, dy Delta) error {
 	if tryMove(p, &s.tiles, dx, dy) {
-		tick(s)
+		return tick(s)
 	}
+
+	return nil
 }
 
 type Bird struct {
