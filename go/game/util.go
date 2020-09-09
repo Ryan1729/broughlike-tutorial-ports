@@ -29,3 +29,17 @@ func randomRangePosition(min, max Position) Position {
 func randomRangeInt(min, max int) int {
 	return rand.Intn(max-min+1) + min
 }
+
+type counter struct {
+	value uint8
+}
+
+func (c *counter) dec() {
+	if c.isActive() {
+		c.value--
+	}
+}
+
+func (c *counter) isActive() bool {
+	return c.value > 0
+}

@@ -47,8 +47,8 @@ type State struct {
 	player       Player
 	tiles        Tiles
 	monsters     []Monstrous
-	spawnRate    uint8
-	spawnCounter uint8
+	spawnRate    counter
+	spawnCounter counter
 	level        Level
 	state        gameState
 }
@@ -93,7 +93,7 @@ func startGame(s *State) error {
 }
 
 func startLevel(s *State, playerHp HP) error {
-	s.spawnRate = 15
+	s.spawnRate = counter{15}
 
 	s.spawnCounter = s.spawnRate
 
@@ -166,10 +166,8 @@ func tick(s *State) error {
 		s.state = dead
 	}
 
-	if s.spawnCounter > 0 {
-		s.spawnCounter--
-	}
-	if s.spawnCounter <= 0 {
+	s.spawnCounter.dec()
+	if !s.spawnCounter.isActive() {
 		m, err := spawnMonster(s)
 		if err != nil {
 			return err
@@ -177,9 +175,8 @@ func tick(s *State) error {
 		s.monsters = append(s.monsters, m)
 
 		s.spawnCounter = s.spawnRate
-		if s.spawnRate > 0 {
-			s.spawnRate--
-		}
+		s.spawnRate.dec()
+		println(s.spawnCounter.value, s.spawnRate.value)
 	}
 
 	return nil
