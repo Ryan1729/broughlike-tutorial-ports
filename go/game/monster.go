@@ -52,7 +52,10 @@ func tryMove(monstrous Monstrous, tiles *Tiles, dx, dy Delta) (moved bool) {
 
 func doStuffUnlessStunned(monstrous Monstrous, s *State) {
 	m := monstrous.monster()
-	if m.stunned {
+
+	m.teleportCounter.dec()
+
+	if m.stunned || m.teleportCounter.isActive() {
 		m.stunned = false
 
 		return
@@ -65,6 +68,7 @@ type Monster struct {
 	tileish          Tileish
 	hp               HP
 	sprite           SpriteIndex
+	teleportCounter  counter
 	dead             bool
 	attackedThisTurn bool
 	stunned          bool
@@ -75,6 +79,7 @@ func NewMonster(tileish Tileish, sprite SpriteIndex, hp HP) Monster {
 		tileish,
 		hp,
 		sprite,
+		counter{2},
 		false,
 		false,
 		false,
@@ -140,9 +145,13 @@ func (m *Monster) die() {
 
 func (m *Monster) draw(p Platform) {
 	t := m.tileish.tile()
-	sprite(p, m.sprite, t.x, t.y)
 
-	m.drawHp(p)
+	if m.teleportCounter.isActive() {
+		sprite(p, 10, t.x, t.y)
+	} else {
+		sprite(p, m.sprite, t.x, t.y)
+		m.drawHp(p)
+	}
 }
 
 func (m *Monster) drawHp(p Platform) {
@@ -168,8 +177,11 @@ func NewPlayer(tileish Tileish) Monstrous {
 }
 
 func NewPlayerStruct(tileish Tileish) *Player {
+	m := NewMonster(tileish, 0, 3)
+	m.teleportCounter = counter{0}
+
 	return &Player{
-		Monster: NewMonster(tileish, 0, 3),
+		Monster: m,
 	}
 }
 
