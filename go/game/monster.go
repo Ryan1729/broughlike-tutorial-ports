@@ -74,8 +74,12 @@ type Monster struct {
 	stunned          bool
 }
 
-func NewMonster(tileish Tileish, sprite SpriteIndex, hp HP) Monster {
-	m := Monster{
+// NewMonster returns a pointer to a monster which has a pointer to itself inside itself, via the tileish field.
+// This means that the Monster value must not be copied, since then the new struct would be pointing toi the old
+// struct! Copying and/or storing the pointer is fine, just don't and save the value you get from dereferencing
+// it, anywhere.
+func NewMonster(tileish Tileish, sprite SpriteIndex, hp HP) *Monster {
+	m := &Monster{
 		tileish,
 		hp,
 		sprite,
@@ -85,7 +89,7 @@ func NewMonster(tileish Tileish, sprite SpriteIndex, hp HP) Monster {
 		false,
 	}
 
-	move(&m, tileish)
+	move(m, tileish)
 
 	return m
 }
@@ -169,7 +173,7 @@ func (m *Monster) drawHp(p Platform) {
 type MonsterMaker = func(tileish Tileish) Monstrous
 
 type Player struct {
-	Monster
+	*Monster
 }
 
 func NewPlayer(tileish Tileish) Monstrous {
@@ -194,7 +198,7 @@ func (p *Player) tryMove(s *State, dx, dy Delta) error {
 }
 
 type Bird struct {
-	Monster
+	*Monster
 }
 
 func NewBird(tileish Tileish) Monstrous {
@@ -204,7 +208,7 @@ func NewBird(tileish Tileish) Monstrous {
 }
 
 type Snake struct {
-	Monster
+	*Monster
 }
 
 func NewSnake(tileish Tileish) Monstrous {
@@ -227,7 +231,7 @@ func (m *Snake) doStuff(s *State) {
 }
 
 type Tank struct {
-	Monster
+	*Monster
 }
 
 func NewTank(tileish Tileish) Monstrous {
@@ -247,7 +251,7 @@ func (m *Tank) update(s *State) {
 }
 
 type Eater struct {
-	Monster
+	*Monster
 }
 
 func NewEater(tileish Tileish) Monstrous {
@@ -278,7 +282,7 @@ func (m *Eater) doStuff(s *State) {
 }
 
 type Jester struct {
-	Monster
+	*Monster
 }
 
 func NewJester(tileish Tileish) Monstrous {
