@@ -141,7 +141,7 @@ class Exit < Tile
   end
 
   def stepOn(s, monster)
-    return unless monster.isPlayer
+    return unless !s.nil? && monster.isPlayer
 
     playSound s, :newLevel
     if s.level == NumLevels
