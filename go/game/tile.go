@@ -3,7 +3,7 @@ package game
 type Tileish interface {
 	tile() *Tile
 	dist(tileish Tileish) Distance
-	// We can add a StepOn method here later
+	stepOn(s *State, monster Monstrous) error
 }
 
 type Tile struct {
@@ -45,6 +45,11 @@ func (t *Tile) tile() *Tile {
 	return t
 }
 
+func (t *Tile) stepOn(s *State, monster Monstrous) (err error) {
+	// Empty default implementation
+	return
+}
+
 type TileMaker = func(x, y Position) Tileish
 
 type Floor struct {
@@ -57,6 +62,11 @@ func NewFloor(x, y Position) Tileish {
 	}
 }
 
+func (t *Floor) stepOn(s *State, monster Monstrous) (err error) {
+	// Reminder: complete
+	return
+}
+
 type Wall struct {
 	*Tile
 }
@@ -65,4 +75,37 @@ func NewWall(x, y Position) Tileish {
 	return &Wall{
 		Tile: NewTile(3, x, y, false),
 	}
+}
+
+type Exit struct {
+	*Tile
+}
+
+func NewExit(x, y Position) Tileish {
+	return &Exit{
+		Tile: NewTile(11, x, y, true),
+	}
+}
+
+func (t *Exit) stepOn(s *State, monster Monstrous) (err error) {
+	_, isPlayer := monster.(*Player)
+
+	println("(t *Exit) stepOn isPlayer: ", isPlayer)
+
+	if isPlayer {
+		if s.level == numLevels {
+			s.state = title
+		} else {
+			s.level++
+
+			newHP := s.player.hp + 1
+			if newHP > maxHP {
+				newHP = maxHP
+			}
+
+			err = startLevel(s, newHP)
+		}
+	}
+
+	return
 }

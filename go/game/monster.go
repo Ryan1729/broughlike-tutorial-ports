@@ -12,14 +12,20 @@ const (
 type Monstrous interface {
 	monster() *Monster
 	draw(p Platform)
-	update(s *State)
-	doStuff(s *State)
+	update(s *State) error
+	doStuff(s *State) error
 }
 
 // It's important that this is implemented as is, instead of say a method on
 // *Monster, because we assign the "this" to the passed in tile's monster
 // property, and we want to store the entire Monstrous implementor there.
-func move(monstrous Monstrous, tileish Tileish) {
+func move(s *State, monstrous Monstrous, tileish Tileish) error {
+	moveWithoutStepOn(monstrous, tileish)
+
+	return monstrous.monster().tileish.stepOn(s, monstrous)
+}
+
+func moveWithoutStepOn(monstrous Monstrous, tileish Tileish) {
 	m := monstrous.monster()
 	if m.tileish != nil {
 		m.tileish.tile().monster = nil
@@ -28,12 +34,14 @@ func move(monstrous Monstrous, tileish Tileish) {
 	m.tileish.tile().monster = monstrous
 }
 
-func tryMove(monstrous Monstrous, tiles *Tiles, dx, dy Delta) (moved bool) {
-	newTileish := tiles.getNeighbor(monstrous.monster().tileish, dx, dy)
+func tryMove(s *State, monstrous Monstrous, dx, dy Delta) (moved bool, err error) {
+	newTileish := s.tiles.getNeighbor(monstrous.monster().tileish, dx, dy)
 	newTile := newTileish.tile()
 	if newTile.passable {
 		if newTile.monster == nil {
-			move(monstrous, newTile)
+			_, mIsPlayer := monstrous.(*Player)
+			println("mIsPlayer:", mIsPlayer)
+			err = move(s, monstrous, newTileish)
 		} else {
 			_, mIsPlayer := monstrous.(*Player)
 			_, nTIsPlayer := newTile.monster.(*Player)
@@ -50,7 +58,7 @@ func tryMove(monstrous Monstrous, tiles *Tiles, dx, dy Delta) (moved bool) {
 	return
 }
 
-func doStuffUnlessStunned(monstrous Monstrous, s *State) {
+func doStuffUnlessStunned(monstrous Monstrous, s *State) error {
 	m := monstrous.monster()
 
 	m.teleportCounter.dec()
@@ -58,10 +66,10 @@ func doStuffUnlessStunned(monstrous Monstrous, s *State) {
 	if m.stunned || m.teleportCounter.isActive() {
 		m.stunned = false
 
-		return
+		return nil
 	}
 
-	monstrous.doStuff(s)
+	return monstrous.doStuff(s)
 }
 
 type Monster struct {
@@ -89,7 +97,7 @@ func NewMonster(tileish Tileish, sprite SpriteIndex, hp HP) *Monster {
 		false,
 	}
 
-	move(m, tileish)
+	moveWithoutStepOn(m, tileish)
 
 	return m
 }
@@ -98,11 +106,11 @@ func (m *Monster) monster() *Monster {
 	return m
 }
 
-func (m *Monster) update(s *State) {
-	doStuffUnlessStunned(m, s)
+func (m *Monster) update(s *State) error {
+	return doStuffUnlessStunned(m, s)
 }
 
-func (m *Monster) doStuff(s *State) {
+func (m *Monster) doStuff(s *State) error {
 	neighbors := s.tiles.getAdjacentPassableNeighbors(m.tileish)
 
 	neighbors = filter(neighbors, func(t Tileish) bool {
@@ -123,8 +131,13 @@ func (m *Monster) doStuff(s *State) {
 		})
 		newTile := neighbors[0].tile()
 		tile := m.tileish.tile()
-		tryMove(m, &s.tiles, Delta(newTile.x)-Delta(tile.x), Delta(newTile.y)-Delta(tile.y))
+
+		_, err := tryMove(s, m, Delta(newTile.x)-Delta(tile.x), Delta(newTile.y)-Delta(tile.y))
+
+		return err
 	}
+
+	return nil
 }
 
 func (m *Monster) heal(damage HP) {
@@ -190,7 +203,12 @@ func NewPlayerStruct(tileish Tileish) *Player {
 }
 
 func (p *Player) tryMove(s *State, dx, dy Delta) error {
-	if tryMove(p, &s.tiles, dx, dy) {
+	moved, err := tryMove(s, p, dx, dy)
+	if err != nil {
+		return err
+	}
+
+	if moved {
 		return tick(s)
 	}
 
@@ -217,17 +235,22 @@ func NewSnake(tileish Tileish) Monstrous {
 	}
 }
 
-func (m *Snake) update(s *State) {
-	doStuffUnlessStunned(m, s)
+func (m *Snake) update(s *State) error {
+	return doStuffUnlessStunned(m, s)
 }
 
-func (m *Snake) doStuff(s *State) {
+func (m *Snake) doStuff(s *State) error {
 	m.Monster.attackedThisTurn = false
-	m.Monster.doStuff(s)
+	err := m.Monster.doStuff(s)
+	if err != nil {
+		return err
+	}
 
 	if !m.Monster.attackedThisTurn {
-		m.Monster.doStuff(s)
+		return m.Monster.doStuff(s)
 	}
+
+	return nil
 }
 
 type Tank struct {
@@ -240,14 +263,19 @@ func NewTank(tileish Tileish) Monstrous {
 	}
 }
 
-func (m *Tank) update(s *State) {
+func (m *Tank) update(s *State) error {
 	startedStunned := m.monster().stunned
 
-	doStuffUnlessStunned(m, s)
+	err := doStuffUnlessStunned(m, s)
+	if err != nil {
+		return err
+	}
 
 	if !startedStunned {
 		m.monster().stunned = true
 	}
+
+	return nil
 }
 
 type Eater struct {
@@ -260,11 +288,11 @@ func NewEater(tileish Tileish) Monstrous {
 	}
 }
 
-func (m *Eater) update(s *State) {
-	doStuffUnlessStunned(m, s)
+func (m *Eater) update(s *State) error {
+	return doStuffUnlessStunned(m, s)
 }
 
-func (m *Eater) doStuff(s *State) {
+func (m *Eater) doStuff(s *State) error {
 	neighbors := filter(
 		s.tiles.getAdjacentNeighbors(m.monster().tileish),
 		func(tileish Tileish) bool {
@@ -277,8 +305,10 @@ func (m *Eater) doStuff(s *State) {
 		s.tiles.replace(neighbors[0], NewFloor)
 		m.heal(0.5)
 	} else {
-		m.Monster.doStuff(s)
+		return m.Monster.doStuff(s)
 	}
+
+	return nil
 }
 
 type Jester struct {
@@ -291,20 +321,22 @@ func NewJester(tileish Tileish) Monstrous {
 	}
 }
 
-func (m *Jester) update(s *State) {
-	doStuffUnlessStunned(m, s)
+func (m *Jester) update(s *State) error {
+	return doStuffUnlessStunned(m, s)
 }
 
-func (m *Jester) doStuff(s *State) {
+func (m *Jester) doStuff(s *State) (err error) {
 	tileish := m.monster().tileish
 	neighbors := s.tiles.getAdjacentPassableNeighbors(tileish)
 	if len(neighbors) > 0 {
 		t := tileish.tile()
-		tryMove(
+		_, err = tryMove(
+			s,
 			m,
-			&s.tiles,
 			Delta(neighbors[0].tile().x-t.x),
 			Delta(neighbors[0].tile().y-t.y),
 		)
 	}
+
+	return
 }

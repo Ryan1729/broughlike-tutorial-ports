@@ -5,6 +5,7 @@ const (
 	UIWidth    = 4
 	maxHP      = 6
 	startingHp = 3
+	numLevels  = 6
 )
 
 const (
@@ -111,6 +112,13 @@ func startLevel(s *State, playerHp HP) error {
 
 	s.player.monster().hp = playerHp
 
+	exitTileish, err := s.tiles.randomPassable()
+	if err != nil {
+		return err
+	}
+
+	s.tiles.replace(exitTileish, NewExit)
+
 	return nil
 }
 
@@ -158,7 +166,10 @@ func tick(s *State) error {
 			copy(s.monsters[i:], s.monsters[i+1:])
 			s.monsters = s.monsters[:len(s.monsters)-1]
 		} else {
-			s.monsters[i].update(s)
+			err := s.monsters[i].update(s)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
