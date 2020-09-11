@@ -176,7 +176,6 @@ func tick(s *State) error {
 
 		s.spawnCounter = s.spawnRate
 		s.spawnRate.dec()
-		println(s.spawnCounter.value, s.spawnRate.value)
 	}
 
 	return nil
