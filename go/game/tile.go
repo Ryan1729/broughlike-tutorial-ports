@@ -13,8 +13,8 @@ type Tile struct {
 	monster  Monstrous
 }
 
-func NewTile(sprite SpriteIndex, x, y Position, passable bool) Tile {
-	return Tile{
+func NewTile(sprite SpriteIndex, x, y Position, passable bool) *Tile {
+	return &Tile{
 		x, y,
 		sprite,
 		passable,
@@ -48,7 +48,7 @@ func (t *Tile) tile() *Tile {
 type TileMaker = func(x, y Position) Tileish
 
 type Floor struct {
-	Tile
+	*Tile
 }
 
 func NewFloor(x, y Position) Tileish {
@@ -58,7 +58,7 @@ func NewFloor(x, y Position) Tileish {
 }
 
 type Wall struct {
-	Tile
+	*Tile
 }
 
 func NewWall(x, y Position) Tileish {
