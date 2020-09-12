@@ -1,9 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"flag"
+	"fmt"
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/Ryan1729/broughlike-tutorial-ports/go/assets"
@@ -16,28 +17,32 @@ const (
 	PerFrameDuration = time.Second / 60
 )
 
-var licenseFlag *bool = flag.Bool("license", false, "Print license info then exit.")
+func handleFlags() {
+	var licenseFlag *bool = flag.Bool("license", false, "Print license info then exit.")
 
-func init() {
 	defaultUsage := flag.Usage
 	flag.Usage = func() {
-	    defaultUsage()
-	    fmt.Println("  \"\"")
-	    fmt.Println("    \tRun without args to play the game.")
+		defaultUsage()
+		fmt.Println("  \"\"")
+		fmt.Println("    \tRun without args to play the game.")
 	}
-}
 
-func main() {
 	flag.Parse()
+
 	if *licenseFlag {
-		fmt.Println("program By Ryan Wiedemann. Source code and license info available at https://github.com/Ryan1729/broughlike-tutorial-ports/")
+		fmt.Println("program By Ryan Wiedemann.")
+		fmt.Println("Source code and license info available at https://github.com/Ryan1729/broughlike-tutorial-ports/")
 		fmt.Println("")
 		fmt.Println("License for the font:")
 		fmt.Println(string(assets.FontLicense))
 
-		return
+		os.Exit(0)
 	}
-	
+}
+
+func main() {
+	handleFlags()
+
 	dieIfErr(sdl.Init(sdl.INIT_AUDIO | sdl.INIT_VIDEO))
 	defer sdl.Quit()
 
@@ -87,12 +92,16 @@ func main() {
 			}
 		}
 
-		platform.Clear()
-		game.Draw(&platform, &s)
-		platform.renderer.Present()
+		doFrame(&platform, &s)
 
 		time.Sleep(time.Until(start.Add(PerFrameDuration)))
 	}
+}
+
+func doFrame(platform *SDL2Platform, s *game.State) {
+	platform.Clear()
+	game.Draw(platform, s)
+	platform.renderer.Present()
 }
 
 // SDL2Platform implements the game.Platform interface.
@@ -104,8 +113,8 @@ type SDL2Platform struct {
 
 func NewSDL2Platform(window *sdl.Window) SDL2Platform {
 	renderer, err := sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED)
-	dieIfErr(renderer.SetDrawBlendMode(sdl.BLENDMODE_BLEND))
 	dieIfErr(err)
+	dieIfErr(renderer.SetDrawBlendMode(sdl.BLENDMODE_BLEND))
 
 	w, h, err := renderer.GetOutputSize()
 	dieIfErr(err)
