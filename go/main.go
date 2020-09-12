@@ -11,7 +11,8 @@ import (
 	"github.com/Ryan1729/broughlike-tutorial-ports/go/game"
 	"github.com/veandco/go-sdl2/img"
 	"github.com/veandco/go-sdl2/sdl"
-)       
+	"github.com/veandco/go-sdl2/ttf"
+)
 
 const (
 	PerFrameDuration = time.Second / 60
@@ -42,6 +43,9 @@ func handleFlags() {
 
 func main() {
 	handleFlags()
+
+	dieIfErr(ttf.Init())
+	defer ttf.Quit()
 
 	dieIfErr(sdl.Init(sdl.INIT_AUDIO | sdl.INIT_VIDEO))
 	defer sdl.Quit()
@@ -185,7 +189,50 @@ func (p *SDL2Platform) Text(
 	textY game.SubTilePosition,
 	color uint32,
 ) {
-	// Reminder: complete
+	renderer := p.renderer
+	sizes := &p.sizes
+
+	var font *ttf.Font
+	if size == game.Title {
+		font = p.assets.titleFont
+	} else {
+		font = p.assets.uiFont
+	}
+
+	width, height, err := font.SizeUTF8(text)
+	dieIfErr(err)
+	w, h := int32(width), int32(height)
+
+	var textX int32
+	if justification == game.Centered {
+		textX = (sizes.playAreaW - w) / 2
+	} else {
+		textX = sizes.playAreaW - game.UIWidth*sizes.tile + 25
+	}
+
+	textSurface, err := font.RenderUTF8Blended(
+		text,
+		sdl.Color{
+			R: byte(color & 0xff),
+			G: byte((color >> 8) & 0xff),
+			B: byte((color >> 16) & 0xff),
+			A: byte(color >> 24),
+		},
+	)
+	dieIfErr(err)
+	defer textSurface.Free()
+
+	// Question: would it be worth it to cache these?
+	textTexture, err := renderer.CreateTextureFromSurface(textSurface)
+	dieIfErr(err)
+	defer func() {
+		dieIfErr(textTexture.Destroy())
+	}()
+
+	dieIfErr(p.renderer.Copy(
+		p.assets.spritesheet,
+		nil,
+		&sdl.Rect{X: textX, Y: int32(textY), W: w, H: h}))
 }
 
 func seedRNG() {
@@ -228,6 +275,8 @@ func min(a, b int32) int32 {
 
 type Assets struct {
 	spritesheet *sdl.Texture
+	uiFont      *ttf.Font
+	titleFont   *ttf.Font
 	// Eventually we can add the sounds to this struct as well.
 }
 
@@ -238,8 +287,23 @@ func loadAssets(renderer *sdl.Renderer) Assets {
 	spritesheet, err := img.LoadTextureRW(renderer, spritesheetRW, false)
 	dieIfErr(err)
 
+	// We get an error from SDL2 if we try to use the same RWOps for both fonts
+	uiFontRW, err := sdl.RWFromMem(assets.Font)
+	dieIfErr(err)
+
+	uiFont, err := ttf.OpenFontRW(uiFontRW, 0, int(game.UI)+10)
+	dieIfErr(err)
+
+	titleFontRW, err := sdl.RWFromMem(assets.Font)
+	dieIfErr(err)
+
+	titleFont, err := ttf.OpenFontRW(titleFontRW, 0, int(game.Title)+10)
+	dieIfErr(err)
+
 	return Assets{
 		spritesheet,
+		uiFont,
+		titleFont,
 	}
 }
 
