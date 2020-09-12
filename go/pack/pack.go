@@ -25,6 +25,12 @@ func main() {
 	appendFileAsByteArray(Spec{output: &output, fileName: "../assets/spell.wav", arrayName: "Spell"})
 	appendFileAsByteArray(Spec{output: &output, fileName: "../assets/treasure.wav", arrayName: "Treasure"})
 
+	appendFileAsByteArray(Spec{
+		output:   &output,
+		fileName: "../assets/fonts/Courier Prime Sans.ttf", arrayName: "Font",
+	})
+	appendFileAsByteArray(Spec{output: &output, fileName: "../assets/fonts/LICENSE.md", arrayName: "FontLicense"})
+
 	err := ioutil.WriteFile("../assets/assets.go", []byte(output.String()), 0600)
 	if err != nil {
 		panic(err)

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"flag"
 	"math/rand"
 	"time"
 
@@ -8,13 +10,34 @@ import (
 	"github.com/Ryan1729/broughlike-tutorial-ports/go/game"
 	"github.com/veandco/go-sdl2/img"
 	"github.com/veandco/go-sdl2/sdl"
-)
+)       
 
 const (
 	PerFrameDuration = time.Second / 60
 )
 
+var licenseFlag *bool = flag.Bool("license", false, "Print license info then exit.")
+
+func init() {
+	defaultUsage := flag.Usage
+	flag.Usage = func() {
+	    defaultUsage()
+	    fmt.Println("  \"\"")
+	    fmt.Println("    \tRun without args to play the game.")
+	}
+}
+
 func main() {
+	flag.Parse()
+	if *licenseFlag {
+		fmt.Println("program By Ryan Wiedemann. Source code and license info available at https://github.com/Ryan1729/broughlike-tutorial-ports/")
+		fmt.Println("")
+		fmt.Println("License for the font:")
+		fmt.Println(string(assets.FontLicense))
+
+		return
+	}
+	
 	dieIfErr(sdl.Init(sdl.INIT_AUDIO | sdl.INIT_VIDEO))
 	defer sdl.Quit()
 
