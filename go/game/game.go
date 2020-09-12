@@ -6,6 +6,8 @@ const (
 	maxHP      = 6
 	startingHp = 3
 	numLevels  = 6
+	// aqua       = 0xff00ffff
+	// violet     = 0xffee82ee.
 )
 
 const (
@@ -122,10 +124,34 @@ func startLevel(s *State, playerHp HP) error {
 	return nil
 }
 
+type TextSize uint8
+
+// Any Platform interface implementations only needs to handle these values for
+// TextSize.
+const (
+	UI    TextSize = iota
+	Title TextSize = iota
+)
+
+type TextJustification uint8
+
+// Any Platform interface implementations only needs to handle these values for
+// TextJustification.
+const (
+	Plain    TextJustification = iota
+	Centered TextJustification = iota
+)
+
 type Platform interface {
 	SubTileSprite(sprite SpriteIndex, x, y SubTilePosition)
 	Overlay()
-	// Later we can add a Text and a Sound method here
+	Text(text string,
+		size TextSize,
+		justification TextJustification,
+		textY SubTilePosition,
+		color uint32,
+	)
+	// Later we can add a Sound method here
 }
 
 func sprite(p Platform, sprite SpriteIndex, x, y Position) {

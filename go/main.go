@@ -12,9 +12,6 @@ import (
 
 const (
 	PerFrameDuration = time.Second / 60
-
-	// Aqua             = 0xff00ffff.
-	// Violet           = 0xffee82ee.
 )
 
 func main() {
@@ -147,6 +144,16 @@ func (p *SDL2Platform) Overlay() {
 			W: sizes.playAreaW,
 			H: sizes.playAreaH,
 		}))
+}
+
+func (p *SDL2Platform) Text(
+	text string,
+	size game.TextSize,
+	justification game.TextJustification,
+	textY game.SubTilePosition,
+	color uint32,
+) {
+	// Reminder: complete
 }
 
 func seedRNG() {
