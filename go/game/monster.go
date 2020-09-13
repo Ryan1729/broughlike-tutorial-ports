@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	healthSize = 5.0 / 16.0
+	healthSize = 5.0 * OneOverSubTileUnit
 )
 
 type Monstrous interface {

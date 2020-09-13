@@ -1,13 +1,23 @@
 package game
 
+import (
+	"strconv"
+)
+
 const (
-	NumTiles   = 9
-	UIWidth    = 4
-	maxHP      = 6
-	startingHp = 3
-	numLevels  = 6
-	// aqua       = 0xff00ffff
-	// violet     = 0xffee82ee.
+	NumTiles = 9
+	UIWidth  = 4
+	// The game requires that tiles can be broken up into at least this many
+	// increments, but if tiles are larger than this many pixels across,
+	// that should be fine.
+	SubTileUnit        = 16
+	OneOverSubTileUnit = 1.0 / SubTileUnit
+	maxHP              = 6
+	startingHp         = 3
+	numLevels          = 6
+	// aqua       = 0xff00ffff.
+	violet = 0xffee82ee
+	white  = 0xffffffff
 )
 
 const (
@@ -33,8 +43,11 @@ type (
 	// [0, 0.5, 1.0, ..., maxHP - 0.5, maxHP]
 	// So we could represent it in a uint8 by interpreting 2 as 1.0 etc., if
 	// we wanted to.
-	HP              = float32
-	Level           = uint8
+	HP    = float32
+	Level = uint8
+	// SubTilePosition is the one-dimensional position of something on the
+	// map, but unlike Position, it can TileFractionalUnit
+	// For any given position p, SubTilePosition(p) has the same meaning.
 	SubTilePosition = float32
 	KeyType         uint8
 	gameState       uint8
@@ -163,6 +176,7 @@ func Draw(p Platform, s *State) {
 
 	if s.state == title {
 		p.Overlay()
+		p.Text("BROUGH-LANG", Title, Centered, SubTileUnit*NumTiles/2-SubTileUnit*3, white)
 	}
 }
 
@@ -183,6 +197,8 @@ func drawGameScreen(p Platform, s *State) {
 	}
 
 	s.player.draw(p)
+
+	p.Text("Level: "+strconv.Itoa(int(s.level)), UI, Plain, SubTileUnit*2.5, violet)
 }
 
 func tick(s *State) error {
