@@ -230,7 +230,7 @@ func (p *SDL2Platform) Text(
 	}()
 
 	dieIfErr(p.renderer.Copy(
-		p.assets.spritesheet,
+		textTexture,
 		nil,
 		&sdl.Rect{X: textX, Y: int32(textY), W: w, H: h}))
 }
