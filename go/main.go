@@ -291,13 +291,13 @@ func loadAssets(renderer *sdl.Renderer) Assets {
 	uiFontRW, err := sdl.RWFromMem(assets.Font)
 	dieIfErr(err)
 
-	uiFont, err := ttf.OpenFontRW(uiFontRW, 0, int(game.UI)+10)
+	uiFont, err := ttf.OpenFontRW(uiFontRW, 0, 40)
 	dieIfErr(err)
 
 	titleFontRW, err := sdl.RWFromMem(assets.Font)
 	dieIfErr(err)
 
-	titleFont, err := ttf.OpenFontRW(titleFontRW, 0, int(game.Title)+10)
+	titleFont, err := ttf.OpenFontRW(titleFontRW, 0, 70)
 	dieIfErr(err)
 
 	return Assets{
