@@ -205,9 +205,9 @@ func (p *SDL2Platform) Text(
 
 	var textX int32
 	if justification == game.Centered {
-		textX = (sizes.playAreaW - w) / 2
+		textX = sizes.playAreaX + ((sizes.playAreaW - w) / 2)
 	} else {
-		textX = sizes.playAreaW - game.UIWidth*sizes.tile + 25
+		textX = sizes.playAreaX + (sizes.playAreaW - game.UIWidth*sizes.tile + 25)
 	}
 
 	textSurface, err := font.RenderUTF8Blended(
@@ -232,7 +232,12 @@ func (p *SDL2Platform) Text(
 	dieIfErr(p.renderer.Copy(
 		textTexture,
 		nil,
-		&sdl.Rect{X: textX, Y: int32(textY), W: w, H: h}))
+		&sdl.Rect{
+			X: textX,
+			Y: int32(textY * game.SubTilePosition(sizes.tile) * game.OneOverSubTileUnit),
+			W: w,
+			H: h,
+		}))
 }
 
 func seedRNG() {

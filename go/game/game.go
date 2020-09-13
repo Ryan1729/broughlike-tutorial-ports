@@ -176,7 +176,7 @@ func Draw(p Platform, s *State) {
 
 	if s.state == title {
 		p.Overlay()
-		p.Text("BROUGH-LANG", Title, Centered, SubTileUnit*NumTiles/2-SubTileUnit*3, white)
+		p.Text("BROUGH-LANG", Title, Centered, SubTileUnit*NumTiles/2-SubTileUnit, white)
 	}
 }
 
@@ -198,7 +198,7 @@ func drawGameScreen(p Platform, s *State) {
 
 	s.player.draw(p)
 
-	p.Text("Level: "+strconv.Itoa(int(s.level)), UI, Plain, SubTileUnit*2.5, violet)
+	p.Text("Level: "+strconv.Itoa(int(s.level)), UI, Plain, SubTileUnit/4, violet)
 }
 
 func tick(s *State) error {
