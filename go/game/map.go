@@ -30,6 +30,14 @@ func generateLevel(s *State) error {
 		return err
 	}
 
+	for i := 0; i < 3; i++ {
+		randomTileish, err := s.tiles.randomPassable()
+		if err != nil {
+			return err
+		}
+		randomTileish.tile().treasure = true
+	}
+
 	return nil
 }
 

@@ -7,18 +7,18 @@ type Tileish interface {
 }
 
 type Tile struct {
+	monster  Monstrous
 	x, y     Position
 	sprite   SpriteIndex
 	passable bool
-	monster  Monstrous
+	treasure bool
 }
 
 func NewTile(sprite SpriteIndex, x, y Position, passable bool) *Tile {
 	return &Tile{
-		x, y,
-		sprite,
-		passable,
-		nil,
+		x: x, y: y,
+		sprite:   sprite,
+		passable: passable,
 	}
 }
 
@@ -39,6 +39,10 @@ func abs(d Distance) Distance {
 
 func (t *Tile) draw(p Platform) {
 	sprite(p, t.sprite, t.x, t.y)
+
+	if t.treasure {
+		sprite(p, 12, t.x, t.y)
+	}
 }
 
 func (t *Tile) tile() *Tile {
