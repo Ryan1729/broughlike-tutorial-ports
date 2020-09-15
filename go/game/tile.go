@@ -67,7 +67,18 @@ func NewFloor(x, y Position) Tileish {
 }
 
 func (t *Floor) stepOn(s *State, monster Monstrous) (err error) {
-	// Reminder: complete
+	if _, isPlayer := monster.(*Player); isPlayer && t.treasure {
+		s.score++
+
+		t.treasure = false
+
+		m, err := spawnMonster(s)
+		if err != nil {
+			return err
+		}
+		s.monsters = append(s.monsters, m)
+	}
+
 	return
 }
 

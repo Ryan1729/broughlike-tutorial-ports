@@ -51,6 +51,7 @@ type (
 	SubTilePosition = float32
 	KeyType         uint8
 	gameState       uint8
+	score           uint64
 )
 
 const (
@@ -67,6 +68,7 @@ type State struct {
 	spawnCounter counter
 	level        Level
 	state        gameState
+	score        score
 }
 
 func (s *State) Input(keyType KeyType) error {
@@ -198,7 +200,8 @@ func drawGameScreen(p Platform, s *State) {
 
 	s.player.draw(p)
 
-	p.Text("Level: "+strconv.Itoa(int(s.level)), UI, Plain, SubTileUnit/4, violet)
+	p.Text("Level: "+strconv.FormatUint(uint64(s.level), 10), UI, Plain, SubTileUnit/4, violet)
+	p.Text("Score: "+strconv.FormatUint(uint64(s.score), 10), UI, Plain, SubTileUnit*3/4, violet)
 }
 
 func tick(s *State) error {
