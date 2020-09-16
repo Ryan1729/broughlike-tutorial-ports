@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"math/rand"
+
+	//	"path/filepath"
 	"os"
 	"time"
 
@@ -18,8 +20,13 @@ const (
 	PerFrameDuration = time.Second / 60
 )
 
-func handleFlags() {
+type config struct {
+	saveFile *os.File
+}
+
+func handleFlags() config {
 	var licenseFlag *bool = flag.Bool("license", false, "Print license info then exit.")
+	// var saveDirFlag *string = flag.String("save-dir", "", "Overwrite save directory")
 
 	defaultUsage := flag.Usage
 	flag.Usage = func() {
@@ -39,10 +46,34 @@ func handleFlags() {
 
 		os.Exit(0)
 	}
+
+	var saveFile *os.File = nil
+	/*saveFile, err := openSaveFile(*saveDirFlag)
+
+	// We assume that most people would rather just play the game without high-scores.
+	// But if someone does care, we should give them the information to fix it.
+	if err != nil {
+		fmt.Println(err)
+	}
+	*/
+
+	return config{
+		saveFile,
+	}
 }
 
+/*
+func openSaveFile(saveDir string) (*os.File, error) {
+	if !isWritableDir(*saveDirFlag) {
+		*saveDirFlag = os.Executable()
+	}
+
+	saveFileName := filepath.Join(*saveDirFlag, game.TitleString + ".sav")
+}
+*/
+
 func main() {
-	handleFlags()
+	config := handleFlags()
 
 	dieIfErr(ttf.Init())
 	defer ttf.Quit()
@@ -58,7 +89,7 @@ func main() {
 	dieIfErr(err)
 	defer func() { dieIfErr(window.Destroy()) }()
 
-	platform, s := NewSDL2Platform(window), game.State{}
+	platform, s := NewSDL2Platform(window, config), game.State{}
 
 	seedRNG()
 
@@ -110,12 +141,13 @@ func doFrame(platform *SDL2Platform, s *game.State) {
 
 // SDL2Platform implements the game.Platform interface.
 type SDL2Platform struct {
+	config   config
 	renderer *sdl.Renderer
 	assets   Assets
 	sizes    Sizes
 }
 
-func NewSDL2Platform(window *sdl.Window) SDL2Platform {
+func NewSDL2Platform(window *sdl.Window, config config) SDL2Platform {
 	renderer, err := sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED)
 	dieIfErr(err)
 	dieIfErr(renderer.SetDrawBlendMode(sdl.BLENDMODE_BLEND))
@@ -124,6 +156,7 @@ func NewSDL2Platform(window *sdl.Window) SDL2Platform {
 	dieIfErr(err)
 
 	return SDL2Platform{
+		config:   config,
 		renderer: renderer,
 		assets:   loadAssets(renderer),
 		sizes:    NewSizes(w, h),
@@ -238,6 +271,16 @@ func (p *SDL2Platform) Text(
 			W: w,
 			H: h,
 		}))
+}
+
+func (p *SDL2Platform) LoadScores() []game.Score {
+	// Reminder: implement loading from p.config.saveFile
+
+	return []game.Score{}
+}
+
+func (p *SDL2Platform) SaveScores(scores []game.Score) {
+	// Reminder: implement saving to p.config.saveFile
 }
 
 func seedRNG() {

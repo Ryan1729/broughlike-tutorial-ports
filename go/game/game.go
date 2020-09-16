@@ -5,8 +5,9 @@ import (
 )
 
 const (
-	NumTiles = 9
-	UIWidth  = 4
+	TitleString = "BROUGH-LANG"
+	NumTiles    = 9
+	UIWidth     = 4
 	// The game requires that tiles can be broken up into at least this many
 	// increments, but if tiles are larger than this many pixels across,
 	// that should be fine.
@@ -51,8 +52,17 @@ type (
 	SubTilePosition = float32
 	KeyType         uint8
 	gameState       uint8
-	score           uint64
+	points          uint64
+	run             uint64
+	active          bool
 )
+
+type Score struct {
+	score      points
+	run        run
+	totalScore points
+	active     active
+}
 
 const (
 	title   gameState = iota
@@ -68,7 +78,7 @@ type State struct {
 	spawnCounter counter
 	level        Level
 	state        gameState
-	score        score
+	score        points
 }
 
 func (s *State) Input(keyType KeyType) error {
@@ -166,6 +176,8 @@ type Platform interface {
 		textY SubTilePosition,
 		color uint32,
 	)
+	LoadScores() []Score
+	SaveScores(scores []Score)
 	// Later we can add a Sound method here
 }
 
@@ -178,7 +190,7 @@ func Draw(p Platform, s *State) {
 
 	if s.state == title {
 		p.Overlay()
-		p.Text("BROUGH-LANG", Title, Centered, SubTileUnit*NumTiles/2-SubTileUnit, white)
+		p.Text(TitleString, Title, Centered, SubTileUnit*NumTiles/2-SubTileUnit, white)
 	}
 }
 
