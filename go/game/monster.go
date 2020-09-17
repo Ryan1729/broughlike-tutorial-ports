@@ -39,8 +39,6 @@ func tryMove(s *State, monstrous Monstrous, dx, dy Delta) (moved bool, err error
 	newTile := newTileish.tile()
 	if newTile.passable {
 		if newTile.monster == nil {
-			_, mIsPlayer := monstrous.(*Player)
-			println("mIsPlayer:", mIsPlayer)
 			err = move(s, monstrous, newTileish)
 		} else {
 			_, mIsPlayer := monstrous.(*Player)

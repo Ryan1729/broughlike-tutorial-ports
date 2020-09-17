@@ -105,8 +105,6 @@ func NewExit(x, y Position) Tileish {
 func (t *Exit) stepOn(s *State, monster Monstrous) (err error) {
 	_, isPlayer := monster.(*Player)
 
-	println("(t *Exit) stepOn isPlayer: ", isPlayer)
-
 	if isPlayer {
 		if s.level == numLevels {
 			s.state = title
