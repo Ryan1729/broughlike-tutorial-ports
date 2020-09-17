@@ -202,14 +202,14 @@ func NewPlayerStruct(tileish Tileish) *Player {
 	}
 }
 
-func (p *Player) tryMove(s *State, dx, dy Delta) error {
+func (p *Player) tryMove(platform Platform, s *State, dx, dy Delta) error {
 	moved, err := tryMove(s, p, dx, dy)
 	if err != nil {
 		return err
 	}
 
 	if moved {
-		return tick(s)
+		return tick(platform, s)
 	}
 
 	return nil

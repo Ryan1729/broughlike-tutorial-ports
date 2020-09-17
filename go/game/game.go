@@ -29,6 +29,11 @@ const (
 	Right KeyType = iota
 )
 
+const (
+	lost wonOrLost = false
+	// won  wonOrLost = true.
+)
+
 type (
 	SpriteIndex = uint8
 	// type Position is the one-dimensional position of something on the map
@@ -54,14 +59,14 @@ type (
 	gameState       uint8
 	points          uint64
 	run             uint64
-	active          bool
+	wonOrLost       bool
 )
 
 type Score struct {
 	score      points
 	run        run
 	totalScore points
-	active     active
+	active     wonOrLost
 }
 
 const (
@@ -81,7 +86,7 @@ type State struct {
 	score        points
 }
 
-func (s *State) Input(keyType KeyType) error {
+func (s *State) Input(p Platform, keyType KeyType) error {
 	var err error = nil
 	switch s.state {
 	case title:
@@ -91,13 +96,13 @@ func (s *State) Input(keyType KeyType) error {
 	case running:
 		switch keyType {
 		case Up:
-			err = s.player.tryMove(s, 0, -1)
+			err = s.player.tryMove(p, s, 0, -1)
 		case Left:
-			err = s.player.tryMove(s, -1, 0)
+			err = s.player.tryMove(p, s, -1, 0)
 		case Down:
-			err = s.player.tryMove(s, 0, 1)
+			err = s.player.tryMove(p, s, 0, 1)
 		case Right:
-			err = s.player.tryMove(s, 1, 0)
+			err = s.player.tryMove(p, s, 1, 0)
 		case Other:
 			fallthrough
 		default:
@@ -216,7 +221,35 @@ func drawGameScreen(p Platform, s *State) {
 	p.Text("Score: "+strconv.FormatUint(uint64(s.score), 10), UI, Plain, SubTileUnit*3/4, violet)
 }
 
-func tick(s *State) error {
+func addScore(p Platform, score points, wonOrLost wonOrLost) {
+	scores := p.LoadScores()
+	scoreStruct := Score{
+		score:      score,
+		run:        1,
+		totalScore: score,
+		active:     wonOrLost,
+	}
+	lastIndex := len(scores) - 1
+	var lastScore *Score
+	if lastIndex >= 0 {
+		lastScore = &scores[lastIndex]
+		scores = scores[:lastIndex-1]
+	}
+
+	if lastScore != nil {
+		if lastScore.active {
+			scoreStruct.run = lastScore.run + 1
+			scoreStruct.totalScore += lastScore.totalScore
+		} else {
+			scores = append(scores, *lastScore)
+		}
+	}
+	scores = append(scores, scoreStruct)
+
+	p.SaveScores(scores)
+}
+
+func tick(p Platform, s *State) error {
 	for i := len(s.monsters) - 1; i >= 0; i-- {
 		if s.monsters[i].monster().dead {
 			// Remove the dead monster
@@ -231,6 +264,7 @@ func tick(s *State) error {
 	}
 
 	if s.player.monster().dead {
+		addScore(p, s.score, lost)
 		s.state = dead
 	}
 

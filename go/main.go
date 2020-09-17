@@ -4,9 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"math/rand"
-
-	//	"path/filepath"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/Ryan1729/broughlike-tutorial-ports/go/assets"
@@ -26,7 +25,7 @@ type config struct {
 
 func handleFlags() config {
 	var licenseFlag *bool = flag.Bool("license", false, "Print license info then exit.")
-	// var saveDirFlag *string = flag.String("save-dir", "", "Overwrite save directory")
+	var saveDirFlag *string = flag.String("save-dir", "", "Override save directory")
 
 	defaultUsage := flag.Usage
 	flag.Usage = func() {
@@ -47,33 +46,77 @@ func handleFlags() config {
 		os.Exit(0)
 	}
 
-	var saveFile *os.File = nil
-	/*saveFile, err := openSaveFile(*saveDirFlag)
-
-	// We assume that most people would rather just play the game without high-scores.
-	// But if someone does care, we should give them the information to fix it.
+	saveFile, err := openSaveFile(*saveDirFlag)
+	// We assume that most people would rather just play the game without
+	// high-scores, if tere's some problem loading them. But if someone does
+	// care, we should give them the information to fix it.
 	if err != nil {
 		fmt.Println(err)
 	}
-	*/
 
 	return config{
 		saveFile,
 	}
 }
 
-/*
+type couldNotWriteToExeDirError struct {
+	exeDirPath string
+}
+
+func (e *couldNotWriteToExeDirError) Error() string {
+	return "Could not write to exe dir:" + e.exeDirPath
+}
+
 func openSaveFile(saveDir string) (*os.File, error) {
-	if !isWritableDir(*saveDirFlag) {
-		*saveDirFlag = os.Executable()
+	if !isWritableDir(saveDir) {
+		exePath, err := os.Executable()
+		if err != nil {
+			return nil, err
+		}
+		exeDirPath := filepath.Dir(exePath)
+
+		if isWritableDir(exeDirPath) {
+			saveDir = exeDirPath
+		} else {
+			return nil, &couldNotWriteToExeDirError{exeDirPath}
+		}
 	}
 
-	saveFileName := filepath.Join(*saveDirFlag, game.TitleString + ".sav")
+	saveFileName := filepath.Join(saveDir, game.TitleString+".sav")
+
+	return os.OpenFile(saveFileName, os.O_RDWR|os.O_CREATE, 0666)
 }
-*/
+
+func isWritableDir(dirPath string) bool {
+	info, err := os.Stat(dirPath)
+	if err != nil {
+		return false
+	}
+
+	const writableDir os.FileMode = os.ModeDir | 0200
+
+	return (info.Mode() & writableDir) == writableDir
+}
+
+func closeConfig(config *config) {
+	if config.saveFile != nil {
+		if err := config.saveFile.Sync(); err != nil {
+			fmt.Println(err)
+		}
+
+		if err := config.saveFile.Close(); err != nil {
+			fmt.Println(err)
+		}
+	}
+}
+
+func destroyWindow(window *sdl.Window) {
+	dieIfErr(window.Destroy())
+}
 
 func main() {
 	config := handleFlags()
+	defer closeConfig(&config)
 
 	dieIfErr(ttf.Init())
 	defer ttf.Quit()
@@ -87,7 +130,7 @@ func main() {
 		800, 600,
 		sdl.WINDOW_FULLSCREEN_DESKTOP|sdl.WINDOW_ALLOW_HIGHDPI|sdl.WINDOW_INPUT_GRABBED)
 	dieIfErr(err)
-	defer func() { dieIfErr(window.Destroy()) }()
+	defer destroyWindow(window)
 
 	platform, s := NewSDL2Platform(window, config), game.State{}
 
@@ -122,7 +165,7 @@ func main() {
 						keyType = game.Right
 					}
 
-					dieIfErr(s.Input(keyType))
+					dieIfErr(s.Input(&platform, keyType))
 				}
 			}
 		}
