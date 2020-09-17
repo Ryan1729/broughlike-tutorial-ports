@@ -30,8 +30,8 @@ const (
 )
 
 const (
-	lost wonOrLost = false
-	// won  wonOrLost = true.
+	Lost WonOrLost = false
+	Won  WonOrLost = true
 )
 
 type (
@@ -57,16 +57,16 @@ type (
 	SubTilePosition = float32
 	KeyType         uint8
 	gameState       uint8
-	points          uint64
-	run             uint64
-	wonOrLost       bool
+	Points          uint64
+	Run             uint64
+	WonOrLost       bool
 )
 
 type Score struct {
-	score      points
-	run        run
-	totalScore points
-	active     wonOrLost
+	Score      Points
+	Run        Run
+	TotalScore Points
+	Active     WonOrLost
 }
 
 const (
@@ -83,7 +83,7 @@ type State struct {
 	spawnCounter counter
 	level        Level
 	state        gameState
-	score        points
+	score        Points
 }
 
 func (s *State) Input(p Platform, keyType KeyType) error {
@@ -221,13 +221,13 @@ func drawGameScreen(p Platform, s *State) {
 	p.Text("Score: "+strconv.FormatUint(uint64(s.score), 10), UI, Plain, SubTileUnit*3/4, violet)
 }
 
-func addScore(p Platform, score points, wonOrLost wonOrLost) {
+func addScore(p Platform, score Points, wonOrLost WonOrLost) {
 	scores := p.LoadScores()
 	scoreStruct := Score{
-		score:      score,
-		run:        1,
-		totalScore: score,
-		active:     wonOrLost,
+		Score:      score,
+		Run:        1,
+		TotalScore: score,
+		Active:     wonOrLost,
 	}
 	lastIndex := len(scores) - 1
 	var lastScore *Score
@@ -237,9 +237,9 @@ func addScore(p Platform, score points, wonOrLost wonOrLost) {
 	}
 
 	if lastScore != nil {
-		if lastScore.active {
-			scoreStruct.run = lastScore.run + 1
-			scoreStruct.totalScore += lastScore.totalScore
+		if lastScore.Active {
+			scoreStruct.Run = lastScore.Run + 1
+			scoreStruct.TotalScore += lastScore.TotalScore
 		} else {
 			scores = append(scores, *lastScore)
 		}
@@ -264,7 +264,7 @@ func tick(p Platform, s *State) error {
 	}
 
 	if s.player.monster().dead {
-		addScore(p, s.score, lost)
+		addScore(p, s.score, Lost)
 		s.state = dead
 	}
 

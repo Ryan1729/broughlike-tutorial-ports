@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -316,14 +318,91 @@ func (p *SDL2Platform) Text(
 		}))
 }
 
-func (p *SDL2Platform) LoadScores() []game.Score {
-	// Reminder: implement loading from p.config.saveFile
+// The game should not have to know or care about how we decide to serialize
+// data on disk.
 
+type scoreJSON struct {
+	Score      game.Points
+	Run        game.Run
+	TotalScore game.Points
+	Active     game.WonOrLost
+}
+
+func toGameScores(scoreJSONs []scoreJSON) []game.Score {
+	// Reminder: complete
 	return []game.Score{}
 }
 
+func toScoreJSONs([]game.Score) []scoreJSON {
+	// Reminder: complete
+	return []scoreJSON{}
+}
+
+func (p *SDL2Platform) LoadScores() []game.Score {
+	return toGameScores(p.loadScoresJSON())
+}
+
+func (p *SDL2Platform) loadScoresJSON() []scoreJSON {
+	var scores []scoreJSON
+	if p.config.saveFile != nil {
+		bytes, err := ioutil.ReadAll(p.config.saveFile)
+		if err != nil {
+			fmt.Println(err)
+
+			return scores
+		}
+
+		// we expect this the first time the file is loaded
+		if len(bytes) == 0 {
+			return scores
+		}
+
+		err = json.Unmarshal(bytes, &scores)
+
+		if err != nil {
+			fmt.Println(err)
+
+			return scores
+		}
+	}
+
+	return scores
+}
+
 func (p *SDL2Platform) SaveScores(scores []game.Score) {
-	// Reminder: implement saving to p.config.saveFile
+	if p.config.saveFile == nil {
+		return
+	}
+
+	bytes, err := json.Marshal(toScoreJSONs(scores))
+	fmt.Println(bytes)
+	if err != nil {
+		fmt.Println(err)
+
+		return
+	}
+
+	if _, err = p.config.saveFile.Seek(0, 0); err != nil {
+		fmt.Println(err)
+
+		return
+	}
+
+	if err = p.config.saveFile.Truncate(0); err != nil {
+		fmt.Println(err)
+
+		return
+	}
+
+	if _, err = p.config.saveFile.Write(bytes); err != nil {
+		fmt.Println(err)
+
+		return
+	}
+
+	if err = p.config.saveFile.Sync(); err != nil {
+		fmt.Println(err)
+	}
 }
 
 func seedRNG() {
