@@ -233,7 +233,7 @@ func addScore(p Platform, score Points, wonOrLost WonOrLost) {
 	var lastScore *Score
 	if lastIndex >= 0 {
 		lastScore = &scores[lastIndex]
-		scores = scores[:lastIndex-1]
+		scores = scores[:lastIndex]
 	}
 
 	if lastScore != nil {
