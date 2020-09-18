@@ -329,22 +329,45 @@ type scoreJSON struct {
 }
 
 func toGameScores(scoreJSONs []scoreJSON) []game.Score {
-	// Reminder: complete
-	return []game.Score{}
+	scores := make([]game.Score, 0, len(scoreJSONs))
+
+	for _, sJ := range scoreJSONs {
+		scores = append(scores, game.Score(
+			sJ,
+		))
+	}
+
+	return scores
 }
 
-func toScoreJSONs([]game.Score) []scoreJSON {
-	// Reminder: complete
-	return []scoreJSON{}
+func toScoreJSONs(scores []game.Score) []scoreJSON {
+	scoreJSONs := make([]scoreJSON, 0, len(scores))
+
+	for _, s := range scores {
+		scoreJSONs = append(scoreJSONs, scoreJSON(
+			s,
+		))
+	}
+
+	return scoreJSONs
 }
 
 func (p *SDL2Platform) LoadScores() []game.Score {
-	return toGameScores(p.loadScoresJSON())
+	ss := p.loadScoresJSON()
+	fmt.Printf("LoadScores %+v\n", ss)
+
+	return toGameScores(ss)
 }
 
 func (p *SDL2Platform) loadScoresJSON() []scoreJSON {
 	var scores []scoreJSON
 	if p.config.saveFile != nil {
+		if _, err := p.config.saveFile.Seek(0, 0); err != nil {
+			fmt.Println(err)
+
+			return scores
+		}
+
 		bytes, err := ioutil.ReadAll(p.config.saveFile)
 		if err != nil {
 			fmt.Println(err)
@@ -354,6 +377,8 @@ func (p *SDL2Platform) loadScoresJSON() []scoreJSON {
 
 		// we expect this the first time the file is loaded
 		if len(bytes) == 0 {
+			fmt.Println("Previous save file was empty/non-existent")
+
 			return scores
 		}
 
@@ -375,7 +400,7 @@ func (p *SDL2Platform) SaveScores(scores []game.Score) {
 	}
 
 	bytes, err := json.Marshal(toScoreJSONs(scores))
-	fmt.Println(bytes)
+	fmt.Println(string(bytes))
 	if err != nil {
 		fmt.Println(err)
 
