@@ -107,6 +107,7 @@ func (t *Exit) stepOn(s *State, monster Monstrous) (err error) {
 
 	if isPlayer {
 		if s.level == numLevels {
+                        addScore(score, Won)
 			s.state = title
 		} else {
 			s.level++
