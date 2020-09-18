@@ -114,6 +114,7 @@ func (s *State) Input(p Platform, keyType KeyType) error {
 
 func startGame(s *State) error {
 	s.level = 1
+        s.score = 0
 
 	err := startLevel(s, startingHp)
 	if err != nil {
