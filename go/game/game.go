@@ -1,6 +1,7 @@
 package game
 
 import (
+	"sort"
 	"strconv"
 )
 
@@ -11,14 +12,16 @@ const (
 	// The game requires that tiles can be broken up into at least this many
 	// increments, but if tiles are larger than this many pixels across,
 	// that should be fine.
-	SubTileUnit        = 16
-	OneOverSubTileUnit = 1.0 / SubTileUnit
-	maxHP              = 6
-	startingHp         = 3
-	numLevels          = 6
-	// aqua       = 0xff00ffff.
-	violet = 0xffee82ee
-	white  = 0xffffffff
+	SubTileUnit               = 16
+	OneOverSubTileUnit        = 1.0 / SubTileUnit
+	tileCenter                = SubTileUnit * NumTiles / 2
+	scoreListSpacing          = 6.0 * OneOverSubTileUnit
+	maxHP                     = 6
+	startingHp                = 3
+	numLevels                 = 6
+	aqua               Colour = 0xffffff00
+	violet             Colour = 0xffee82ee
+	white              Colour = 0xffffffff
 )
 
 const (
@@ -60,6 +63,7 @@ type (
 	Points          uint64
 	Run             uint64
 	WonOrLost       bool
+	Colour          uint32
 )
 
 type Score struct {
@@ -160,8 +164,9 @@ type TextSize uint8
 // Any Platform interface implementations only needs to handle these values for
 // TextSize.
 const (
-	UI    TextSize = iota
-	Title TextSize = iota
+	UI        TextSize = iota
+	Title     TextSize = iota
+	ScoreList TextSize = iota
 )
 
 type TextJustification uint8
@@ -180,9 +185,9 @@ type Platform interface {
 		size TextSize,
 		justification TextJustification,
 		textY SubTilePosition,
-		color uint32,
+		color Colour,
 	)
-	LoadScores() []Score
+	GetScores() []Score
 	SaveScores(scores []Score)
 	// Later we can add a Sound method here
 }
@@ -196,7 +201,63 @@ func Draw(p Platform, s *State) {
 
 	if s.state == title {
 		p.Overlay()
-		p.Text(TitleString, Title, Centered, SubTileUnit*NumTiles/2-SubTileUnit, white)
+		p.Text(TitleString, Title, Centered, tileCenter-SubTileUnit, white)
+
+		drawScores(p)
+	}
+}
+
+func drawScores(p Platform) {
+	scores := p.GetScores()
+	length := len(scores)
+	if length > 0 {
+		p.Text(
+			rightPad("RUN", "SCORE", "TOTAL"),
+			ScoreList,
+			Centered,
+			tileCenter,
+			white,
+		)
+
+		var newestScore Score
+		{
+			// This block relies on length > 0
+			lastIndex := length - 1
+			newestScore = scores[lastIndex]
+			scores = scores[:lastIndex]
+		}
+
+		sort.Slice(scores, func(aIndex, bIndex int) bool {
+			return scores[aIndex].TotalScore > scores[bIndex].TotalScore
+		})
+
+		scores = append([]Score{newestScore}, scores...)
+
+		displayed := length
+		if displayed > 10 {
+			displayed = 10
+		}
+
+		for i := 0; i < displayed; i++ {
+			scoreText := rightPad(
+				strconv.FormatUint(uint64(scores[i].Run), 10),
+				strconv.FormatUint(uint64(scores[i].Score), 10),
+				strconv.FormatUint(uint64(scores[i].TotalScore), 10),
+			)
+
+			colour := violet
+			if i == 0 {
+				colour = aqua
+			}
+
+			p.Text(
+				scoreText,
+				ScoreList,
+				Centered,
+				tileCenter+SubTilePosition(i+1)*(SubTileUnit*scoreListSpacing),
+				colour,
+			)
+		}
 	}
 }
 
@@ -223,18 +284,20 @@ func drawGameScreen(p Platform, s *State) {
 }
 
 func addScore(p Platform, score Points, wonOrLost WonOrLost) {
-	scores := p.LoadScores()
+	scores := p.GetScores()
 	scoreStruct := Score{
 		Score:      score,
 		Run:        1,
 		TotalScore: score,
 		Active:     wonOrLost,
 	}
-	lastIndex := len(scores) - 1
 	var lastScore *Score
-	if lastIndex >= 0 {
-		lastScore = &scores[lastIndex]
-		scores = scores[:lastIndex]
+	{
+		lastIndex := len(scores) - 1
+		if lastIndex >= 0 {
+			lastScore = &scores[lastIndex]
+			scores = scores[:lastIndex]
+		}
 	}
 
 	if lastScore != nil {
@@ -257,7 +320,7 @@ func tick(p Platform, s *State) error {
 			copy(s.monsters[i:], s.monsters[i+1:])
 			s.monsters = s.monsters[:len(s.monsters)-1]
 		} else {
-			err := s.monsters[i].update(s)
+			err := s.monsters[i].update(p, s)
 			if err != nil {
 				return err
 			}

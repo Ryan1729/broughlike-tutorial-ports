@@ -3,7 +3,7 @@ package game
 type Tileish interface {
 	tile() *Tile
 	dist(tileish Tileish) Distance
-	stepOn(s *State, monster Monstrous) error
+	stepOn(p Platform, s *State, monster Monstrous) error
 }
 
 type Tile struct {
@@ -49,7 +49,7 @@ func (t *Tile) tile() *Tile {
 	return t
 }
 
-func (t *Tile) stepOn(s *State, monster Monstrous) (err error) {
+func (t *Tile) stepOn(_ Platform, s *State, monster Monstrous) (err error) {
 	// Empty default implementation
 	return
 }
@@ -66,7 +66,7 @@ func NewFloor(x, y Position) Tileish {
 	}
 }
 
-func (t *Floor) stepOn(s *State, monster Monstrous) (err error) {
+func (t *Floor) stepOn(_ Platform, s *State, monster Monstrous) (err error) {
 	if _, isPlayer := monster.(*Player); isPlayer && t.treasure {
 		s.score++
 
@@ -102,12 +102,12 @@ func NewExit(x, y Position) Tileish {
 	}
 }
 
-func (t *Exit) stepOn(s *State, monster Monstrous) (err error) {
+func (t *Exit) stepOn(p Platform, s *State, monster Monstrous) (err error) {
 	_, isPlayer := monster.(*Player)
 
 	if isPlayer {
 		if s.level == numLevels {
-                        addScore(score, Won)
+			addScore(p, s.score, Won)
 			s.state = title
 		} else {
 			s.level++

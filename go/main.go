@@ -186,10 +186,12 @@ func doFrame(platform *SDL2Platform, s *game.State) {
 
 // SDL2Platform implements the game.Platform interface.
 type SDL2Platform struct {
-	config   config
-	renderer *sdl.Renderer
-	assets   Assets
-	sizes    Sizes
+	config             config
+	renderer           *sdl.Renderer
+	assets             Assets
+	sizes              Sizes
+	isScoresCacheValid bool
+	scoresCache        []game.Score
 }
 
 func NewSDL2Platform(window *sdl.Window, config config) SDL2Platform {
@@ -265,15 +267,20 @@ func (p *SDL2Platform) Text(
 	size game.TextSize,
 	justification game.TextJustification,
 	textY game.SubTilePosition,
-	color uint32,
+	colour game.Colour,
 ) {
 	renderer := p.renderer
 	sizes := &p.sizes
 
 	var font *ttf.Font
-	if size == game.Title {
+	switch size {
+	case game.Title:
 		font = p.assets.titleFont
-	} else {
+	case game.ScoreList:
+		font = p.assets.scoreListFont
+	case game.UI:
+		fallthrough
+	default:
 		font = p.assets.uiFont
 	}
 
@@ -291,10 +298,10 @@ func (p *SDL2Platform) Text(
 	textSurface, err := font.RenderUTF8Blended(
 		text,
 		sdl.Color{
-			R: byte(color & 0xff),
-			G: byte((color >> 8) & 0xff),
-			B: byte((color >> 16) & 0xff),
-			A: byte(color >> 24),
+			R: byte(colour & 0xff),
+			G: byte((colour >> 8) & 0xff),
+			B: byte((colour >> 16) & 0xff),
+			A: byte(colour >> 24),
 		},
 	)
 	dieIfErr(err)
@@ -352,11 +359,17 @@ func toScoreJSONs(scores []game.Score) []scoreJSON {
 	return scoreJSONs
 }
 
-func (p *SDL2Platform) LoadScores() []game.Score {
-	ss := p.loadScoresJSON()
-	fmt.Printf("LoadScores %+v\n", ss)
+func (p *SDL2Platform) GetScores() []game.Score {
+	if !p.isScoresCacheValid {
+		p.scoresCache = toGameScores(p.loadScoresJSON())
+	}
 
-	return toGameScores(ss)
+	// We return a copy to permit mutation of the slice, without messing up
+	// the cache.
+	scores := make([]game.Score, len(p.scoresCache))
+	copy(scores, p.scoresCache)
+
+	return scores
 }
 
 func (p *SDL2Platform) loadScoresJSON() []scoreJSON {
@@ -469,9 +482,10 @@ func min(a, b int32) int32 {
 }
 
 type Assets struct {
-	spritesheet *sdl.Texture
-	uiFont      *ttf.Font
-	titleFont   *ttf.Font
+	spritesheet   *sdl.Texture
+	uiFont        *ttf.Font
+	titleFont     *ttf.Font
+	scoreListFont *ttf.Font
 	// Eventually we can add the sounds to this struct as well.
 }
 
@@ -495,10 +509,17 @@ func loadAssets(renderer *sdl.Renderer) Assets {
 	titleFont, err := ttf.OpenFontRW(titleFontRW, 0, 70)
 	dieIfErr(err)
 
+	scoreListFontRW, err := sdl.RWFromMem(assets.Font)
+	dieIfErr(err)
+
+	scoreListFont, err := ttf.OpenFontRW(scoreListFontRW, 0, 24)
+	dieIfErr(err)
+
 	return Assets{
 		spritesheet,
 		uiFont,
 		titleFont,
+		scoreListFont,
 	}
 }
 

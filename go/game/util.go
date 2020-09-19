@@ -43,3 +43,16 @@ func (c *counter) dec() {
 func (c *counter) isActive() bool {
 	return c.value > 0
 }
+
+func rightPad(textArray ...string) string {
+	finalText := ""
+
+	for _, text := range textArray {
+		for i := len(text); i < 10; i++ {
+			text += " "
+		}
+		finalText += text
+	}
+
+	return finalText
+}
