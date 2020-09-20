@@ -55,7 +55,17 @@ type (
 	HP    = float32
 	Level = uint8
 	// SubTilePosition is the one-dimensional position of something on the
-	// map, but unlike Position, it can TileFractionalUnit
+	// map, but unlike Position, it can hold values of the form
+	// k * OneOverSubTileUnit where k is in the range
+	// [0, (Numtiles - 1) * SubTileUnit], AKA the range [
+	//     0,
+	//     OneOverSubTileUnit,
+	//     2 * OneOverSubTileUnit,
+	//     3 * OneOverSubTileUnit,
+	//     ...,
+	//     (Numtiles - 1) - OneOverSubTileUnit,
+	//     (Numtiles - 1)
+	// ]
 	// For any given position p, SubTilePosition(p) has the same meaning.
 	SubTilePosition = float32
 	KeyType         uint8
