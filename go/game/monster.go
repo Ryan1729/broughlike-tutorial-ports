@@ -32,8 +32,8 @@ func moveWithoutStepOn(monstrous Monstrous, tileish Tileish) {
 		tile := tileish.tile()
 		mTile := m.tileish.tile()
 		mTile.monster = nil
-		m.offsetX = SubTilePosition(mTile.x - tile.x)
-		m.offsetY = SubTilePosition(mTile.y - tile.y)
+		m.offsetX = SubTilePosition(mTile.x) - SubTilePosition(tile.x)
+		m.offsetY = SubTilePosition(mTile.y) - SubTilePosition(tile.y)
 	}
 	m.tileish = tileish
 	m.tileish.tile().monster = monstrous
