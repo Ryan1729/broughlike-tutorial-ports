@@ -6,7 +6,8 @@ import (
 )
 
 const (
-	healthSize = 5.0 * OneOverSubTileUnit
+	healthSize          = 5.0 * OneOverSubTileUnit
+	slideAmountPerFrame = 2.0 * OneOverSubTileUnit
 )
 
 type Monstrous interface {
@@ -28,7 +29,11 @@ func move(p Platform, s *State, monstrous Monstrous, tileish Tileish) error {
 func moveWithoutStepOn(monstrous Monstrous, tileish Tileish) {
 	m := monstrous.monster()
 	if m.tileish != nil {
-		m.tileish.tile().monster = nil
+		tile := tileish.tile()
+		mTile := m.tileish.tile()
+		mTile.monster = nil
+		m.offsetX = SubTilePosition(mTile.x - tile.x)
+		m.offsetY = SubTilePosition(mTile.y - tile.y)
 	}
 	m.tileish = tileish
 	m.tileish.tile().monster = monstrous
@@ -72,6 +77,8 @@ func doStuffUnlessStunned(monstrous Monstrous, p Platform, s *State) error {
 
 type Monster struct {
 	tileish          Tileish
+	offsetX          SubTilePosition
+	offsetY          SubTilePosition
 	hp               HP
 	sprite           SpriteIndex
 	teleportCounter  counter
@@ -86,13 +93,10 @@ type Monster struct {
 // it, anywhere.
 func NewMonster(tileish Tileish, sprite SpriteIndex, hp HP) *Monster {
 	m := &Monster{
-		tileish,
-		hp,
-		sprite,
-		counter{2},
-		false,
-		false,
-		false,
+		tileish:         tileish,
+		hp:              hp,
+		sprite:          sprite,
+		teleportCounter: counter{2},
 	}
 
 	moveWithoutStepOn(m, tileish)
@@ -158,25 +162,47 @@ func (m *Monster) die() {
 	m.sprite = 1
 }
 
-func (m *Monster) draw(p Platform) {
-	t := m.tileish.tile()
+func (m *Monster) getDisplayX() SubTilePosition {
+	return SubTilePosition(m.tileish.tile().x) + m.offsetX
+}
 
+func (m *Monster) getDisplayY() SubTilePosition {
+	return SubTilePosition(m.tileish.tile().y) + m.offsetY
+}
+
+func (m *Monster) draw(p Platform) {
 	if m.teleportCounter.isActive() {
-		sprite(p, 10, t.x, t.y)
+		p.SubTileSprite(10, m.getDisplayX(), m.getDisplayY())
 	} else {
-		sprite(p, m.sprite, t.x, t.y)
+		p.SubTileSprite(m.sprite, m.getDisplayX(), m.getDisplayY())
 		m.drawHp(p)
+	}
+
+	m.offsetX -= signum(m.offsetX) * slideAmountPerFrame
+	m.offsetY -= signum(m.offsetY) * slideAmountPerFrame
+}
+
+func signum(stp SubTilePosition) SubTilePosition {
+	switch {
+	case stp > 0:
+		return 1.0
+	case stp < 0:
+		return -1.0
+	default:
+		// NaN ends up here
+		return 0.0
 	}
 }
 
 func (m *Monster) drawHp(p Platform) {
-	tile := m.tileish.tile()
 	var i HP
 	for ; i < m.hp; i++ {
 		p.SubTileSprite(
 			9,
-			SubTilePosition(tile.x)+SubTilePosition(math.Mod(float64(i), 3.0))*healthSize,
-			SubTilePosition(tile.y)-SubTilePosition(math.Floor(float64(i)/3.0))*healthSize,
+			m.getDisplayX()+
+				SubTilePosition(math.Mod(float64(i), 3.0))*healthSize,
+			m.getDisplayY()-
+				SubTilePosition(math.Floor(float64(i)/3.0))*healthSize,
 		)
 	}
 }
