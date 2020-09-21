@@ -49,10 +49,14 @@ func tryMove(p Platform, s *State, monstrous Monstrous, dx, dy Delta) (moved boo
 			_, mIsPlayer := monstrous.(*Player)
 			_, nTIsPlayer := newTile.monster.(*Player)
 			if mIsPlayer != nTIsPlayer {
-				monstrous.monster().attackedThisTurn = true
+				m := monstrous.monster()
+				m.attackedThisTurn = true
 				nTM := newTile.monster.monster()
 				nTM.stunned = true
 				nTM.hit(1)
+
+				m.offsetX = (SubTilePosition(newTile.x) - SubTilePosition(m.tileish.tile().x)) / 2
+				m.offsetY = (SubTilePosition(newTile.y) - SubTilePosition(m.tileish.tile().y)) / 2
 			}
 		}
 		moved = true

@@ -413,7 +413,6 @@ func (p *SDL2Platform) SaveScores(scores []game.Score) {
 	}
 
 	bytes, err := json.Marshal(toScoreJSONs(scores))
-
 	if err != nil {
 		fmt.Println(err)
 
