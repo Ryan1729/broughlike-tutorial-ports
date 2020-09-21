@@ -89,10 +89,17 @@ const (
 	dead    gameState = iota
 )
 
+type shake struct {
+	amount counter
+	x      Position
+	y      Position
+}
+
 type State struct {
 	player       Player
 	tiles        Tiles
 	monsters     []Monstrous
+	shake        shake
 	spawnRate    counter
 	spawnCounter counter
 	level        Level
@@ -189,7 +196,7 @@ const (
 )
 
 type Platform interface {
-	SubTileSprite(sprite SpriteIndex, x, y SubTilePosition)
+	SubTileSprite(sprite SpriteIndex, x, y, shakeX, shakeY SubTilePosition)
 	Overlay()
 	Text(text string,
 		size TextSize,
@@ -202,8 +209,14 @@ type Platform interface {
 	// Later we can add a Sound method here
 }
 
-func sprite(p Platform, sprite SpriteIndex, x, y Position) {
-	p.SubTileSprite(sprite, SubTilePosition(x), SubTilePosition(y))
+func sprite(p Platform, sprite SpriteIndex, x, y Position, shake shake) {
+	p.SubTileSprite(
+		sprite,
+		SubTilePosition(x),
+		SubTilePosition(y),
+		SubTilePosition(shake.x),
+		SubTilePosition(shake.y),
+	)
 }
 
 func Draw(p Platform, s *State) {
@@ -279,15 +292,15 @@ func drawGameScreen(p Platform, s *State) {
 	var i, j Position
 	for j = 0; j < NumTiles; j++ {
 		for i = 0; i < NumTiles; i++ {
-			s.tiles.get(i, j).tile().draw(p)
+			s.tiles.get(i, j).tile().draw(p, s.shake)
 		}
 	}
 
 	for _, m := range s.monsters {
-		m.draw(p)
+		m.draw(p, s.shake)
 	}
 
-	s.player.draw(p)
+	s.player.draw(p, s.shake)
 
 	p.Text("Level: "+strconv.FormatUint(uint64(s.level), 10), UI, Plain, SubTileUnit/4, violet)
 	p.Text("Score: "+strconv.FormatUint(uint64(s.score), 10), UI, Plain, SubTileUnit*3/4, violet)

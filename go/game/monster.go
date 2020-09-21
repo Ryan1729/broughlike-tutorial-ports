@@ -12,7 +12,7 @@ const (
 
 type Monstrous interface {
 	monster() *Monster
-	draw(p Platform)
+	draw(p Platform, shake shake)
 	update(p Platform, s *State) error
 	doStuff(p Platform, s *State) error
 }
@@ -54,6 +54,8 @@ func tryMove(p Platform, s *State, monstrous Monstrous, dx, dy Delta) (moved boo
 				nTM := newTile.monster.monster()
 				nTM.stunned = true
 				nTM.hit(1)
+
+				s.shake.amount = counter{5}
 
 				m.offsetX = (SubTilePosition(newTile.x) - SubTilePosition(m.tileish.tile().x)) / 2
 				m.offsetY = (SubTilePosition(newTile.y) - SubTilePosition(m.tileish.tile().y)) / 2
@@ -174,12 +176,24 @@ func (m *Monster) getDisplayY() SubTilePosition {
 	return SubTilePosition(m.tileish.tile().y) + m.offsetY
 }
 
-func (m *Monster) draw(p Platform) {
+func (m *Monster) draw(p Platform, shake shake) {
 	if m.teleportCounter.isActive() {
-		p.SubTileSprite(10, m.getDisplayX(), m.getDisplayY())
+		p.SubTileSprite(
+			10,
+			m.getDisplayX(),
+			m.getDisplayY(),
+			SubTilePosition(shake.x),
+			SubTilePosition(shake.y),
+		)
 	} else {
-		p.SubTileSprite(m.sprite, m.getDisplayX(), m.getDisplayY())
-		m.drawHp(p)
+		p.SubTileSprite(
+			m.sprite,
+			m.getDisplayX(),
+			m.getDisplayY(),
+			SubTilePosition(shake.x),
+			SubTilePosition(shake.y),
+		)
+		m.drawHp(p, shake)
 	}
 
 	m.offsetX -= signum(m.offsetX) * slideAmountPerFrame
@@ -198,7 +212,7 @@ func signum(stp SubTilePosition) SubTilePosition {
 	}
 }
 
-func (m *Monster) drawHp(p Platform) {
+func (m *Monster) drawHp(p Platform, shake shake) {
 	var i HP
 	for ; i < m.hp; i++ {
 		p.SubTileSprite(
@@ -207,6 +221,8 @@ func (m *Monster) drawHp(p Platform) {
 				SubTilePosition(math.Mod(float64(i), 3.0))*healthSize,
 			m.getDisplayY()-
 				SubTilePosition(math.Floor(float64(i)/3.0))*healthSize,
+			SubTilePosition(shake.x),
+			SubTilePosition(shake.y),
 		)
 	}
 }

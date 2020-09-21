@@ -229,7 +229,7 @@ func (p *SDL2Platform) Clear() {
 		}))
 }
 
-func (p *SDL2Platform) SubTileSprite(sprite game.SpriteIndex, x, y game.SubTilePosition) {
+func (p *SDL2Platform) SubTileSprite(sprite game.SpriteIndex, x, y, shakeX, shakeY game.SubTilePosition) {
 	sizes := &p.sizes
 
 	dieIfErr(p.renderer.Copy(
@@ -241,8 +241,8 @@ func (p *SDL2Platform) SubTileSprite(sprite game.SpriteIndex, x, y game.SubTileP
 			H: 16,
 		},
 		&sdl.Rect{
-			X: sizes.playAreaX + int32(x*game.SubTilePosition(sizes.tile)),
-			Y: sizes.playAreaY + int32(y*game.SubTilePosition(sizes.tile)),
+			X: sizes.playAreaX + int32(x*game.SubTilePosition(sizes.tile)+shakeX),
+			Y: sizes.playAreaY + int32(y*game.SubTilePosition(sizes.tile)+shakeY),
 			W: sizes.tile,
 			H: sizes.tile,
 		}))

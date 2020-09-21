@@ -37,11 +37,11 @@ func abs(d Distance) Distance {
 	return d
 }
 
-func (t *Tile) draw(p Platform) {
-	sprite(p, t.sprite, t.x, t.y)
+func (t *Tile) draw(p Platform, shake shake) {
+	sprite(p, t.sprite, t.x, t.y, shake)
 
 	if t.treasure {
-		sprite(p, 12, t.x, t.y)
+		sprite(p, 12, t.x, t.y, shake)
 	}
 }
 
