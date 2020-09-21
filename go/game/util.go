@@ -30,6 +30,10 @@ func randomRangeInt(min, max int) int {
 	return rand.Intn(max-min+1) + min
 }
 
+func randomFloat() float64 {
+	return rand.Float64()
+}
+
 type counter struct {
 	value uint8
 }

@@ -1,6 +1,7 @@
 package game
 
 import (
+	"math"
 	"sort"
 	"strconv"
 )
@@ -289,6 +290,8 @@ func drawGameScreen(p Platform, s *State) {
 		return
 	}
 
+	screenshake(&s.shake)
+
 	var i, j Position
 	for j = 0; j < NumTiles; j++ {
 		for i = 0; i < NumTiles; i++ {
@@ -304,6 +307,19 @@ func drawGameScreen(p Platform, s *State) {
 
 	p.Text("Level: "+strconv.FormatUint(uint64(s.level), 10), UI, Plain, SubTileUnit/4, violet)
 	p.Text("Score: "+strconv.FormatUint(uint64(s.score), 10), UI, Plain, SubTileUnit*3/4, violet)
+}
+
+func screenshake(shake *shake) {
+	shake.amount.dec()
+
+	shakeAmount := shake.amount.value
+	shakeAngle := randomFloat() * math.Pi * 2
+	shake.x = Position(
+		math.Round(math.Cos(shakeAngle) * float64(shakeAmount)),
+	)
+	shake.y = Position(
+		math.Round(math.Sin(shakeAngle) * float64(shakeAmount)),
+	)
 }
 
 func addScore(p Platform, score Points, wonOrLost WonOrLost) {
