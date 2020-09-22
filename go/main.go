@@ -13,6 +13,7 @@ import (
 	"github.com/Ryan1729/broughlike-tutorial-ports/go/assets"
 	"github.com/Ryan1729/broughlike-tutorial-ports/go/game"
 	"github.com/veandco/go-sdl2/img"
+	"github.com/veandco/go-sdl2/mix"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/ttf"
 )
@@ -119,11 +120,18 @@ func destroyWindow(window *sdl.Window) {
 func sdlInit() {
 	dieIfErr(ttf.Init())
 	dieIfErr(sdl.Init(sdl.INIT_AUDIO | sdl.INIT_VIDEO))
+
+	// The channels here the output channels, not the mixing channels.
+	// See https://www.libsdl.org/projects/SDL_mixer/docs/SDL_mixer_11.html
+	dieIfErr(mix.OpenAudio(mix.DEFAULT_FREQUENCY, mix.DEFAULT_FORMAT, mix.DEFAULT_CHANNELS, mix.DEFAULT_CHUNKSIZE))
+
+	mix.AllocateChannels(16)
 }
 
 func sdlQuit() {
 	sdl.Quit()
 	ttf.Quit()
+	mix.CloseAudio()
 }
 
 func main() {
@@ -492,15 +500,27 @@ type Assets struct {
 	uiFont        *ttf.Font
 	titleFont     *ttf.Font
 	scoreListFont *ttf.Font
-	// Eventually we can add the sounds to this struct as well.
+	hit1          *mix.Chunk
+	hit2          *mix.Chunk
+	newLevel      *mix.Chunk
+	spell         *mix.Chunk
+	treasure      *mix.Chunk
 }
 
 func loadAssets(renderer *sdl.Renderer) Assets {
+	//
+	//  Images
+	//
+
 	spritesheetRW, err := sdl.RWFromMem(assets.Spritesheet)
 	dieIfErr(err)
 
 	spritesheet, err := img.LoadTextureRW(renderer, spritesheetRW, false)
 	dieIfErr(err)
+
+	//
+	//  Fonts
+	//
 
 	// We get an error from SDL2 if we try to use the same RWOps for both fonts
 	uiFontRW, err := sdl.RWFromMem(assets.Font)
@@ -521,11 +541,50 @@ func loadAssets(renderer *sdl.Renderer) Assets {
 	scoreListFont, err := ttf.OpenFontRW(scoreListFontRW, 0, 24)
 	dieIfErr(err)
 
+	//
+	//  Audio
+	//
+
+	hit1RW, err := sdl.RWFromMem(assets.Hit1)
+	dieIfErr(err)
+
+	hit1, err := mix.LoadWAVRW(hit1RW, true)
+	dieIfErr(err)
+
+	hit2RW, err := sdl.RWFromMem(assets.Hit2)
+	dieIfErr(err)
+
+	hit2, err := mix.LoadWAVRW(hit2RW, true)
+	dieIfErr(err)
+
+	newLevelRW, err := sdl.RWFromMem(assets.NewLevel)
+	dieIfErr(err)
+
+	newLevel, err := mix.LoadWAVRW(newLevelRW, true)
+	dieIfErr(err)
+
+	spellRW, err := sdl.RWFromMem(assets.Spell)
+	dieIfErr(err)
+
+	spell, err := mix.LoadWAVRW(spellRW, true)
+	dieIfErr(err)
+
+	treasureRW, err := sdl.RWFromMem(assets.Treasure)
+	dieIfErr(err)
+
+	treasure, err := mix.LoadWAVRW(treasureRW, true)
+	dieIfErr(err)
+
 	return Assets{
 		spritesheet,
 		uiFont,
 		titleFont,
 		scoreListFont,
+		hit1,
+		hit2,
+		newLevel,
+		spell,
+		treasure,
 	}
 }
 
