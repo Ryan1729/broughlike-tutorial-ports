@@ -116,15 +116,22 @@ func destroyWindow(window *sdl.Window) {
 	dieIfErr(window.Destroy())
 }
 
+func sdlInit() {
+	dieIfErr(ttf.Init())
+	dieIfErr(sdl.Init(sdl.INIT_AUDIO | sdl.INIT_VIDEO))
+}
+
+func sdlQuit() {
+	sdl.Quit()
+	ttf.Quit()
+}
+
 func main() {
 	config := handleFlags()
 	defer closeConfig(&config)
 
-	dieIfErr(ttf.Init())
-	defer ttf.Quit()
-
-	dieIfErr(sdl.Init(sdl.INIT_AUDIO | sdl.INIT_VIDEO))
-	defer sdl.Quit()
+	sdlInit()
+	defer sdlQuit()
 
 	window, err := sdl.CreateWindow(
 		"AWESOME BROUGHLIKE",
