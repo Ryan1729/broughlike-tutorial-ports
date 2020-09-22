@@ -182,16 +182,16 @@ func (m *Monster) draw(p Platform, shake shake) {
 			10,
 			m.getDisplayX(),
 			m.getDisplayY(),
-			SubTilePosition(shake.x),
-			SubTilePosition(shake.y),
+			shake.x,
+			shake.y,
 		)
 	} else {
 		p.SubTileSprite(
 			m.sprite,
 			m.getDisplayX(),
 			m.getDisplayY(),
-			SubTilePosition(shake.x),
-			SubTilePosition(shake.y),
+			shake.x,
+			shake.y,
 		)
 		m.drawHp(p, shake)
 	}
@@ -221,8 +221,8 @@ func (m *Monster) drawHp(p Platform, shake shake) {
 				SubTilePosition(math.Mod(float64(i), 3.0))*healthSize,
 			m.getDisplayY()-
 				SubTilePosition(math.Floor(float64(i)/3.0))*healthSize,
-			SubTilePosition(shake.x),
-			SubTilePosition(shake.y),
+			shake.x,
+			shake.y,
 		)
 	}
 }

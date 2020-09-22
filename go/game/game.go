@@ -92,8 +92,8 @@ const (
 
 type shake struct {
 	amount counter
-	x      Position
-	y      Position
+	x      SubTilePosition
+	y      SubTilePosition
 }
 
 type State struct {
@@ -215,8 +215,8 @@ func sprite(p Platform, sprite SpriteIndex, x, y Position, shake shake) {
 		sprite,
 		SubTilePosition(x),
 		SubTilePosition(y),
-		SubTilePosition(shake.x),
-		SubTilePosition(shake.y),
+		shake.x,
+		shake.y,
 	)
 }
 
@@ -312,13 +312,13 @@ func drawGameScreen(p Platform, s *State) {
 func screenshake(shake *shake) {
 	shake.amount.dec()
 
-	shakeAmount := shake.amount.value
+	shakeAmount := SubTilePosition(shake.amount.value) * SubTileUnit
 	shakeAngle := randomFloat() * math.Pi * 2
-	shake.x = Position(
-		math.Round(math.Cos(shakeAngle) * float64(shakeAmount)),
+	shake.x = SubTilePosition(
+		math.Round(math.Cos(shakeAngle)*float64(shakeAmount)) * OneOverSubTileUnit,
 	)
-	shake.y = Position(
-		math.Round(math.Sin(shakeAngle) * float64(shakeAmount)),
+	shake.y = SubTilePosition(
+		math.Round(math.Sin(shakeAngle)*float64(shakeAmount)) * OneOverSubTileUnit,
 	)
 }
 
