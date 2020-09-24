@@ -53,7 +53,7 @@ func tryMove(p Platform, s *State, monstrous Monstrous, dx, dy Delta) (moved boo
 				m.attackedThisTurn = true
 				nTM := newTile.monster.monster()
 				nTM.stunned = true
-				nTM.hit(1)
+				hit(p, newTile.monster, 1)
 
 				s.shake.amount = counter{5}
 
@@ -79,6 +79,20 @@ func doStuffUnlessStunned(monstrous Monstrous, p Platform, s *State) error {
 	}
 
 	return monstrous.doStuff(p, s)
+}
+
+func hit(p Platform, monstrous Monstrous, damage HP) {
+	m := monstrous.monster()
+	m.hp -= damage
+	if m.hp <= 0 {
+		m.die()
+	}
+
+	if _, mIsPlayer := monstrous.(*Player); mIsPlayer {
+		p.Sound(Hit1)
+	} else {
+		p.Sound(Hit2)
+	}
 }
 
 type Monster struct {
@@ -152,13 +166,6 @@ func (m *Monster) heal(damage HP) {
 	m.hp += damage
 	if m.hp > maxHP {
 		m.hp = maxHP
-	}
-}
-
-func (m *Monster) hit(damage HP) {
-	m.hp -= damage
-	if m.hp <= 0 {
-		m.die()
 	}
 }
 

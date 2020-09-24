@@ -196,6 +196,18 @@ const (
 	Centered TextJustification = iota
 )
 
+type Sound uint8
+
+// Any Platform interface implementations only needs to handle these values for
+// Sound.
+const (
+	Hit1     Sound = iota
+	Hit2     Sound = iota
+	Treasure Sound = iota
+	NewLevel Sound = iota
+	Spell    Sound = iota
+)
+
 type Platform interface {
 	SubTileSprite(sprite SpriteIndex, x, y, shakeX, shakeY SubTilePosition)
 	Overlay()
@@ -207,7 +219,7 @@ type Platform interface {
 	)
 	GetScores() []Score
 	SaveScores(scores []Score)
-	// Later we can add a Sound method here
+	Sound(sound Sound)
 }
 
 func sprite(p Platform, sprite SpriteIndex, x, y Position, shake shake) {

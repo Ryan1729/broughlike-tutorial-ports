@@ -340,6 +340,28 @@ func (p *SDL2Platform) Text(
 		}))
 }
 
+func (p *SDL2Platform) Sound(sound game.Sound) {
+	switch sound {
+	case game.Hit1:
+		_, err := p.assets.hit1.Play(-1, 0)
+		dieIfErr(err)
+	case game.Hit2:
+		_, err := p.assets.hit2.Play(-1, 0)
+		dieIfErr(err)
+	case game.Treasure:
+		_, err := p.assets.treasure.Play(-1, 0)
+		dieIfErr(err)
+	case game.NewLevel:
+		_, err := p.assets.newLevel.Play(-1, 0)
+		dieIfErr(err)
+	case game.Spell:
+		_, err := p.assets.spell.Play(-1, 0)
+		dieIfErr(err)
+	default:
+		fmt.Println("Unknown sound")
+	}
+}
+
 // The game should not have to know or care about how we decide to serialize
 // data on disk.
 

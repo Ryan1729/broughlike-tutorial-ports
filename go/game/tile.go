@@ -66,9 +66,11 @@ func NewFloor(x, y Position) Tileish {
 	}
 }
 
-func (t *Floor) stepOn(_ Platform, s *State, monster Monstrous) (err error) {
+func (t *Floor) stepOn(p Platform, s *State, monster Monstrous) (err error) {
 	if _, isPlayer := monster.(*Player); isPlayer && t.treasure {
 		s.score++
+
+		p.Sound(Treasure)
 
 		t.treasure = false
 
@@ -106,6 +108,8 @@ func (t *Exit) stepOn(p Platform, s *State, monster Monstrous) (err error) {
 	_, isPlayer := monster.(*Player)
 
 	if isPlayer {
+		p.Sound(NewLevel)
+
 		if s.level == numLevels {
 			addScore(p, s.score, Won)
 			s.state = title
