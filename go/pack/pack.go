@@ -7,60 +7,90 @@ import (
 )
 
 func main() {
-	var output strings.Builder
+	var assetsExport strings.Builder
+
+	assetsExport.Write([]byte("//nolint // This is generated code\n"))
+	assetsExport.Write([]byte("package assets\n\n"))
+
+	var assetsGenerated strings.Builder
 	// As of this writing the assets take up around 5 * 90k bytes on disk.
 	// After converting to source code, ech byte will be around 5 more bytes on
 	// average, ("128, ").
-	output.Grow(5 * 90_000 * 5)
+	assetsGenerated.Grow(5 * 90_000 * 5)
 
-	output.Write([]byte("//nolint "))
-	output.Write([]byte("// This generated code, and besides reading this file is slowing down the linting.\n"))
-	output.Write([]byte("package assets\n\n"))
+	assetsGenerated.Write([]byte("//nolint "))
+	assetsGenerated.Write([]byte("// This is generated code, and besides reading this file slows down the linting.\n\n"))
+	assetsGenerated.Write([]byte("// +build !codeanalysis\n\n"))
+	assetsGenerated.Write([]byte("package assets\n\n"))
+	assetsGenerated.Write([]byte("func init() {\n"))
 
-	appendFileAsByteArray(Spec{output: &output, fileName: "../assets/spritesheet.png", arrayName: "Spritesheet"})
+	files := files{
+		generated: &assetsGenerated,
+		export:    &assetsExport,
+	}
 
-	appendFileAsByteArray(Spec{output: &output, fileName: "../assets/hit1.wav", arrayName: "Hit1"})
-	appendFileAsByteArray(Spec{output: &output, fileName: "../assets/hit2.wav", arrayName: "Hit2"})
-	appendFileAsByteArray(Spec{output: &output, fileName: "../assets/newLevel.wav", arrayName: "NewLevel"})
-	appendFileAsByteArray(Spec{output: &output, fileName: "../assets/spell.wav", arrayName: "Spell"})
-	appendFileAsByteArray(Spec{output: &output, fileName: "../assets/treasure.wav", arrayName: "Treasure"})
+	appendFileAsByteArray(Spec{files: files, fileName: "../assets/spritesheet.png", arrayName: "Spritesheet"})
+
+	appendFileAsByteArray(Spec{files: files, fileName: "../assets/hit1.wav", arrayName: "Hit1"})
+	appendFileAsByteArray(Spec{files: files, fileName: "../assets/hit2.wav", arrayName: "Hit2"})
+	appendFileAsByteArray(Spec{files: files, fileName: "../assets/newLevel.wav", arrayName: "NewLevel"})
+	appendFileAsByteArray(Spec{files: files, fileName: "../assets/spell.wav", arrayName: "Spell"})
+	appendFileAsByteArray(Spec{files: files, fileName: "../assets/treasure.wav", arrayName: "Treasure"})
 
 	appendFileAsByteArray(Spec{
-		output:   &output,
+		files:    files,
 		fileName: "../assets/fonts/Courier Prime Sans.ttf", arrayName: "Font",
 	})
-	appendFileAsByteArray(Spec{output: &output, fileName: "../assets/fonts/LICENSE.md", arrayName: "FontLicense"})
+	appendFileAsByteArray(Spec{files: files, fileName: "../assets/fonts/LICENSE.md", arrayName: "FontLicense"})
 
-	err := ioutil.WriteFile("../assets/assets.go", []byte(output.String()), 0600)
+	assetsGenerated.Write([]byte("}\n"))
+
+	err := ioutil.WriteFile("../assets/assets.go", []byte(assetsExport.String()), 0600)
+	if err != nil {
+		panic(err)
+	}
+
+	err = ioutil.WriteFile("../assets/generated.go", []byte(assetsGenerated.String()), 0600)
 	if err != nil {
 		panic(err)
 	}
 }
 
+type files struct {
+	generated *strings.Builder
+	export    *strings.Builder
+}
+
 type Spec struct {
-	output    *strings.Builder
+	files     files
 	fileName  string
 	arrayName string
 }
 
 func appendFileAsByteArray(spec Spec) {
-	output := spec.output
+	export := spec.files.export
 	fileData, err := ioutil.ReadFile(spec.fileName)
 	if err != nil {
 		panic(err)
 	}
 
-	output.Write([]byte("var "))
-	output.Write([]byte(spec.arrayName))
-	output.Write([]byte(" = []byte{"))
+	export.Write([]byte("var "))
+	export.Write([]byte(spec.arrayName))
+	export.Write([]byte(" []byte\n"))
+
+	generated := spec.files.generated
+
+	generated.Write([]byte("\t"))
+	generated.Write([]byte(spec.arrayName))
+	generated.Write([]byte(" = []byte{"))
 
 	sep := ""
 
 	for _, v := range fileData {
-		output.Write([]byte(sep))
-		output.Write([]byte(strconv.Itoa(int(v))))
+		generated.Write([]byte(sep))
+		generated.Write([]byte(strconv.Itoa(int(v))))
 		sep = ", "
 	}
 
-	output.Write([]byte("}\n"))
+	generated.Write([]byte("}\n"))
 }
