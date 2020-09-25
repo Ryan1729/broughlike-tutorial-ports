@@ -60,3 +60,36 @@ func rightPad(textArray ...string) string {
 
 	return finalText
 }
+
+// Mutates the passed in slice, but also returns it to be convenient.
+func shuffleTileishInPlace(slice []Tileish) []Tileish {
+	length := len(slice)
+	for i := 1; i < length; i++ {
+		r := randomRangeInt(0, i)
+		slice[i], slice[r] = slice[r], slice[i]
+	}
+
+	return slice
+}
+
+// Mutates the passed in slice, but also returns it to be convenient.
+func shuffleMonsterMakersInPlace(slice []MonsterMaker) []MonsterMaker {
+	length := len(slice)
+	for i := 1; i < length; i++ {
+		r := randomRangeInt(0, i)
+		slice[i], slice[r] = slice[r], slice[i]
+	}
+
+	return slice
+}
+
+// Mutates the passed in slice, but also returns it to be convenient.
+func shuffleSpellNamesInPlace(slice []SpellName) []SpellName {
+	length := len(slice)
+	for i := 1; i < length; i++ {
+		r := randomRangeInt(0, i)
+		slice[i], slice[r] = slice[r], slice[i]
+	}
+
+	return slice
+}

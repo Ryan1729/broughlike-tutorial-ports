@@ -146,28 +146,6 @@ func (ts *Tiles) replace(tileish Tileish, newTileType TileMaker) {
 	ts.tiles[t.x][t.y] = newTileType(t.x, t.y)
 }
 
-// Mutates the passed in slice, but also returns it to be convenient.
-func shuffleTileishInPlace(slice []Tileish) []Tileish {
-	length := len(slice)
-	for i := 1; i < length; i++ {
-		r := randomRangeInt(0, i)
-		slice[i], slice[r] = slice[r], slice[i]
-	}
-
-	return slice
-}
-
-// Mutates the passed in slice, but also returns it to be convenient.
-func shuffleMonsterMakerInPlace(slice []MonsterMaker) []MonsterMaker {
-	length := len(slice)
-	for i := 1; i < length; i++ {
-		r := randomRangeInt(0, i)
-		slice[i], slice[r] = slice[r], slice[i]
-	}
-
-	return slice
-}
-
 func filter(slice []Tileish, predicate func(Tileish) bool) []Tileish {
 	output := make([]Tileish, 0, len(slice))
 
@@ -197,7 +175,7 @@ func generateMonsters(s *State) error {
 }
 
 func spawnMonster(s *State) (Monstrous, error) {
-	monsterType := shuffleMonsterMakerInPlace(
+	monsterType := shuffleMonsterMakersInPlace(
 		[]MonsterMaker{NewBird, NewSnake, NewTank, NewEater, NewJester},
 	)[0]
 

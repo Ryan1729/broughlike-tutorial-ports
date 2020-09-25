@@ -31,6 +31,15 @@ const (
 	Down  KeyType = iota
 	Left  KeyType = iota
 	Right KeyType = iota
+	One   KeyType = iota
+	Two   KeyType = iota
+	Three KeyType = iota
+	Four  KeyType = iota
+	Five  KeyType = iota
+	Six   KeyType = iota
+	Seven KeyType = iota
+	Eight KeyType = iota
+	Nine  KeyType = iota
 )
 
 const (
@@ -75,6 +84,7 @@ type (
 	Run             uint64
 	WonOrLost       bool
 	Colour          uint32
+	numSpells       uint8
 )
 
 type Score struct {
@@ -100,12 +110,14 @@ type State struct {
 	player       Player
 	tiles        Tiles
 	monsters     []Monstrous
+	spells       SpellMap
 	shake        shake
 	spawnRate    counter
 	spawnCounter counter
 	level        Level
 	state        gameState
 	score        Points
+	numSpells    numSpells
 }
 
 func (s *State) Input(p Platform, keyType KeyType) error {
@@ -116,16 +128,19 @@ func (s *State) Input(p Platform, keyType KeyType) error {
 	case dead:
 		s.state = title
 	case running:
-		switch keyType {
-		case Up:
+		switch {
+		case keyType == Up:
 			err = s.player.tryMove(p, s, 0, -1)
-		case Left:
+		case keyType == Left:
 			err = s.player.tryMove(p, s, -1, 0)
-		case Down:
+		case keyType == Down:
 			err = s.player.tryMove(p, s, 0, 1)
-		case Right:
+		case keyType == Right:
 			err = s.player.tryMove(p, s, 1, 0)
-		case Other:
+		case keyType >= One && keyType <= Nine:
+			// One maps to 0, Two maps to 1 and so forth.
+			err = s.player.castSpell(p, s, int(keyType-One))
+		case keyType == Other:
 			fallthrough
 		default:
 		}
@@ -137,6 +152,11 @@ func (s *State) Input(p Platform, keyType KeyType) error {
 func startGame(s *State) error {
 	s.level = 1
 	s.score = 0
+	s.numSpells = 1
+
+	if s.spells == nil {
+		s.spells = getSpellMap()
+	}
 
 	err := startLevel(s, startingHp)
 	if err != nil {
@@ -163,7 +183,7 @@ func startLevel(s *State, playerHp HP) error {
 		return err
 	}
 
-	s.player = *NewPlayerStruct(startingTileish)
+	s.player = *NewPlayerStruct(s, startingTileish)
 
 	s.player.monster().hp = playerHp
 
@@ -185,6 +205,7 @@ const (
 	UI        TextSize = iota
 	Title     TextSize = iota
 	ScoreList TextSize = iota
+	SpellList TextSize = iota
 )
 
 type TextJustification uint8
@@ -201,11 +222,11 @@ type Sound uint8
 // Any Platform interface implementations only needs to handle these values for
 // Sound.
 const (
-	Hit1     Sound = iota
-	Hit2     Sound = iota
-	Treasure Sound = iota
-	NewLevel Sound = iota
-	Spell    Sound = iota
+	Hit1       Sound = iota
+	Hit2       Sound = iota
+	Treasure   Sound = iota
+	NewLevel   Sound = iota
+	SpellSound Sound = iota
 )
 
 type Platform interface {
@@ -319,6 +340,11 @@ func drawGameScreen(p Platform, s *State) {
 
 	p.Text("Level: "+strconv.FormatUint(uint64(s.level), 10), UI, Plain, SubTileUnit/4, violet)
 	p.Text("Score: "+strconv.FormatUint(uint64(s.score), 10), UI, Plain, SubTileUnit*3/4, violet)
+
+	for i := 0; i < len(s.player.spells); i++ {
+		spellText := strconv.FormatUint(uint64(i+1), 10) + ") " + s.player.spells[i].String()
+		p.Text(spellText, SpellList, Plain, SubTilePosition(SubTileUnit)*5/4+SubTilePosition(i)*SubTileUnit/2, aqua)
+	}
 }
 
 func screenshake(shake *shake) {

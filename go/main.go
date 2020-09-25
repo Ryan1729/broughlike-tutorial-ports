@@ -162,27 +162,7 @@ func main() {
 				return
 			case *sdl.KeyboardEvent:
 				if e.State == sdl.PRESSED {
-					var keyType game.KeyType
-					switch e.Keysym.Sym {
-					case sdl.K_w:
-						fallthrough
-					case sdl.K_UP:
-						keyType = game.Up
-					case sdl.K_a:
-						fallthrough
-					case sdl.K_LEFT:
-						keyType = game.Left
-					case sdl.K_s:
-						fallthrough
-					case sdl.K_DOWN:
-						keyType = game.Down
-					case sdl.K_d:
-						fallthrough
-					case sdl.K_RIGHT:
-						keyType = game.Right
-					}
-
-					dieIfErr(s.Input(&platform, keyType))
+					dieIfErr(s.Input(&platform, keyCodetoKeyType(e.Keysym.Sym)))
 				}
 			}
 		}
@@ -191,6 +171,86 @@ func main() {
 
 		time.Sleep(time.Until(start.Add(PerFrameDuration)))
 	}
+}
+
+//nolint:funlen, gocyclo // This function does exactly one cohesive thing,
+// splitting it up further would be counter-productive.
+func keyCodetoKeyType(keycode sdl.Keycode) game.KeyType {
+	var keyType game.KeyType
+	switch keycode {
+	case sdl.K_w:
+		fallthrough
+	case sdl.K_UP:
+		keyType = game.Up
+	case sdl.K_a:
+		fallthrough
+	case sdl.K_LEFT:
+		keyType = game.Left
+	case sdl.K_s:
+		fallthrough
+	case sdl.K_DOWN:
+		keyType = game.Down
+	case sdl.K_d:
+		fallthrough
+	case sdl.K_RIGHT:
+		keyType = game.Right
+	case sdl.K_1:
+		fallthrough
+	case sdl.K_F1:
+		fallthrough
+	case sdl.K_KP_1:
+		keyType = game.One
+	case sdl.K_2:
+		fallthrough
+	case sdl.K_F2:
+		fallthrough
+	case sdl.K_KP_2:
+		keyType = game.Two
+	case sdl.K_3:
+		fallthrough
+	case sdl.K_F3:
+		fallthrough
+	case sdl.K_KP_3:
+		keyType = game.Three
+	case sdl.K_4:
+		fallthrough
+	case sdl.K_F4:
+		fallthrough
+	case sdl.K_KP_4:
+		keyType = game.Four
+	case sdl.K_5:
+		fallthrough
+	case sdl.K_F5:
+		fallthrough
+	case sdl.K_KP_5:
+		keyType = game.Five
+	case sdl.K_6:
+		fallthrough
+	case sdl.K_F6:
+		fallthrough
+	case sdl.K_KP_6:
+		keyType = game.Six
+	case sdl.K_7:
+		fallthrough
+	case sdl.K_F7:
+		fallthrough
+	case sdl.K_KP_7:
+		keyType = game.Seven
+	case sdl.K_8:
+		fallthrough
+	case sdl.K_F8:
+		fallthrough
+	case sdl.K_KP_8:
+		keyType = game.Eight
+	case sdl.K_9:
+		fallthrough
+	case sdl.K_F9:
+		fallthrough
+	case sdl.K_KP_9:
+		keyType = game.Nine
+	}
+
+	return keyType
 }
 
 func doFrame(platform *SDL2Platform, s *game.State) {
@@ -290,13 +350,15 @@ func (p *SDL2Platform) Text(
 	var font *ttf.Font
 	switch size {
 	case game.Title:
-		font = p.assets.titleFont
+		font = p.assets.fonts.title
 	case game.ScoreList:
-		font = p.assets.scoreListFont
+		font = p.assets.fonts.scoreList
+	case game.SpellList:
+		font = p.assets.fonts.spellList
 	case game.UI:
 		fallthrough
 	default:
-		font = p.assets.uiFont
+		font = p.assets.fonts.ui
 	}
 
 	width, height, err := font.SizeUTF8(text)
@@ -354,7 +416,7 @@ func (p *SDL2Platform) Sound(sound game.Sound) {
 	case game.NewLevel:
 		_, err := p.assets.newLevel.Play(-1, 0)
 		dieIfErr(err)
-	case game.Spell:
+	case game.SpellSound:
 		_, err := p.assets.spell.Play(-1, 0)
 		dieIfErr(err)
 	default:
@@ -517,16 +579,21 @@ func min(a, b int32) int32 {
 	return b
 }
 
+type fonts struct {
+	ui        *ttf.Font
+	title     *ttf.Font
+	scoreList *ttf.Font
+	spellList *ttf.Font
+}
+
 type Assets struct {
-	spritesheet   *sdl.Texture
-	uiFont        *ttf.Font
-	titleFont     *ttf.Font
-	scoreListFont *ttf.Font
-	hit1          *mix.Chunk
-	hit2          *mix.Chunk
-	newLevel      *mix.Chunk
-	spell         *mix.Chunk
-	treasure      *mix.Chunk
+	spritesheet *sdl.Texture
+	fonts       fonts
+	hit1        *mix.Chunk
+	hit2        *mix.Chunk
+	newLevel    *mix.Chunk
+	spell       *mix.Chunk
+	treasure    *mix.Chunk
 }
 
 func loadAssets(renderer *sdl.Renderer) Assets {
@@ -544,24 +611,7 @@ func loadAssets(renderer *sdl.Renderer) Assets {
 	//  Fonts
 	//
 
-	// We get an error from SDL2 if we try to use the same RWOps for both fonts
-	uiFontRW, err := sdl.RWFromMem(assets.Font)
-	dieIfErr(err)
-
-	uiFont, err := ttf.OpenFontRW(uiFontRW, 0, 40)
-	dieIfErr(err)
-
-	titleFontRW, err := sdl.RWFromMem(assets.Font)
-	dieIfErr(err)
-
-	titleFont, err := ttf.OpenFontRW(titleFontRW, 0, 70)
-	dieIfErr(err)
-
-	scoreListFontRW, err := sdl.RWFromMem(assets.Font)
-	dieIfErr(err)
-
-	scoreListFont, err := ttf.OpenFontRW(scoreListFontRW, 0, 24)
-	dieIfErr(err)
+	fonts := loadFonts()
 
 	//
 	//  Audio
@@ -599,14 +649,46 @@ func loadAssets(renderer *sdl.Renderer) Assets {
 
 	return Assets{
 		spritesheet,
-		uiFont,
-		titleFont,
-		scoreListFont,
+		fonts,
 		hit1,
 		hit2,
 		newLevel,
 		spell,
 		treasure,
+	}
+}
+
+func loadFonts() fonts {
+	// We get an error from SDL2 if we try to use the same RWOps for multiple fonts
+	uiFontRW, err := sdl.RWFromMem(assets.Font)
+	dieIfErr(err)
+
+	uiFont, err := ttf.OpenFontRW(uiFontRW, 0, 40)
+	dieIfErr(err)
+
+	titleFontRW, err := sdl.RWFromMem(assets.Font)
+	dieIfErr(err)
+
+	titleFont, err := ttf.OpenFontRW(titleFontRW, 0, 70)
+	dieIfErr(err)
+
+	scoreListFontRW, err := sdl.RWFromMem(assets.Font)
+	dieIfErr(err)
+
+	scoreListFont, err := ttf.OpenFontRW(scoreListFontRW, 0, 24)
+	dieIfErr(err)
+
+	spellListFontRW, err := sdl.RWFromMem(assets.Font)
+	dieIfErr(err)
+
+	spellListFont, err := ttf.OpenFontRW(spellListFontRW, 0, 42)
+	dieIfErr(err)
+
+	return fonts{
+		uiFont,
+		titleFont,
+		scoreListFont,
+		spellListFont,
 	}
 }
 

@@ -238,18 +238,18 @@ type MonsterMaker = func(tileish Tileish) Monstrous
 
 type Player struct {
 	*Monster
+	spells []SpellName
 }
 
-func NewPlayer(tileish Tileish) Monstrous {
-	return NewPlayerStruct(tileish)
-}
-
-func NewPlayerStruct(tileish Tileish) *Player {
+func NewPlayerStruct(s *State, tileish Tileish) *Player {
 	m := NewMonster(tileish, 0, 3)
 	m.teleportCounter = counter{0}
 
+	playerSpells := shuffledSpellNames(s.spells)[:int(s.numSpells)]
+
 	return &Player{
 		Monster: m,
+		spells:  playerSpells,
 	}
 }
 
@@ -264,6 +264,29 @@ func (p *Player) tryMove(platform Platform, s *State, dx, dy Delta) error {
 	}
 
 	return nil
+}
+
+func (p *Player) castSpell(platform Platform, s *State, index int) (err error) {
+	spellName := NoSpell
+	if index >= 0 && index < len(p.spells) {
+		spellName = p.spells[index]
+	}
+
+	if spellName != NoSpell {
+		p.spells[index] = NoSpell
+		err = s.spells[spellName](platform, s)
+		if err != nil {
+			return err
+		}
+
+		platform.Sound(SpellSound)
+		err = tick(platform, s)
+		if err != nil {
+			return err
+		}
+	}
+
+	return err
 }
 
 type Bird struct {
