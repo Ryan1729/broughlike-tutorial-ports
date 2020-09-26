@@ -5,6 +5,7 @@ type SpellName uint8
 const (
 	NoSpell SpellName = iota
 	WOOP    SpellName = iota
+	QUAKE   SpellName = iota
 )
 
 func (s SpellName) String() string {
@@ -14,6 +15,8 @@ func (s SpellName) String() string {
 		return ""
 	case WOOP:
 		return "WOOP"
+	case QUAKE:
+		return "QUAKE"
 	default:
 		return "Unknown Spell"
 	}
@@ -36,6 +39,21 @@ func getSpellMap() SpellMap {
 			}
 
 			return move(p, s, s.player, tileish)
+		},
+		QUAKE: func(p Platform, s *State) error {
+			var i, j Position
+			for j = 0; j < NumTiles; j++ {
+				for i = 0; i < NumTiles; i++ {
+					tile := s.tiles.get(i, j).tile()
+					if tile.monster != nil {
+						numWalls := 4 - len(s.tiles.getAdjacentPassableNeighbors(tile))
+						hit(p, tile.monster, HP(numWalls*2))
+					}
+				}
+			}
+			s.shake.amount = counter{20}
+
+			return nil
 		},
 	}
 }
