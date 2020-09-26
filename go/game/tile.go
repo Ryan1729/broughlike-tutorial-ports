@@ -70,6 +70,11 @@ func (t *Floor) stepOn(p Platform, s *State, monster Monstrous) (err error) {
 	if _, isPlayer := monster.(*Player); isPlayer && t.treasure {
 		s.score++
 
+		if s.score%3 == 0 && s.numSpells < 9 {
+			s.numSpells++
+			s.player.addSpell(s.spells)
+		}
+
 		p.Sound(Treasure)
 
 		t.treasure = false

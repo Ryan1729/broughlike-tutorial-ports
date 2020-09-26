@@ -245,7 +245,13 @@ func NewPlayerStruct(s *State, tileish Tileish) *Player {
 	m := NewMonster(tileish, 0, 3)
 	m.teleportCounter = counter{0}
 
-	playerSpells := shuffledSpellNames(s.spells)[:int(s.numSpells)]
+	spellNames := shuffledSpellNames(s.spells)
+	maxSpells := int(s.numSpells)
+	if maxSpells > len(spellNames) {
+		maxSpells = len(spellNames)
+	}
+
+	playerSpells := spellNames[:maxSpells]
 
 	return &Player{
 		Monster: m,
@@ -264,6 +270,10 @@ func (p *Player) tryMove(platform Platform, s *State, dx, dy Delta) error {
 	}
 
 	return nil
+}
+
+func (p *Player) addSpell(spells SpellMap) {
+	p.spells = append(p.spells, shuffledSpellNames(spells)[0])
 }
 
 func (p *Player) castSpell(platform Platform, s *State, index int) (err error) {
