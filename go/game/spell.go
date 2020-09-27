@@ -7,6 +7,7 @@ const (
 	WOOP      SpellName = iota
 	QUAKE     SpellName = iota
 	MAELSTROM SpellName = iota
+	MULLIGAN  SpellName = iota
 )
 
 func (s SpellName) String() string {
@@ -20,6 +21,8 @@ func (s SpellName) String() string {
 		return "QUAKE"
 	case MAELSTROM:
 		return "MAELSTROM"
+	case MULLIGAN:
+		return "MULLIGAN"
 	default:
 		return "Unknown Spell"
 	}
@@ -74,6 +77,9 @@ func getSpellMap() SpellMap {
 			}
 
 			return nil
+		},
+		MULLIGAN: func(p Platform, s *State) error {
+			return startLevel(s, 1, s.player.spells)
 		},
 	}
 }

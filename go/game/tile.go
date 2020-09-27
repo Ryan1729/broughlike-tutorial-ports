@@ -126,7 +126,7 @@ func (t *Exit) stepOn(p Platform, s *State, monster Monstrous) (err error) {
 				newHP = maxHP
 			}
 
-			err = startLevel(s, newHP)
+			err = startLevel(s, newHP, nil)
 		}
 	}
 

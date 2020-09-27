@@ -158,7 +158,7 @@ func startGame(s *State) error {
 		s.spells = getSpellMap()
 	}
 
-	err := startLevel(s, startingHp)
+	err := startLevel(s, startingHp, nil)
 	if err != nil {
 		return err
 	}
@@ -168,7 +168,7 @@ func startGame(s *State) error {
 	return nil
 }
 
-func startLevel(s *State, playerHp HP) error {
+func startLevel(s *State, playerHp HP, playerSpells []SpellName) error {
 	s.spawnRate = counter{15}
 
 	s.spawnCounter = s.spawnRate
@@ -186,6 +186,10 @@ func startLevel(s *State, playerHp HP) error {
 	s.player = *NewPlayerStruct(s, startingTileish)
 
 	s.player.monster().hp = playerHp
+
+	if len(playerSpells) > 0 {
+		s.player.spells = playerSpells
+	}
 
 	exitTileish, err := s.tiles.randomPassable()
 	if err != nil {
