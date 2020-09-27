@@ -3,9 +3,10 @@ package game
 type SpellName uint8
 
 const (
-	NoSpell SpellName = iota
-	WOOP    SpellName = iota
-	QUAKE   SpellName = iota
+	NoSpell   SpellName = iota
+	WOOP      SpellName = iota
+	QUAKE     SpellName = iota
+	MAELSTROM SpellName = iota
 )
 
 func (s SpellName) String() string {
@@ -17,6 +18,8 @@ func (s SpellName) String() string {
 		return "WOOP"
 	case QUAKE:
 		return "QUAKE"
+	case MAELSTROM:
+		return "MAELSTROM"
 	default:
 		return "Unknown Spell"
 	}
@@ -52,6 +55,23 @@ func getSpellMap() SpellMap {
 				}
 			}
 			s.shake.amount = counter{20}
+
+			return nil
+		},
+		MAELSTROM: func(p Platform, s *State) error {
+			for i := 0; i < len(s.monsters); i++ {
+				tileish, err := s.tiles.randomPassable()
+				if err != nil {
+					return err
+				}
+
+				err = move(p, s, s.monsters[i], tileish)
+				if err != nil {
+					return err
+				}
+
+				s.monsters[i].monster().teleportCounter = counter{2}
+			}
 
 			return nil
 		},
