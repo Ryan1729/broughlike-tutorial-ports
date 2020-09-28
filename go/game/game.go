@@ -78,13 +78,15 @@ type (
 	// ]
 	// For any given position p, SubTilePosition(p) has the same meaning.
 	SubTilePosition = float32
-	KeyType         uint8
-	gameState       uint8
-	Points          uint64
-	Run             uint64
-	WonOrLost       bool
-	Colour          uint32
-	numSpells       uint8
+	// Should only be within the range [0, 1].
+	Alpha     float32
+	KeyType   uint8
+	gameState uint8
+	Points    uint64
+	Run       uint64
+	WonOrLost bool
+	Colour    uint32
+	numSpells uint8
 )
 
 type Score struct {
@@ -234,7 +236,11 @@ const (
 )
 
 type Platform interface {
-	SubTileSprite(sprite SpriteIndex, x, y, shakeX, shakeY SubTilePosition)
+	SubTileSprite(
+		sprite SpriteIndex,
+		x, y, shakeX, shakeY SubTilePosition,
+		alpha Alpha,
+	)
 	Overlay()
 	Text(text string,
 		size TextSize,
@@ -248,12 +254,34 @@ type Platform interface {
 }
 
 func sprite(p Platform, sprite SpriteIndex, x, y Position, shake shake) {
+	subTileSprite(
+		p,
+		sprite,
+		SubTilePosition(x),
+		SubTilePosition(y),
+		shake,
+	)
+}
+
+func spriteWithAlpha(p Platform, sprite SpriteIndex, x, y Position, shake shake, alpha Alpha) {
 	p.SubTileSprite(
 		sprite,
 		SubTilePosition(x),
 		SubTilePosition(y),
 		shake.x,
 		shake.y,
+		alpha,
+	)
+}
+
+func subTileSprite(p Platform, sprite SpriteIndex, x, y SubTilePosition, shake shake) {
+	p.SubTileSprite(
+		sprite,
+		x,
+		y,
+		shake.x,
+		shake.y,
+		1.0,
 	)
 }
 

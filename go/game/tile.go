@@ -4,14 +4,17 @@ type Tileish interface {
 	tile() *Tile
 	dist(tileish Tileish) Distance
 	stepOn(p Platform, s *State, monster Monstrous) error
+	setEffect(sprite SpriteIndex)
 }
 
 type Tile struct {
-	monster  Monstrous
-	x, y     Position
-	sprite   SpriteIndex
-	passable bool
-	treasure bool
+	monster       Monstrous
+	x, y          Position
+	sprite        SpriteIndex
+	passable      bool
+	treasure      bool
+	effect        SpriteIndex
+	effectCounter counter
 }
 
 func NewTile(sprite SpriteIndex, x, y Position, passable bool) *Tile {
@@ -37,12 +40,34 @@ func abs(d Distance) Distance {
 	return d
 }
 
+const (
+	effectDuration = 30
+)
+
 func (t *Tile) draw(p Platform, shake shake) {
 	sprite(p, t.sprite, t.x, t.y, shake)
 
 	if t.treasure {
 		sprite(p, 12, t.x, t.y, shake)
 	}
+
+	if t.effectCounter.isActive() {
+		t.effectCounter.dec()
+
+		spriteWithAlpha(
+			p,
+			t.effect,
+			t.x,
+			t.y,
+			shake,
+			Alpha(float32(t.effectCounter.value)/effectDuration),
+		)
+	}
+}
+
+func (t *Tile) setEffect(sprite SpriteIndex) {
+	t.effect = sprite
+	t.effectCounter = counter{effectDuration}
 }
 
 func (t *Tile) tile() *Tile {

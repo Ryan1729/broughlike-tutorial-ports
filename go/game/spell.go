@@ -8,6 +8,7 @@ const (
 	QUAKE     SpellName = iota
 	MAELSTROM SpellName = iota
 	MULLIGAN  SpellName = iota
+	AURA      SpellName = iota
 )
 
 func (s SpellName) String() string {
@@ -23,6 +24,8 @@ func (s SpellName) String() string {
 		return "MAELSTROM"
 	case MULLIGAN:
 		return "MULLIGAN"
+	case AURA:
+		return "AURA"
 	default:
 		return "Unknown Spell"
 	}
@@ -80,6 +83,19 @@ func getSpellMap() SpellMap {
 		},
 		MULLIGAN: func(p Platform, s *State) error {
 			return startLevel(s, 1, s.player.spells)
+		},
+		AURA: func(p Platform, s *State) error {
+			for _, tileish := range s.tiles.getAdjacentNeighbors(s.player.tileish) {
+				tileish.setEffect(13)
+				t := tileish.tile()
+				if t.monster != nil {
+					t.monster.monster().heal(1)
+				}
+			}
+			s.player.tileish.setEffect(13)
+			s.player.monster().heal(1)
+
+			return nil
 		},
 	}
 }

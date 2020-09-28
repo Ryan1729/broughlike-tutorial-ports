@@ -304,8 +304,14 @@ func (p *SDL2Platform) Clear() {
 		}))
 }
 
-func (p *SDL2Platform) SubTileSprite(sprite game.SpriteIndex, x, y, shakeX, shakeY game.SubTilePosition) {
+func (p *SDL2Platform) SubTileSprite(
+	sprite game.SpriteIndex,
+	x, y, shakeX, shakeY game.SubTilePosition,
+	alpha game.Alpha,
+) {
 	sizes := &p.sizes
+
+	dieIfErr(p.assets.spritesheet.SetAlphaMod(uint8(alpha * 255.0)))
 
 	dieIfErr(p.renderer.Copy(
 		p.assets.spritesheet,

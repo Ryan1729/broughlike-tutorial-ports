@@ -185,20 +185,20 @@ func (m *Monster) getDisplayY() SubTilePosition {
 
 func (m *Monster) draw(p Platform, shake shake) {
 	if m.teleportCounter.isActive() {
-		p.SubTileSprite(
+		subTileSprite(
+			p,
 			10,
 			m.getDisplayX(),
 			m.getDisplayY(),
-			shake.x,
-			shake.y,
+			shake,
 		)
 	} else {
-		p.SubTileSprite(
+		subTileSprite(
+			p,
 			m.sprite,
 			m.getDisplayX(),
 			m.getDisplayY(),
-			shake.x,
-			shake.y,
+			shake,
 		)
 		m.drawHp(p, shake)
 	}
@@ -222,14 +222,14 @@ func signum(stp SubTilePosition) SubTilePosition {
 func (m *Monster) drawHp(p Platform, shake shake) {
 	var i HP
 	for ; i < m.hp; i++ {
-		p.SubTileSprite(
+		subTileSprite(
+			p,
 			9,
 			m.getDisplayX()+
 				SubTilePosition(math.Mod(float64(i), 3.0))*healthSize,
 			m.getDisplayY()-
 				SubTilePosition(math.Floor(float64(i)/3.0))*healthSize,
-			shake.x,
-			shake.y,
+			shake,
 		)
 	}
 }
