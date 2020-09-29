@@ -238,7 +238,8 @@ type MonsterMaker = func(tileish Tileish) Monstrous
 
 type Player struct {
 	*Monster
-	spells []SpellName
+	spells   []SpellName
+	lastMove [2]Delta
 }
 
 func NewPlayerStruct(s *State, tileish Tileish) *Player {
@@ -254,8 +255,9 @@ func NewPlayerStruct(s *State, tileish Tileish) *Player {
 	playerSpells := spellNames[:maxSpells]
 
 	return &Player{
-		Monster: m,
-		spells:  playerSpells,
+		Monster:  m,
+		spells:   playerSpells,
+		lastMove: [2]Delta{-1, 0},
 	}
 }
 
@@ -266,6 +268,8 @@ func (p *Player) tryMove(platform Platform, s *State, dx, dy Delta) error {
 	}
 
 	if moved {
+		p.lastMove = [2]Delta{dx, dy}
+
 		return tick(platform, s)
 	}
 
