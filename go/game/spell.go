@@ -10,6 +10,7 @@ const (
 	MULLIGAN  SpellName = iota
 	AURA      SpellName = iota
 	DASH      SpellName = iota
+	DIG       SpellName = iota
 )
 
 func (s SpellName) String() string {
@@ -29,6 +30,8 @@ func (s SpellName) String() string {
 		return "AURA"
 	case DASH:
 		return "DASH"
+	case DIG:
+		return "DIG"
 	default:
 		return "Unknown Spell"
 	}
@@ -129,6 +132,23 @@ func dash(p Platform, s *State) error {
 	return nil
 }
 
+func dig(p Platform, s *State) error {
+	var i, j Position
+	for j = 0; j < NumTiles; j++ {
+		for i = 0; i < NumTiles; i++ {
+			tile := s.tiles.get(i, j)
+			if !tile.tile().passable {
+				s.tiles.replace(tile, NewFloor)
+			}
+		}
+	}
+
+	s.player.tileish.setEffect(13)
+	s.player.heal(2)
+
+	return nil
+}
+
 // We make this a function to avoid what would otherwise be a global variable,
 // since golang doesn't support const maps.
 func getSpellMap() SpellMap {
@@ -141,6 +161,7 @@ func getSpellMap() SpellMap {
 		MULLIGAN:  mulligan,
 		AURA:      aura,
 		DASH:      dash,
+		DIG:       dig,
 	}
 }
 
