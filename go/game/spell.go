@@ -11,6 +11,7 @@ const (
 	AURA      SpellName = iota
 	DASH      SpellName = iota
 	DIG       SpellName = iota
+	KINGMAKER SpellName = iota
 )
 
 func (s SpellName) String() string {
@@ -32,6 +33,8 @@ func (s SpellName) String() string {
 		return "DASH"
 	case DIG:
 		return "DIG"
+	case KINGMAKER:
+		return "KINGMAKER"
 	default:
 		return "Unknown Spell"
 	}
@@ -149,6 +152,15 @@ func dig(p Platform, s *State) error {
 	return nil
 }
 
+func kingmaker(p Platform, s *State) error {
+	for _, m := range s.monsters {
+		m.monster().heal(1)
+		m.monster().tileish.tile().treasure = true
+	}
+
+	return nil
+}
+
 // We make this a function to avoid what would otherwise be a global variable,
 // since golang doesn't support const maps.
 func getSpellMap() SpellMap {
@@ -162,6 +174,7 @@ func getSpellMap() SpellMap {
 		AURA:      aura,
 		DASH:      dash,
 		DIG:       dig,
+		KINGMAKER: kingmaker,
 	}
 }
 
