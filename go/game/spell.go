@@ -13,6 +13,7 @@ const (
 	DIG       SpellName = iota
 	KINGMAKER SpellName = iota
 	ALCHEMY   SpellName = iota
+	POWER     SpellName = iota
 )
 
 func (s SpellName) String() string {
@@ -38,6 +39,8 @@ func (s SpellName) String() string {
 		return "KINGMAKER"
 	case ALCHEMY:
 		return "ALCHEMY"
+	case POWER:
+		return "POWER"
 	default:
 		return "Unknown Spell"
 	}
@@ -177,6 +180,12 @@ func alchemy(p Platform, s *State) error {
 	return nil
 }
 
+func power(p Platform, s *State) error {
+	s.player.monster().bonusAttack = 5
+
+	return nil
+}
+
 // We make this a function to avoid what would otherwise be a global variable,
 // since golang doesn't support const maps.
 func getSpellMap() SpellMap {
@@ -192,6 +201,7 @@ func getSpellMap() SpellMap {
 		DIG:       dig,
 		KINGMAKER: kingmaker,
 		ALCHEMY:   alchemy,
+		POWER:     power,
 	}
 }
 

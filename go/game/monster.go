@@ -53,7 +53,8 @@ func tryMove(p Platform, s *State, monstrous Monstrous, dx, dy Delta) (moved boo
 				m.attackedThisTurn = true
 				nTM := newTile.monster.monster()
 				nTM.stunned = true
-				hit(p, newTile.monster, 1)
+				hit(p, newTile.monster, 1+m.bonusAttack)
+				m.bonusAttack = 0
 
 				s.shake.amount = counter{5}
 
@@ -102,6 +103,7 @@ type Monster struct {
 	hp               HP
 	sprite           SpriteIndex
 	teleportCounter  counter
+	bonusAttack      HP
 	dead             bool
 	attackedThisTurn bool
 	stunned          bool
