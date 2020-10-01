@@ -12,6 +12,7 @@ const (
 	DASH      SpellName = iota
 	DIG       SpellName = iota
 	KINGMAKER SpellName = iota
+	ALCHEMY   SpellName = iota
 )
 
 func (s SpellName) String() string {
@@ -35,6 +36,8 @@ func (s SpellName) String() string {
 		return "DIG"
 	case KINGMAKER:
 		return "KINGMAKER"
+	case ALCHEMY:
+		return "ALCHEMY"
 	default:
 		return "Unknown Spell"
 	}
@@ -161,6 +164,19 @@ func kingmaker(p Platform, s *State) error {
 	return nil
 }
 
+func alchemy(p Platform, s *State) error {
+	for _, tileish := range s.tiles.getAdjacentNeighbors(s.player.tileish) {
+		t := tileish.tile()
+		if !t.passable && inBounds(t.x, t.y) {
+			s.tiles.replace(tileish, NewFloor)
+
+			s.tiles.get(t.x, t.y).tile().treasure = true
+		}
+	}
+
+	return nil
+}
+
 // We make this a function to avoid what would otherwise be a global variable,
 // since golang doesn't support const maps.
 func getSpellMap() SpellMap {
@@ -175,6 +191,7 @@ func getSpellMap() SpellMap {
 		DASH:      dash,
 		DIG:       dig,
 		KINGMAKER: kingmaker,
+		ALCHEMY:   alchemy,
 	}
 }
 
