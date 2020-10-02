@@ -15,6 +15,7 @@ const (
 	ALCHEMY   SpellName = iota
 	POWER     SpellName = iota
 	BUBBLE    SpellName = iota
+	BRAVERY   SpellName = iota
 )
 
 func (s SpellName) String() string {
@@ -44,6 +45,8 @@ func (s SpellName) String() string {
 		return "POWER"
 	case BUBBLE:
 		return "BUBBLE"
+	case BRAVERY:
+		return "BRAVERY"
 	default:
 		return "Unknown Spell"
 	}
@@ -59,7 +62,7 @@ func woop(p Platform, s *State) error {
 		return err
 	}
 
-	return move(p, s, s.player, tileish)
+	return move(p, s, &s.player, tileish)
 }
 
 func quake(p Platform, s *State) error {
@@ -126,7 +129,7 @@ func dash(p Platform, s *State) error {
 		}
 	}
 	if s.player.tileish != newTile {
-		err := move(p, s, s.player, newTile)
+		err := move(p, s, &s.player, newTile)
 		if err != nil {
 			return err
 		}
@@ -199,6 +202,15 @@ func bubble(p Platform, s *State) error {
 	return nil
 }
 
+func bravery(p Platform, s *State) error {
+	s.player.shield = counter{2}
+	for _, m := range s.monsters {
+		m.monster().stunned = true
+	}
+
+	return nil
+}
+
 // We make this a function to avoid what would otherwise be a global variable,
 // since golang doesn't support const maps.
 func getSpellMap() SpellMap {
@@ -216,6 +228,7 @@ func getSpellMap() SpellMap {
 		ALCHEMY:   alchemy,
 		POWER:     power,
 		BUBBLE:    bubble,
+		BRAVERY:   bravery,
 	}
 }
 

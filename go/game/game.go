@@ -436,6 +436,11 @@ func tick(p Platform, s *State) error {
 		}
 	}
 
+	err := s.player.update(p, s)
+	if err != nil {
+		return err
+	}
+
 	if s.player.monster().dead {
 		addScore(p, s.score, Lost)
 		s.state = dead

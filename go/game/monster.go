@@ -84,6 +84,11 @@ func doStuffUnlessStunned(monstrous Monstrous, p Platform, s *State) error {
 
 func hit(p Platform, monstrous Monstrous, damage HP) {
 	m := monstrous.monster()
+
+	if m.shield.isActive() {
+		return
+	}
+
 	m.hp -= damage
 	if m.hp <= 0 {
 		m.die()
@@ -104,6 +109,7 @@ type Monster struct {
 	sprite           SpriteIndex
 	teleportCounter  counter
 	bonusAttack      HP
+	shield           counter
 	dead             bool
 	attackedThisTurn bool
 	stunned          bool
@@ -261,6 +267,12 @@ func NewPlayerStruct(s *State, tileish Tileish) *Player {
 		spells:   playerSpells,
 		lastMove: [2]Delta{-1, 0},
 	}
+}
+
+func (p *Player) update(platform Platform, s *State) error {
+	p.shield.dec()
+
+	return nil
 }
 
 func (p *Player) tryMove(platform Platform, s *State, dx, dy Delta) error {
