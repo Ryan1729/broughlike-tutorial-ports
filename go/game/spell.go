@@ -14,6 +14,7 @@ const (
 	KINGMAKER SpellName = iota
 	ALCHEMY   SpellName = iota
 	POWER     SpellName = iota
+	BUBBLE    SpellName = iota
 )
 
 func (s SpellName) String() string {
@@ -41,6 +42,8 @@ func (s SpellName) String() string {
 		return "ALCHEMY"
 	case POWER:
 		return "POWER"
+	case BUBBLE:
+		return "BUBBLE"
 	default:
 		return "Unknown Spell"
 	}
@@ -186,6 +189,16 @@ func power(p Platform, s *State) error {
 	return nil
 }
 
+func bubble(p Platform, s *State) error {
+	for i := len(s.player.spells) - 1; i > 0; i-- {
+		if s.player.spells[i] == NoSpell {
+			s.player.spells[i] = s.player.spells[i-1]
+		}
+	}
+
+	return nil
+}
+
 // We make this a function to avoid what would otherwise be a global variable,
 // since golang doesn't support const maps.
 func getSpellMap() SpellMap {
@@ -202,6 +215,7 @@ func getSpellMap() SpellMap {
 		KINGMAKER: kingmaker,
 		ALCHEMY:   alchemy,
 		POWER:     power,
+		BUBBLE:    bubble,
 	}
 }
 
