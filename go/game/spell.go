@@ -16,6 +16,7 @@ const (
 	POWER     SpellName = iota
 	BUBBLE    SpellName = iota
 	BRAVERY   SpellName = iota
+	BOLT      SpellName = iota
 )
 
 func (s SpellName) String() string {
@@ -47,6 +48,8 @@ func (s SpellName) String() string {
 		return "BUBBLE"
 	case BRAVERY:
 		return "BRAVERY"
+	case BOLT:
+		return "BOLT"
 	default:
 		return "Unknown Spell"
 	}
@@ -211,6 +214,13 @@ func bravery(p Platform, s *State) error {
 	return nil
 }
 
+func bolt(p Platform, s *State) error {
+	lastMove := s.player.lastMove
+	boltTravel(p, s, lastMove, boltSprite(lastMove), 4)
+
+	return nil
+}
+
 // We make this a function to avoid what would otherwise be a global variable,
 // since golang doesn't support const maps.
 func getSpellMap() SpellMap {
@@ -229,6 +239,7 @@ func getSpellMap() SpellMap {
 		POWER:     power,
 		BUBBLE:    bubble,
 		BRAVERY:   bravery,
+		BOLT:      bolt,
 	}
 }
 
@@ -241,4 +252,31 @@ func shuffledSpellNames(spells SpellMap) []SpellName {
 	}
 
 	return shuffleSpellNamesInPlace(names)
+}
+
+func boltTravel(p Platform, s *State, direction [2]Delta, effect SpriteIndex, damage HP) {
+	newTileish := s.player.tileish
+	for {
+		testTileish := s.tiles.getNeighbor(newTileish, direction[0], direction[1])
+		if testTileish.tile().passable {
+			newTileish = testTileish
+
+			m := newTileish.tile().monster
+
+			if m != nil {
+				hit(p, m, damage)
+			}
+			newTileish.setEffect(effect)
+		} else {
+			break
+		}
+	}
+}
+
+func boltSprite(direction Direction) SpriteIndex {
+	if direction[1] == 0 {
+		return 15
+	}
+
+	return 16
 }
