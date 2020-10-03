@@ -18,6 +18,7 @@ const (
 	BRAVERY   SpellName = iota
 	BOLT      SpellName = iota
 	CROSS     SpellName = iota
+	EX        SpellName = iota
 )
 
 func (s SpellName) String() string {
@@ -53,6 +54,8 @@ func (s SpellName) String() string {
 		return "BOLT"
 	case CROSS:
 		return "CROSS"
+	case EX:
+		return "EX"
 	default:
 		return "Unknown Spell"
 	}
@@ -238,6 +241,20 @@ func cross(p Platform, s *State) error {
 	return nil
 }
 
+func ex(p Platform, s *State) error {
+	directions := [4]Direction{
+		{-1, -1},
+		{-1, 1},
+		{1, -1},
+		{1, 1},
+	}
+	for _, d := range directions {
+		boltTravel(p, s, d, 14, 3)
+	}
+
+	return nil
+}
+
 // We make this a function to avoid what would otherwise be a global variable,
 // since golang doesn't support const maps.
 func getSpellMap() SpellMap {
@@ -258,6 +275,7 @@ func getSpellMap() SpellMap {
 		BRAVERY:   bravery,
 		BOLT:      bolt,
 		CROSS:     cross,
+		EX:        ex,
 	}
 }
 
