@@ -247,7 +247,7 @@ type MonsterMaker = func(tileish Tileish) Monstrous
 type Player struct {
 	*Monster
 	spells   []SpellName
-	lastMove [2]Delta
+	lastMove Direction
 }
 
 func NewPlayerStruct(s *State, tileish Tileish) *Player {
@@ -265,7 +265,7 @@ func NewPlayerStruct(s *State, tileish Tileish) *Player {
 	return &Player{
 		Monster:  m,
 		spells:   playerSpells,
-		lastMove: [2]Delta{-1, 0},
+		lastMove: Direction{-1, 0},
 	}
 }
 

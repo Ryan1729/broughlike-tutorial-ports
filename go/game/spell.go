@@ -17,6 +17,7 @@ const (
 	BUBBLE    SpellName = iota
 	BRAVERY   SpellName = iota
 	BOLT      SpellName = iota
+	CROSS     SpellName = iota
 )
 
 func (s SpellName) String() string {
@@ -50,6 +51,8 @@ func (s SpellName) String() string {
 		return "BRAVERY"
 	case BOLT:
 		return "BOLT"
+	case CROSS:
+		return "CROSS"
 	default:
 		return "Unknown Spell"
 	}
@@ -221,6 +224,20 @@ func bolt(p Platform, s *State) error {
 	return nil
 }
 
+func cross(p Platform, s *State) error {
+	directions := [4]Direction{
+		{0, -1},
+		{0, 1},
+		{-1, 0},
+		{1, 0},
+	}
+	for _, d := range directions {
+		boltTravel(p, s, d, boltSprite(d), 2)
+	}
+
+	return nil
+}
+
 // We make this a function to avoid what would otherwise be a global variable,
 // since golang doesn't support const maps.
 func getSpellMap() SpellMap {
@@ -240,6 +257,7 @@ func getSpellMap() SpellMap {
 		BUBBLE:    bubble,
 		BRAVERY:   bravery,
 		BOLT:      bolt,
+		CROSS:     cross,
 	}
 }
 
@@ -254,7 +272,7 @@ func shuffledSpellNames(spells SpellMap) []SpellName {
 	return shuffleSpellNamesInPlace(names)
 }
 
-func boltTravel(p Platform, s *State, direction [2]Delta, effect SpriteIndex, damage HP) {
+func boltTravel(p Platform, s *State, direction Direction, effect SpriteIndex, damage HP) {
 	newTileish := s.player.tileish
 	for {
 		testTileish := s.tiles.getNeighbor(newTileish, direction[0], direction[1])

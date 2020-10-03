@@ -55,6 +55,8 @@ type (
 	// type Delta should only ever be -1, 0, or 1. When added with
 	// a Position, produces another Position.
 	Delta = int8
+	// type Direction is an x, y pair of Delta values, in that order.
+	Direction = [2]Delta
 	// type Distance is the manhattan distance from (Position, Position) to
 	// another. At most this can be NumTiles * 2.
 	Distance = int8
