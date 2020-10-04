@@ -31,4 +31,4 @@ update msg model =
 
 
 view model =
-    Html.text "Hello, World!"
+    Html.text ""

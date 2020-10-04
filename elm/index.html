@@ -1,8 +1,13 @@
-<body></body>
+<canvas></canvas>
+<script>
+    canvas = document.querySelector("canvas");
+    ctx = canvas.getContext("2d");
+    ctx.fillRect(0,0,20,20,20);
+</script>
 <script type="text/javascript" src="elm.js"></script>
 <script type="text/javascript">
 var app = Elm.Main.init({
-    node: document.body,
+    node: document.createElement("dummy"),
     flags: {}
 });
 </script>
