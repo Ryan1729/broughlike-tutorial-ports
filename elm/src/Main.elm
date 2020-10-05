@@ -2,6 +2,7 @@ module Main exposing (..)
 
 import Browser
 import Html
+import Ports
 import Time
 import Types exposing (Model, Msg(..))
 
@@ -15,9 +16,9 @@ main =
         }
 
 
-init : Model -> ( Model, Cmd Msg )
-init model =
-    ( model, Cmd.none )
+init : () -> ( Model, Cmd Msg )
+init _ =
+    ( Types.defaultModel, Cmd.none )
 
 
 subscriptions _ =
@@ -27,7 +28,7 @@ subscriptions _ =
 update msg model =
     case msg of
         Tick ->
-            ( model, Cmd.none )
+            ( model, Ports.draw model )
 
 
 view model =

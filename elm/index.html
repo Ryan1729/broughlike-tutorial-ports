@@ -10,4 +10,12 @@ var app = Elm.Main.init({
     node: document.createElement("dummy"),
     flags: {}
 });
+
+var commandCount = 0
+app.ports.platform.subscribe(function(commands) {
+    if (commandCount == 0) {
+        console.log(commands)
+    }
+    commandCount += 1
+});
 </script>
