@@ -2,6 +2,8 @@ module Main exposing (..)
 
 import Browser
 import Html
+import Time
+import Types exposing (Model, Msg(..))
 
 
 main =
@@ -9,12 +11,8 @@ main =
         { init = init
         , update = update
         , view = view
-        , subscriptions = \_ -> Sub.none
+        , subscriptions = subscriptions
         }
-
-
-type alias Model =
-    ()
 
 
 init : Model -> ( Model, Cmd Msg )
@@ -22,12 +20,14 @@ init model =
     ( model, Cmd.none )
 
 
-type alias Msg =
-    ()
+subscriptions _ =
+    Time.every 15 (\_ -> Tick)
 
 
 update msg model =
-    ( model, Cmd.none )
+    case msg of
+        Tick ->
+            ( model, Cmd.none )
 
 
 view model =
