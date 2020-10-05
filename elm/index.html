@@ -2,7 +2,6 @@
 <script>
     canvas = document.querySelector("canvas");
     ctx = canvas.getContext("2d");
-    ctx.fillRect(0,0,20,20,20);
 </script>
 <script type="text/javascript" src="elm.js"></script>
 <script type="text/javascript">
@@ -12,7 +11,9 @@ var app = Elm.Main.init({
 });
 
 const actions = {
-    "draw": () => {},
+    "draw": ({x, y}) => {
+        ctx.fillRect(x*20,y*20,20,20);
+    },
 }
 
 app.ports.platform.subscribe((commands) => {
