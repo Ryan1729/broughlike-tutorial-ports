@@ -1,18 +1,30 @@
-port module Ports exposing (draw)
+port module Ports exposing (CommandRecord, draw, perform, setCanvasDimensions)
 
 import Array exposing (Array)
+import Game exposing (H(..), Model, W(..), X(..), Y(..))
 import Json.Encode as JE
-import Types exposing (..)
 
 
-type alias CommandRecord =
-    JE.Value
+type CommandRecord
+    = CommandRecord JE.Value
 
 
-port platform : Array CommandRecord -> Cmd msg
+port platform : Array JE.Value -> Cmd msg
 
 
-draw : Model -> Cmd msg
+perform : Array CommandRecord -> Cmd msg
+perform records =
+    Array.map
+        (\cr ->
+            case cr of
+                CommandRecord v ->
+                    v
+        )
+        records
+        |> platform
+
+
+draw : Model -> CommandRecord
 draw model =
     JE.object
         [ ( "kind", JE.string "draw" )
@@ -27,5 +39,20 @@ draw model =
                     JE.float y
           )
         ]
-        |> Array.repeat 1
-        |> platform
+        |> CommandRecord
+
+
+setCanvasDimensions : ( W, H ) -> CommandRecord
+setCanvasDimensions dimensions =
+    case dimensions of
+        ( W w, H h ) ->
+            JE.object
+                [ ( "kind", JE.string "setCanvasDimensions" )
+                , ( "w"
+                  , JE.float w
+                  )
+                , ( "h"
+                  , JE.float h
+                  )
+                ]
+                |> CommandRecord

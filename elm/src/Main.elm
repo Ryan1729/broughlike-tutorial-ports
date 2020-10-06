@@ -1,11 +1,12 @@
 module Main exposing (..)
 
+import Array
 import Browser
 import Browser.Events
+import Game exposing (H, Model, W, X, Y, decX, decY, incX, incY)
 import Html
 import Json.Decode as JD
 import Ports
-import Types exposing (Model, X, Y, decX, decY, incX, incY)
 
 
 main =
@@ -19,13 +20,21 @@ main =
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( Types.defaultModel, Cmd.none )
+    ( Game.defaultModel
+    , Ports.setCanvasDimensions ( Game.pixelWidth, Game.pixelHeight )
+        |> Array.repeat 1
+        |> Ports.perform
+    )
 
 
 update msg model =
     case msg of
         Tick ->
-            ( model, Ports.draw model )
+            ( model
+            , Ports.draw model
+                |> Array.repeat 1
+                |> Ports.perform
+            )
 
         Input input ->
             ( case input of

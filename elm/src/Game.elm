@@ -1,4 +1,24 @@
-module Types exposing (..)
+module Game exposing (..)
+
+
+tileSize =
+    64
+
+
+numTiles =
+    9
+
+
+uiWidth =
+    4
+
+
+pixelWidth =
+    W (tileSize * (numTiles + uiWidth))
+
+
+pixelHeight =
+    H (tileSize * numTiles)
 
 
 type alias Model =
@@ -52,3 +72,11 @@ decY yy =
             Y y ->
                 y - 1
         )
+
+
+type W
+    = W Float
+
+
+type H
+    = H Float

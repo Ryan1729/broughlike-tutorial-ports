@@ -28,6 +28,12 @@ const actions = {
     "draw": ({x, y}) => {
         ctx.fillRect(x*20,y*20,20,20);
     },
+    "setCanvasDimensions": ({w, h}) => {
+        canvas.width = w;
+        canvas.height = h;
+        canvas.style.width = canvas.width + 'px';
+        canvas.style.height = canvas.height + 'px';
+    }
 }
 
 app.ports.platform.subscribe((commands) => {
