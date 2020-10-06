@@ -38,6 +38,9 @@ draw model =
                 Y y ->
                     JE.float y
           )
+        , ( "tileSize"
+          , JE.float Game.tileSize
+          )
         ]
         |> CommandRecord
 

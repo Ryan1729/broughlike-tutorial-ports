@@ -25,8 +25,8 @@ var app = Elm.Main.init({
 });
 
 const actions = {
-    "draw": ({x, y}) => {
-        ctx.fillRect(x*20,y*20,20,20);
+    "draw": ({x, y, tileSize}) => {
+        ctx.fillRect(x*tileSize,y*tileSize,tileSize,tileSize);
     },
     "setCanvasDimensions": ({w, h}) => {
         canvas.width = w;
