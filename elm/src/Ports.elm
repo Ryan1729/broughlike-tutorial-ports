@@ -1,7 +1,7 @@
 port module Ports exposing (CommandRecord, draw, perform, setCanvasDimensions)
 
 import Array exposing (Array)
-import Game exposing (H(..), Model, W(..), X(..), Y(..))
+import Game exposing (H(..), Model, SpriteIndex(..), W(..), X(..), Y(..))
 import Json.Encode as JE
 
 
@@ -24,17 +24,22 @@ perform records =
         |> platform
 
 
-draw : Model -> CommandRecord
-draw model =
+draw : SpriteIndex -> X -> Y -> CommandRecord
+draw spriteIndex xx yy =
     JE.object
-        [ ( "kind", JE.string "draw" )
+        [ ( "kind", JE.string "drawSprite" )
+        , ( "sprite"
+          , case spriteIndex of
+                SpriteIndex sprite ->
+                    JE.int sprite
+          )
         , ( "x"
-          , case model.x of
+          , case xx of
                 X x ->
                     JE.float x
           )
         , ( "y"
-          , case model.y of
+          , case yy of
                 Y y ->
                     JE.float y
           )

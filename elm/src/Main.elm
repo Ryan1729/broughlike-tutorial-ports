@@ -31,7 +31,7 @@ update msg model =
     case msg of
         Tick ->
             ( model
-            , Ports.draw model
+            , Ports.draw (Game.SpriteIndex 0) model.x model.y
                 |> Array.repeat 1
                 |> Ports.perform
             )

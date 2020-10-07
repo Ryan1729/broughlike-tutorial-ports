@@ -1,6 +1,10 @@
 module Game exposing (..)
 
 
+type SpriteIndex
+    = SpriteIndex Int
+
+
 tileSize =
     64
 

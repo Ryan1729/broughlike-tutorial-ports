@@ -28,8 +28,18 @@ var app = Elm.Main.init({
 });
 
 const actions = {
-    "draw": ({x, y, tileSize}) => {
-        ctx.drawImage(spritesheet, x*tileSize, y*tileSize);
+    "drawSprite": ({sprite, x, y, tileSize}) => {
+        ctx.drawImage(
+            spritesheet,
+            sprite*16,
+            0,
+            16,
+            16,
+            x*tileSize,
+            y*tileSize,
+            tileSize,
+            tileSize
+        );
     },
     "setCanvasDimensions": ({w, h}) => {
         canvas.width = w;
