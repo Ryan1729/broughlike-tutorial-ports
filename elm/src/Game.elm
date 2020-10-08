@@ -27,21 +27,6 @@ pixelHeight =
     H (tileSize * numTiles)
 
 
-type alias Model =
-    { x : X
-    , y : Y
-    , seed : Seed
-    }
-
-
-modelFromSeed : Seed -> Model
-modelFromSeed seed =
-    { x = X 0
-    , y = Y 0
-    , seed = seed
-    }
-
-
 type X
     = X Float
 

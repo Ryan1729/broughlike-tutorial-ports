@@ -1,7 +1,7 @@
 port module Ports exposing (CommandRecord, drawSprite, perform, setCanvasDimensions)
 
 import Array exposing (Array)
-import Game exposing (H(..), Model, SpriteIndex(..), W(..), X(..), Y(..))
+import Game exposing (H(..), SpriteIndex(..), W(..), X(..), Y(..))
 import Json.Encode as JE
 
 

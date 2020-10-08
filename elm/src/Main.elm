@@ -3,11 +3,12 @@ module Main exposing (..)
 import Array
 import Browser
 import Browser.Events
-import Game exposing (H, Model, W, X, Y, decX, decY, incX, incY)
+import Game exposing (H(..), W(..), X(..), Y(..), decX, decY, incX, incY)
 import Html
 import Json.Decode as JD
+import Map exposing (Tiles)
 import Ports
-import Random
+import Random exposing (Seed)
 
 
 main =
@@ -19,10 +20,31 @@ main =
         }
 
 
+type alias Model =
+    { x : X
+    , y : Y
+    , seed : Seed
+    , tiles : Tiles
+    }
+
+
+modelFromSeed : Seed -> Model
+modelFromSeed seedIn =
+    let
+        ( tiles, seed ) =
+            Random.step Map.levelGen seedIn
+    in
+    { x = X 0
+    , y = Y 0
+    , seed = seed
+    , tiles = tiles
+    }
+
+
 init : Int -> ( Model, Cmd Msg )
 init seed =
     ( Random.initialSeed seed
-        |> Game.modelFromSeed
+        |> modelFromSeed
     , Ports.setCanvasDimensions ( Game.pixelWidth, Game.pixelHeight )
         |> Array.repeat 1
         |> Ports.perform
