@@ -51,7 +51,7 @@ const actions = {
 }
 
 app.ports.platform.subscribe((commands) => {
-    ctx.clearRect(0,0,1000,1000);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
     for (var i = 0; i < commands.length; i += 1) {
         const command = commands[i];
         const action = actions[command.kind];
