@@ -22,9 +22,12 @@
 </script>
 <script type="text/javascript" src="elm.js"></script>
 <script type="text/javascript">
+const seed = new Date().getTime();
+console.log(seed)
+
 var app = Elm.Main.init({
     node: document.createElement("dummy"),
-    flags: {}
+    flags: seed
 });
 
 const actions = {

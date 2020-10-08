@@ -7,6 +7,7 @@ import Game exposing (H, Model, W, X, Y, decX, decY, incX, incY)
 import Html
 import Json.Decode as JD
 import Ports
+import Random
 
 
 main =
@@ -18,9 +19,10 @@ main =
         }
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
-    ( Game.defaultModel
+init : Int -> ( Model, Cmd Msg )
+init seed =
+    ( Random.initialSeed seed
+        |> Game.modelFromSeed
     , Ports.setCanvasDimensions ( Game.pixelWidth, Game.pixelHeight )
         |> Array.repeat 1
         |> Ports.perform
@@ -31,7 +33,7 @@ update msg model =
     case msg of
         Tick ->
             ( model
-            , Ports.draw (Game.SpriteIndex 0) model.x model.y
+            , Ports.drawSprite (Game.SpriteIndex 0) model.x model.y
                 |> Array.repeat 1
                 |> Ports.perform
             )

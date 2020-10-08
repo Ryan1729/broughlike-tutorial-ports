@@ -1,5 +1,7 @@
 module Game exposing (..)
 
+import Random exposing (Seed)
+
 
 type SpriteIndex
     = SpriteIndex Int
@@ -28,13 +30,15 @@ pixelHeight =
 type alias Model =
     { x : X
     , y : Y
+    , seed : Seed
     }
 
 
-defaultModel : Model
-defaultModel =
+modelFromSeed : Seed -> Model
+modelFromSeed seed =
     { x = X 0
     , y = Y 0
+    , seed = seed
     }
 
 
