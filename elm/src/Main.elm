@@ -9,6 +9,7 @@ import Json.Decode as JD
 import Map exposing (Tiles)
 import Ports
 import Random exposing (Seed)
+import Tile
 
 
 main =
@@ -41,6 +42,13 @@ modelFromSeed seedIn =
     }
 
 
+draw : Model -> Cmd Msg
+draw model =
+    Map.map Tile.draw model.tiles
+        |> Array.push (Ports.drawSprite (Game.SpriteIndex 0) model.x model.y)
+        |> Ports.perform
+
+
 init : Int -> ( Model, Cmd Msg )
 init seed =
     ( Random.initialSeed seed
@@ -55,9 +63,7 @@ update msg model =
     case msg of
         Tick ->
             ( model
-            , Ports.drawSprite (Game.SpriteIndex 0) model.x model.y
-                |> Array.repeat 1
-                |> Ports.perform
+            , draw model
             )
 
         Input input ->

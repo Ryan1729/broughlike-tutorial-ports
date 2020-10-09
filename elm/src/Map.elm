@@ -1,4 +1,4 @@
-module Map exposing (Tiles, levelGen)
+module Map exposing (Tiles, get, levelGen, map)
 
 import Array exposing (Array)
 import Game exposing (X(..), Y(..))
@@ -38,7 +38,8 @@ tileGen =
 
                 y =
                     Y
-                        (index // Game.numTiles
+                        (index
+                            // Game.numTiles
                             |> toFloat
                         )
             in
@@ -58,3 +59,48 @@ tileGen =
 
 type Tiles
     = Tiles (Array Tile)
+
+
+map : (Tile -> a) -> Tiles -> Array a
+map mapper tiles =
+    case tiles of
+        Tiles ts ->
+            Array.map mapper ts
+
+
+get : Tiles -> X -> Y -> Tile
+get tiles x y =
+    case tiles of
+        Tiles ts ->
+            let
+                m : Maybe Tile
+                m =
+                    if inBounds x y then
+                        Array.get (toIndex x y) ts
+
+                    else
+                        Nothing
+            in
+            case m of
+                Just t ->
+                    t
+
+                Nothing ->
+                    Tile.wall x y
+
+
+inBounds : X -> Y -> Bool
+inBounds xx yy =
+    case ( xx, yy ) of
+        ( X x, Y y ) ->
+            x > 0 && y > 0 && x < Game.numTiles - 1 && y < Game.numTiles - 1
+
+
+toIndex : X -> Y -> Int
+toIndex xx yy =
+    case ( xx, yy ) of
+        ( X x, Y y ) ->
+            y
+                * Game.numTiles
+                + x
+                |> round
