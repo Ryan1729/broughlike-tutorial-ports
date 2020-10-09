@@ -22,26 +22,17 @@ probability =
 tileGen : Generator Tiles
 tileGen =
     let
-        boolArrayGen : Generator (Array Bool)
-        boolArrayGen =
+        isWallArrayGen : Generator (Array Bool)
+        isWallArrayGen =
             Random.map (\x -> x < 0.3) probability
                 |> Random.list tileCount
                 |> Random.map Array.fromList
+                |> Random.map (Array.indexedMap (\i bool -> bool || not (toXY i |> inBounds)))
 
         toTile index isWall =
             let
-                x =
-                    X
-                        (modBy Game.numTiles index
-                            |> toFloat
-                        )
-
-                y =
-                    Y
-                        (index
-                            // Game.numTiles
-                            |> toFloat
-                        )
+                ( x, y ) =
+                    toXY index
             in
             if isWall then
                 Tile.wall x y
@@ -54,7 +45,7 @@ tileGen =
             Array.indexedMap toTile bools
                 |> Tiles
     in
-    Random.map toTiles boolArrayGen
+    Random.map toTiles isWallArrayGen
 
 
 type Tiles
@@ -75,7 +66,7 @@ get tiles x y =
             let
                 m : Maybe Tile
                 m =
-                    if inBounds x y then
+                    if inBounds ( x, y ) then
                         Array.get (toIndex x y) ts
 
                     else
@@ -89,11 +80,25 @@ get tiles x y =
                     Tile.wall x y
 
 
-inBounds : X -> Y -> Bool
-inBounds xx yy =
-    case ( xx, yy ) of
+inBounds : ( X, Y ) -> Bool
+inBounds xy =
+    case xy of
         ( X x, Y y ) ->
             x > 0 && y > 0 && x < Game.numTiles - 1 && y < Game.numTiles - 1
+
+
+toXY : Int -> ( X, Y )
+toXY index =
+    ( X
+        (modBy Game.numTiles index
+            |> toFloat
+        )
+    , Y
+        (index
+            // Game.numTiles
+            |> toFloat
+        )
+    )
 
 
 toIndex : X -> Y -> Int
