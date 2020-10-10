@@ -13,6 +13,7 @@
     }
 </style>
 <canvas></canvas>
+<div id="error-div" />
 <script>
     spritesheet = new Image();
     spritesheet.src = 'spritesheet.png';
@@ -26,7 +27,7 @@ const seed = new Date().getTime();
 console.log(seed)
 
 var app = Elm.Main.init({
-    node: document.createElement("dummy"),
+    node: document.getElementById("error-div"),
     flags: seed
 });
 

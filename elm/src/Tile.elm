@@ -31,3 +31,20 @@ floor x y =
 wall : X -> Y -> Tile
 wall x y =
     { kind = Wall, x = x, y = y, sprite = SpriteIndex 3 }
+
+
+isPassable tile =
+    case tile.kind of
+        Floor ->
+            True
+
+        Wall ->
+            False
+
+
+
+-- Fill this in once we can
+
+
+hasMonster tile =
+    False

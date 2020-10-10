@@ -22,6 +22,10 @@ main =
 
 
 type alias Model =
+    Result String State
+
+
+type alias State =
     { x : X
     , y : Y
     , seed : Seed
@@ -32,20 +36,27 @@ type alias Model =
 modelFromSeed : Seed -> Model
 modelFromSeed seedIn =
     let
-        ( tiles, seed ) =
+        ( tiles, seed1 ) =
             Random.step Map.levelGen seedIn
+
+        ( startingTileRes, seed ) =
+            Random.step (Map.randomPassableTile tiles) seed1
     in
-    { x = X 0
-    , y = Y 0
-    , seed = seed
-    , tiles = tiles
-    }
+    Result.map
+        (\startingTile ->
+            { x = startingTile.x
+            , y = startingTile.y
+            , seed = seed
+            , tiles = tiles
+            }
+        )
+        startingTileRes
 
 
-draw : Model -> Cmd Msg
-draw model =
-    Map.map Tile.draw model.tiles
-        |> Array.push (Ports.drawSprite (Game.SpriteIndex 0) model.x model.y)
+draw : State -> Cmd Msg
+draw state =
+    Map.map Tile.draw state.tiles
+        |> Array.push (Ports.drawSprite (Game.SpriteIndex 0) state.x state.y)
         |> Ports.perform
 
 
@@ -60,28 +71,37 @@ init seed =
 
 
 update msg model =
-    case msg of
-        Tick ->
+    case model of
+        Ok state ->
+            case msg of
+                Tick ->
+                    ( model
+                    , draw state
+                    )
+
+                Input input ->
+                    ( Ok
+                        (case input of
+                            Up ->
+                                { state | y = decY state.y }
+
+                            Down ->
+                                { state | y = incY state.y }
+
+                            Left ->
+                                { state | x = decX state.x }
+
+                            Right ->
+                                { state | x = incX state.x }
+
+                            Other ->
+                                state
+                        )
+                    , Cmd.none
+                    )
+
+        Err _ ->
             ( model
-            , draw model
-            )
-
-        Input input ->
-            ( case input of
-                Up ->
-                    { model | y = decY model.y }
-
-                Down ->
-                    { model | y = incY model.y }
-
-                Left ->
-                    { model | x = decX model.x }
-
-                Right ->
-                    { model | x = incX model.x }
-
-                Other ->
-                    model
             , Cmd.none
             )
 
@@ -142,4 +162,9 @@ toInput s =
 
 
 view model =
-    Html.text ""
+    case model of
+        Ok _ ->
+            Html.text ""
+
+        Err e ->
+            Html.text e

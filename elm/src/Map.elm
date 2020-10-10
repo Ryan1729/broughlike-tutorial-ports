@@ -1,8 +1,8 @@
-module Map exposing (Tiles, get, levelGen, map)
+module Map exposing (Tiles, get, levelGen, map, randomPassableTile)
 
 import Array exposing (Array)
 import Game exposing (X(..), Y(..))
-import Random exposing (Generator)
+import Random exposing (Generator, Seed)
 import Tile exposing (Kind(..), Tile)
 
 
@@ -24,7 +24,9 @@ tileGen =
     let
         isWallArrayGen : Generator (Array Bool)
         isWallArrayGen =
-            Random.map (\x -> x < 0.3) probability
+            Random.map
+                (\x -> x < 0.3)
+                probability
                 |> Random.list tileCount
                 |> Random.map Array.fromList
                 |> Random.map (Array.indexedMap (\i bool -> bool || not (toXY i |> inBounds)))
@@ -109,3 +111,60 @@ toIndex xx yy =
                 * Game.numTiles
                 + x
                 |> round
+
+
+xyGen : Generator ( X, Y )
+xyGen =
+    let
+        coordIntGen =
+            Game.numTiles - 1 |> Random.int 0
+    in
+    Random.pair
+        (Random.map (toFloat >> X) coordIntGen)
+        (Random.map (toFloat >> Y) coordIntGen)
+
+
+randomPassableTile : Tiles -> Generator (Result String Tile)
+randomPassableTile tiles =
+    Random.map
+        (\( x, y ) ->
+            let
+                t : Tile
+                t =
+                    get tiles x y
+            in
+            if Tile.isPassable t && not (Tile.hasMonster t) then
+                Just t
+
+            else
+                Nothing
+        )
+        xyGen
+        |> tryTo "get random passable tile"
+
+
+tryTo : String -> Generator (Maybe a) -> Generator (Result String a)
+tryTo description generator =
+    tryToHelper description generator 1000
+
+
+tryToHelper : String -> Generator (Maybe a) -> Int -> Generator (Result String a)
+tryToHelper description generator timeout =
+    Random.andThen
+        (\maybe ->
+            case maybe of
+                Just a ->
+                    Ok a
+                        |> Random.constant
+
+                Nothing ->
+                    if timeout <= 0 then
+                        "Timeout while trying to "
+                            ++ description
+                            |> Err
+                            |> Random.constant
+
+                    else
+                        tryToHelper description generator (timeout - 1)
+        )
+        generator
