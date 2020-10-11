@@ -10,8 +10,25 @@ tileCount =
     Game.numTiles * Game.numTiles
 
 
+levelGen : Generator (Result String Tiles)
 levelGen =
-    tileGen
+    Random.andThen
+        (\( tiles, passableCount ) ->
+            randomPassableTile tiles
+                |> Random.map
+                    (\tileResult ->
+                        Result.toMaybe tileResult
+                            |> Maybe.andThen
+                                (\tile ->
+                                    if passableCount == (getConnectedTiles tiles tile |> List.length) then
+                                        Just tiles
+                                    else
+                                        Nothing
+                                )
+                    )
+        )
+        tilesGen
+        |> tryTo "generate map"
 
 
 probability : Generator Float
@@ -19,8 +36,8 @@ probability =
     Random.float 0 1
 
 
-tileGen : Generator Tiles
-tileGen =
+tilesGen : Generator ( Tiles, Int )
+tilesGen =
     let
         isWallArrayGen : Generator (Array Bool)
         isWallArrayGen =
@@ -43,11 +60,23 @@ tileGen =
                 Tile.floor x y
 
         toTiles : Array Bool -> Tiles
-        toTiles bools =
-            Array.indexedMap toTile bools
-                |> Tiles
+        toTiles =
+            Array.indexedMap toTile
+                >> Tiles
+
+        toPassableCount : Array Bool -> Int
+        toPassableCount =
+            Array.foldl
+                (\isWall count ->
+                    if isWall then
+                        count
+
+                    else
+                        count + 1
+                )
+                0
     in
-    Random.map toTiles isWallArrayGen
+    Random.map (\bools -> ( toTiles bools, toPassableCount bools )) isWallArrayGen
 
 
 type Tiles
@@ -111,6 +140,11 @@ toIndex xx yy =
                 * Game.numTiles
                 + x
                 |> round
+
+
+getConnectedTiles : Tiles -> Tile -> List Tile
+getConnectedTiles tiles tile =
+    Debug.todo "getConnectedTiles"
 
 
 xyGen : Generator ( X, Y )

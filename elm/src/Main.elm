@@ -36,21 +36,26 @@ type alias State =
 modelFromSeed : Seed -> Model
 modelFromSeed seedIn =
     let
-        ( tiles, seed1 ) =
+        ( tilesRes, seed1 ) =
             Random.step Map.levelGen seedIn
-
-        ( startingTileRes, seed ) =
-            Random.step (Map.randomPassableTile tiles) seed1
     in
-    Result.map
-        (\startingTile ->
-            { x = startingTile.x
-            , y = startingTile.y
-            , seed = seed
-            , tiles = tiles
-            }
+    Result.andThen
+        (\tiles ->
+            let
+                ( startingTileRes, seed ) =
+                    Random.step (Map.randomPassableTile tiles) seed1
+            in
+            Result.map
+                (\startingTile ->
+                    { x = startingTile.x
+                    , y = startingTile.y
+                    , seed = seed
+                    , tiles = tiles
+                    }
+                )
+                startingTileRes
         )
-        startingTileRes
+        tilesRes
 
 
 draw : State -> Cmd Msg
