@@ -3,7 +3,7 @@ module Main exposing (..)
 import Array
 import Browser
 import Browser.Events
-import Game exposing (H(..), W(..), X(..), Y(..), decX, decY, incX, incY)
+import Game exposing (DeltaX(..), DeltaY(..), H(..), W(..), X(..), Y(..), moveX, moveY)
 import Html
 import Json.Decode as JD
 import Map exposing (Tiles)
@@ -88,16 +88,16 @@ update msg model =
                     ( Ok
                         (case input of
                             Up ->
-                                { state | y = decY state.y }
+                                { state | y = moveY DYm1 state.y }
 
                             Down ->
-                                { state | y = incY state.y }
+                                { state | y = moveY DY1 state.y }
 
                             Left ->
-                                { state | x = decX state.x }
+                                { state | x = moveX DXm1 state.x }
 
                             Right ->
-                                { state | x = incX state.x }
+                                { state | x = moveX DX1 state.x }
 
                             Other ->
                                 state

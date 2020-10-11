@@ -27,44 +27,52 @@ pixelHeight =
     H (tileSize * numTiles)
 
 
+type DeltaX
+    = DX0
+    | DX1
+    | DXm1
+
+
+type DeltaY
+    = DY0
+    | DY1
+    | DYm1
+
+
 type X
     = X Float
 
 
-incX xx =
-    X
-        (case xx of
-            X x ->
-                x + 1
-        )
+moveX dx xx =
+    case xx of
+        X x ->
+            case dx of
+                DX0 ->
+                    X x
 
+                DX1 ->
+                    x + 1 |> X
 
-decX xx =
-    X
-        (case xx of
-            X x ->
-                x - 1
-        )
+                DXm1 ->
+                    x - 1 |> X
 
 
 type Y
     = Y Float
 
 
-incY yy =
-    Y
-        (case yy of
-            Y y ->
-                y + 1
-        )
+moveY dy yy =
+    case yy of
+        Y y ->
+            case dy of
+                DY0 ->
+                    Y y
 
+                DY1 ->
+                    y + 1 |> Y
 
-decY yy =
-    Y
-        (case yy of
-            Y y ->
-                y - 1
-        )
+                DYm1 ->
+                    y - 1 |> Y
 
 
 type W

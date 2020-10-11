@@ -1,7 +1,7 @@
 module Map exposing (Tiles, get, levelGen, map, randomPassableTile)
 
 import Array exposing (Array)
-import Game exposing (X(..), Y(..))
+import Game exposing (DeltaX(..), DeltaY(..), X(..), Y(..), moveX, moveY)
 import Random exposing (Generator, Seed)
 import Tile exposing (Kind(..), Tile)
 
@@ -15,16 +15,22 @@ levelGen =
     Random.andThen
         (\( tiles, passableCount ) ->
             randomPassableTile tiles
-                |> Random.map
+                |> Random.andThen
                     (\tileResult ->
-                        Result.toMaybe tileResult
-                            |> Maybe.andThen
-                                (\tile ->
-                                    if passableCount == (getConnectedTiles tiles tile |> List.length) then
-                                        Just tiles
-                                    else
-                                        Nothing
-                                )
+                        case tileResult of
+                            Err e ->
+                                Random.constant Nothing
+
+                            Ok tile ->
+                                getConnectedTiles tiles tile
+                                    |> Random.map
+                                        (\connectedTiles ->
+                                            if passableCount == List.length connectedTiles then
+                                                Just tiles
+
+                                            else
+                                                Nothing
+                                        )
                     )
         )
         tilesGen
@@ -142,9 +148,123 @@ toIndex xx yy =
                 |> round
 
 
-getConnectedTiles : Tiles -> Tile -> List Tile
+getConnectedTiles : Tiles -> Tile -> Generator (List Tile)
 getConnectedTiles tiles tile =
-    Debug.todo "getConnectedTiles"
+    getConnectedTilesHelper tiles [ tile ] [ tile ]
+
+
+getConnectedTilesHelper : Tiles -> List Tile -> List Tile -> Generator (List Tile)
+getConnectedTilesHelper tiles connectedTiles frontier =
+    case pop frontier of
+        Nothing ->
+            Random.constant connectedTiles
+
+        Just ( newFrontier, popped ) ->
+            getAdjacentPassableNeighbors tiles popped
+                |> Random.andThen
+                    (\passableNeighbors ->
+                        let
+                            uncheckedNeighbors =
+                                List.filter (\t -> List.member t connectedTiles |> not) passableNeighbors
+                        in
+                        getConnectedTilesHelper
+                            tiles
+                            (connectedTiles ++ uncheckedNeighbors)
+                            (newFrontier ++ uncheckedNeighbors)
+                    )
+
+
+pop : List a -> Maybe ( List a, a )
+pop list =
+    let
+        newLength =
+            List.length list - 1
+    in
+    List.drop newLength list
+        |> List.head
+        |> Maybe.map
+            (\popped ->
+                ( List.take newLength list, popped )
+            )
+
+
+shuffle : List a -> Generator (List a)
+shuffle list =
+    shuffleHelper list 0
+
+
+shuffleHelper : List a -> Int -> Generator (List a)
+shuffleHelper list i =
+    Random.int 0 i
+        |> Random.andThen
+            (\randomIndex ->
+                let
+                    newList =
+                        swapAt i randomIndex list
+
+                    newI =
+                        i + 1
+                in
+                if newI < List.length newList then
+                    shuffleHelper newList newI
+
+                else
+                    Random.constant newList
+            )
+
+
+swapAt : Int -> Int -> List a -> List a
+swapAt i j list =
+    if i == j || i < 0 then
+        list
+
+    else if i > j then
+        swapAt j i list
+
+    else
+        let
+            beforeI =
+                List.take i list
+
+            iAndAfter =
+                List.drop i list
+
+            jInIAndAfter =
+                j - i
+
+            iToBeforeJ =
+                List.take jInIAndAfter iAndAfter
+
+            jAndAfter =
+                List.drop jInIAndAfter iAndAfter
+        in
+        case ( iToBeforeJ, jAndAfter ) of
+            ( valueAtI :: afterIToJ, valueAtJ :: rest ) ->
+                List.concat [ beforeI, valueAtJ :: afterIToJ, valueAtI :: rest ]
+
+            _ ->
+                list
+
+
+getNeighbor : Tiles -> Tile -> DeltaX -> DeltaY -> Tile
+getNeighbor tiles tile dx dy =
+    get tiles (moveX dx tile.x) (moveY dy tile.y)
+
+
+getAdjacentNeighbors : Tiles -> Tile -> Generator (List Tile)
+getAdjacentNeighbors tiles tile =
+    shuffle
+        [ getNeighbor tiles tile DX0 DYm1
+        , getNeighbor tiles tile DX0 DY1
+        , getNeighbor tiles tile DXm1 DY0
+        , getNeighbor tiles tile DX1 DY0
+        ]
+
+
+getAdjacentPassableNeighbors : Tiles -> Tile -> Generator (List Tile)
+getAdjacentPassableNeighbors tiles tile =
+    getAdjacentNeighbors tiles tile
+        |> Random.map (List.filter Tile.isPassable)
 
 
 xyGen : Generator ( X, Y )
