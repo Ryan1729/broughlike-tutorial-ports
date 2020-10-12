@@ -114,8 +114,8 @@ get tiles x y =
                     Tile.wall x y
 
 
-set : Tiles -> Tile -> Tiles
-set tiles tile =
+set : Tile -> Tiles -> Tiles
+set tile tiles =
     case tiles of
         Tiles ts ->
             Tiles

@@ -53,6 +53,7 @@ isNothing maybe =
         Nothing ->
             True
 
+
 tryMove : Tiles -> Monster -> DeltaX -> DeltaY -> Maybe ( Tiles, Monster )
 tryMove tiles monster dx dy =
     let
@@ -76,11 +77,15 @@ move : Tiles -> Monster -> Located a -> ( Tiles, Monster )
 move tiles monsterIn { x, y } =
     let
         oldTile =
+            Map.get tiles monsterIn.x monsterIn.y
+
+        newTile =
             Map.get tiles x y
 
         monster =
             { monsterIn | x = x, y = y }
     in
-    ( Map.set tiles { oldTile | monster = Just () }
+    ( Map.set { oldTile | monster = Nothing } tiles
+        |> Map.set { newTile | monster = Just () }
     , monster
     )

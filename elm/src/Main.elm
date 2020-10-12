@@ -126,8 +126,7 @@ update msg model =
 
 subscriptions _ =
     Sub.batch
-        [ --Browser.Events.onAnimationFrame (\_ -> Tick)
-          Browser.Events.onClick (JD.succeed Tick)
+        [ Browser.Events.onAnimationFrame (\_ -> Tick)
         , JD.field "key" JD.string
             |> JD.map toInput
             |> Browser.Events.onKeyDown
