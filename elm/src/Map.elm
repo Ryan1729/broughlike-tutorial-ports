@@ -1,7 +1,7 @@
-module Map exposing (Tiles, get, levelGen, map, randomPassableTile)
+module Map exposing (Tiles, get, getNeighbor, levelGen, map, randomPassableTile, set)
 
 import Array exposing (Array)
-import Game exposing (DeltaX(..), DeltaY(..), X(..), Y(..), moveX, moveY)
+import Game exposing (DeltaX(..), DeltaY(..), Located, X(..), Y(..), moveX, moveY)
 import Random exposing (Generator, Seed)
 import Tile exposing (Kind(..), Tile)
 
@@ -56,7 +56,7 @@ tilesGen =
 
         toTile index isWall =
             let
-                ( x, y ) =
+                { x, y } =
                     toXY index
             in
             if isWall then
@@ -103,11 +103,8 @@ get tiles x y =
             let
                 m : Maybe Tile
                 m =
-                    if inBounds ( x, y ) then
-                        Array.get (toIndex x y) ts
-
-                    else
-                        Nothing
+                    toIndex { x = x, y = y }
+                        |> Maybe.andThen (\i -> Array.get i ts)
             in
             case m of
                 Just t ->
@@ -117,35 +114,57 @@ get tiles x y =
                     Tile.wall x y
 
 
-inBounds : ( X, Y ) -> Bool
+set : Tiles -> Tile -> Tiles
+set tiles tile =
+    case tiles of
+        Tiles ts ->
+            Tiles
+                (case toIndex tile of
+                    Just i ->
+                        Array.set i tile ts
+
+                    Nothing ->
+                        ts
+                )
+
+
+inBounds : Located a -> Bool
 inBounds xy =
-    case xy of
+    case ( xy.x, xy.y ) of
         ( X x, Y y ) ->
             x > 0 && y > 0 && x < Game.numTiles - 1 && y < Game.numTiles - 1
 
 
-toXY : Int -> ( X, Y )
+toXY : Int -> Located {}
 toXY index =
-    ( X
-        (modBy Game.numTiles index
-            |> toFloat
-        )
-    , Y
-        (index
-            // Game.numTiles
-            |> toFloat
-        )
-    )
+    { x =
+        X
+            (modBy Game.numTiles index
+                |> toFloat
+            )
+    , y =
+        Y
+            (index
+                // Game.numTiles
+                |> toFloat
+            )
+    }
 
 
-toIndex : X -> Y -> Int
-toIndex xx yy =
-    case ( xx, yy ) of
-        ( X x, Y y ) ->
-            y
-                * Game.numTiles
-                + x
-                |> round
+toIndex : Located a -> Maybe Int
+toIndex xy =
+    if inBounds xy then
+        Just
+            (case ( xy.x, xy.y ) of
+                ( X x, Y y ) ->
+                    y
+                        * Game.numTiles
+                        + x
+                        |> round
+            )
+
+    else
+        Nothing
 
 
 getConnectedTiles : Tiles -> Tile -> Generator (List Tile)
@@ -246,9 +265,9 @@ swapAt i j list =
                 list
 
 
-getNeighbor : Tiles -> Tile -> DeltaX -> DeltaY -> Tile
-getNeighbor tiles tile dx dy =
-    get tiles (moveX dx tile.x) (moveY dy tile.y)
+getNeighbor : Tiles -> Located a -> DeltaX -> DeltaY -> Tile
+getNeighbor tiles { x, y } dx dy =
+    get tiles (moveX dx x) (moveY dy y)
 
 
 getAdjacentNeighbors : Tiles -> Tile -> Generator (List Tile)

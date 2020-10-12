@@ -10,11 +10,17 @@ type Kind
     | Wall
 
 
+type alias MonsterId =
+    -- This will probably be an index into a monsters array later
+    ()
+
+
 type alias Tile =
     { kind : Kind
     , x : X
     , y : Y
     , sprite : SpriteIndex
+    , monster : Maybe MonsterId
     }
 
 
@@ -25,12 +31,12 @@ draw tile =
 
 floor : X -> Y -> Tile
 floor x y =
-    { kind = Floor, x = x, y = y, sprite = SpriteIndex 2 }
+    { kind = Floor, x = x, y = y, sprite = SpriteIndex 2, monster = Nothing }
 
 
 wall : X -> Y -> Tile
 wall x y =
-    { kind = Wall, x = x, y = y, sprite = SpriteIndex 3 }
+    { kind = Wall, x = x, y = y, sprite = SpriteIndex 3, monster = Nothing }
 
 
 isPassable tile =

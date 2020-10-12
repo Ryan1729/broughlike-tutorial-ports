@@ -7,6 +7,7 @@ import Game exposing (DeltaX(..), DeltaY(..), H(..), W(..), X(..), Y(..), moveX,
 import Html
 import Json.Decode as JD
 import Map exposing (Tiles)
+import Monster exposing (Monster)
 import Ports
 import Random exposing (Seed)
 import Tile
@@ -26,8 +27,7 @@ type alias Model =
 
 
 type alias State =
-    { x : X
-    , y : Y
+    { player : Monster
     , seed : Seed
     , tiles : Tiles
     }
@@ -40,15 +40,18 @@ modelFromSeed seedIn =
             Random.step Map.levelGen seedIn
     in
     Result.andThen
-        (\tiles ->
+        (\tilesIn ->
             let
                 ( startingTileRes, seed ) =
-                    Random.step (Map.randomPassableTile tiles) seed1
+                    Random.step (Map.randomPassableTile tilesIn) seed1
             in
             Result.map
                 (\startingTile ->
-                    { x = startingTile.x
-                    , y = startingTile.y
+                    let
+                        ( tiles, player ) =
+                            Monster.add tilesIn { kind = Monster.Player, x = startingTile.x, y = startingTile.y }
+                    in
+                    { player = player
                     , seed = seed
                     , tiles = tiles
                     }
@@ -61,7 +64,7 @@ modelFromSeed seedIn =
 draw : State -> Cmd Msg
 draw state =
     Map.map Tile.draw state.tiles
-        |> Array.push (Ports.drawSprite (Game.SpriteIndex 0) state.x state.y)
+        |> Array.push (Monster.draw state.player)
         |> Ports.perform
 
 
@@ -73,6 +76,16 @@ init seed =
         |> Array.repeat 1
         |> Ports.perform
     )
+
+
+movePlayer : State -> DeltaX -> DeltaY -> State
+movePlayer state dx dy =
+    case Monster.tryMove state.tiles state.player dx dy of
+        Nothing ->
+            state
+
+        Just ( tiles, player ) ->
+            { state | tiles = tiles, player = player }
 
 
 update msg model =
@@ -88,16 +101,16 @@ update msg model =
                     ( Ok
                         (case input of
                             Up ->
-                                { state | y = moveY DYm1 state.y }
+                                movePlayer state DX0 DYm1
 
                             Down ->
-                                { state | y = moveY DY1 state.y }
+                                movePlayer state DX0 DY1
 
                             Left ->
-                                { state | x = moveX DXm1 state.x }
+                                movePlayer state DXm1 DY0
 
                             Right ->
-                                { state | x = moveX DX1 state.x }
+                                movePlayer state DX1 DY0
 
                             Other ->
                                 state
@@ -113,7 +126,8 @@ update msg model =
 
 subscriptions _ =
     Sub.batch
-        [ Browser.Events.onAnimationFrame (\_ -> Tick)
+        [ --Browser.Events.onAnimationFrame (\_ -> Tick)
+          Browser.Events.onClick (JD.succeed Tick)
         , JD.field "key" JD.string
             |> JD.map toInput
             |> Browser.Events.onKeyDown

@@ -75,6 +75,10 @@ moveY dy yy =
                     y - 1 |> Y
 
 
+type alias Located a =
+    { a | x : X, y : Y }
+
+
 type W
     = W Float
 
