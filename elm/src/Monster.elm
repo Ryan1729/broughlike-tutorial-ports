@@ -8,6 +8,11 @@ import Tile exposing (Tile)
 
 type Kind
     = Player
+    | Bird
+    | Snake
+    | Tank
+    | Eater
+    | Jester
 
 
 type HP
@@ -26,15 +31,33 @@ type alias Monster =
 add : Tiles -> Located { kind : Kind } -> ( Tiles, Monster )
 add tiles monsterSpec =
     let
-        newMonster =
+        ( sprite, hp ) =
             case monsterSpec.kind of
                 Player ->
-                    { kind = Player
-                    , x = monsterSpec.x
-                    , y = monsterSpec.y
-                    , sprite = SpriteIndex 0
-                    , hp = HP 3
-                    }
+                    ( SpriteIndex 0, HP 3 )
+
+                Bird ->
+                    ( SpriteIndex 4, HP 3 )
+
+                Snake ->
+                    ( SpriteIndex 5, HP 1 )
+
+                Tank ->
+                    ( SpriteIndex 6, HP 2 )
+
+                Eater ->
+                    ( SpriteIndex 7, HP 1 )
+
+                Jester ->
+                    ( SpriteIndex 8, HP 2 )
+
+        newMonster =
+            { kind = monsterSpec.kind
+            , x = monsterSpec.x
+            , y = monsterSpec.y
+            , sprite = sprite
+            , hp = hp
+            }
     in
     move tiles newMonster monsterSpec
 
