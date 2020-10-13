@@ -10,31 +10,15 @@ tileCount =
     Game.numTiles * Game.numTiles
 
 
-levelGen : Generator (Result String Tiles)
+type alias Level =
+    Tiles
+
+
+
+levelGen : Generator (Result String Level)
 levelGen =
-    Random.andThen
-        (\( tiles, passableCount ) ->
-            randomPassableTile tiles
-                |> Random.andThen
-                    (\tileResult ->
-                        case tileResult of
-                            Err e ->
-                                Random.constant Nothing
-
-                            Ok tile ->
-                                getConnectedTiles tiles tile
-                                    |> Random.map
-                                        (\connectedTiles ->
-                                            if passableCount == List.length connectedTiles then
-                                                Just tiles
-
-                                            else
-                                                Nothing
-                                        )
-                    )
-        )
-        tilesGen
-        |> tryTo "generate map"
+    tilesGen
+        |> tryTo
 
 
 probability : Generator Float
@@ -42,8 +26,35 @@ probability =
     Random.float 0 1
 
 
-tilesGen : Generator ( Tiles, Int )
+
+tilesGen : Generator (Result String Tiles)
 tilesGen =
+    Random.andThen
+        (\( tiles, passableCount ) ->
+            randomPassableTile tiles
+                |> Random.andThen
+                    (\tileResult ->
+                        case tileResult of
+                            Err e ->
+                                Random.constant (Err e)
+
+                            Ok tile ->
+                                getConnectedTiles tiles tile
+                                    |> Random.map
+                                        (\connectedTiles ->
+                                            if passableCount == List.length connectedTiles then
+                                                Ok tiles
+
+                                            else
+                                                Err "generate connected tiles"
+                                        )
+                    )
+        )
+        possiblyDisconnectedTilesGen
+
+
+possiblyDisconnectedTilesGen : Generator ( Tiles, Int )
+possiblyDisconnectedTilesGen =
     let
         isWallArrayGen : Generator (Array Bool)
         isWallArrayGen =
@@ -307,30 +318,30 @@ randomPassableTile tiles =
                     get tiles x y
             in
             if Tile.isPassable t && not (Tile.hasMonster t) then
-                Just t
+                Ok t
 
             else
-                Nothing
+                Err "get random passable tile"
         )
         xyGen
-        |> tryTo "get random passable tile"
+        |> tryTo
 
 
-tryTo : String -> Generator (Maybe a) -> Generator (Result String a)
-tryTo description generator =
-    tryToHelper description generator 1000
+tryTo : Generator (Result String a) -> Generator (Result String a)
+tryTo generator =
+    tryToHelper generator 1000
 
 
-tryToHelper : String -> Generator (Maybe a) -> Int -> Generator (Result String a)
-tryToHelper description generator timeout =
+tryToHelper : Generator (Result String a) -> Int -> Generator (Result String a)
+tryToHelper generator timeout =
     Random.andThen
-        (\maybe ->
-            case maybe of
-                Just a ->
+        (\result ->
+            case result of
+                Ok a ->
                     Ok a
                         |> Random.constant
 
-                Nothing ->
+                Err description ->
                     if timeout <= 0 then
                         "Timeout while trying to "
                             ++ description
@@ -338,6 +349,6 @@ tryToHelper description generator timeout =
                             |> Random.constant
 
                     else
-                        tryToHelper description generator (timeout - 1)
+                        tryToHelper generator (timeout - 1)
         )
         generator
