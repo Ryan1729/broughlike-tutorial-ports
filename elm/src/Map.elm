@@ -1,30 +1,87 @@
-module Map exposing (Tiles, get, getNeighbor, levelGen, map, randomPassableTile, set)
+module Map exposing (Level, Monsters, generateLevel, randomPassableTile)
 
 import Array exposing (Array)
-import Game exposing (DeltaX(..), DeltaY(..), Located, X(..), Y(..), moveX, moveY)
+import Game exposing (DeltaX(..), DeltaY(..), LevelNum(..), Located, X(..), Y(..), moveX, moveY)
+import Monster exposing (Monster)
 import Random exposing (Generator, Seed)
 import Tile exposing (Kind(..), Tile)
-
-
-tileCount =
-    Game.numTiles * Game.numTiles
+import Tiles exposing (Tiles)
 
 
 type alias Level =
-    Tiles
+    ( Tiles, Monsters )
 
 
+generateLevel : LevelNum -> Generator (Result String Level)
+generateLevel level =
+    Random.andThen
+        (\tilesResult ->
+            case tilesResult of
+                Err e ->
+                    Err e
+                        |> Random.constant
 
-levelGen : Generator (Result String Level)
-levelGen =
-    tilesGen
+                Ok tiles ->
+                    generateMonsters level tiles
+        )
+        tilesGen
         |> tryTo
 
 
-probability : Generator Float
-probability =
-    Random.float 0 1
+type alias Monsters =
+    Array Monster
 
+
+generateMonsters : LevelNum -> Tiles -> Generator (Result String Level)
+generateMonsters levelNum tiles =
+    let
+        numMonsters =
+            case levelNum of
+                LevelNum level ->
+                    level + 1
+    in
+    addMonsters numMonsters ( tiles, Array.empty )
+
+
+addMonsters : Int -> Level -> Generator (Result String Level)
+addMonsters count ( tilesIn, monstersIn ) =
+    if count <= 0 then
+        ( tilesIn, monstersIn )
+            |> Ok
+            |> Random.constant
+
+    else
+        nonPlayerMonsterKindGen
+            |> Random.andThen
+                (\kind ->
+                    randomPassableTile tilesIn
+                        |> Random.andThen
+                            (\tileResult ->
+                                case tileResult of
+                                    Err e ->
+                                        Err e
+                                            |> Random.constant
+
+                                    Ok { x, y } ->
+                                        Monster.add tilesIn { x = x, y = y, kind = kind }
+                                            |> (\( tiles, monster ) -> ( tiles, Array.push monster monstersIn ))
+                                            |> addMonsters
+                                                (count - 1)
+                            )
+                )
+
+
+nonPlayerMonsterKindGen : Generator Monster.Kind
+nonPlayerMonsterKindGen =
+    shuffleNonEmpty
+        ( Monster.Bird
+        , [ Monster.Snake
+          , Monster.Tank
+          , Monster.Eater
+          , Monster.Jester
+          ]
+        )
+        |> Random.map (\( head, _ ) -> head)
 
 
 tilesGen : Generator (Result String Tiles)
@@ -36,7 +93,8 @@ tilesGen =
                     (\tileResult ->
                         case tileResult of
                             Err e ->
-                                Random.constant (Err e)
+                                Err e
+                                    |> Random.constant
 
                             Ok tile ->
                                 getConnectedTiles tiles tile
@@ -50,132 +108,7 @@ tilesGen =
                                         )
                     )
         )
-        possiblyDisconnectedTilesGen
-
-
-possiblyDisconnectedTilesGen : Generator ( Tiles, Int )
-possiblyDisconnectedTilesGen =
-    let
-        isWallArrayGen : Generator (Array Bool)
-        isWallArrayGen =
-            Random.map
-                (\x -> x < 0.3)
-                probability
-                |> Random.list tileCount
-                |> Random.map Array.fromList
-                |> Random.map (Array.indexedMap (\i bool -> bool || not (toXY i |> inBounds)))
-
-        toTile index isWall =
-            let
-                { x, y } =
-                    toXY index
-            in
-            if isWall then
-                Tile.wall x y
-
-            else
-                Tile.floor x y
-
-        toTiles : Array Bool -> Tiles
-        toTiles =
-            Array.indexedMap toTile
-                >> Tiles
-
-        toPassableCount : Array Bool -> Int
-        toPassableCount =
-            Array.foldl
-                (\isWall count ->
-                    if isWall then
-                        count
-
-                    else
-                        count + 1
-                )
-                0
-    in
-    Random.map (\bools -> ( toTiles bools, toPassableCount bools )) isWallArrayGen
-
-
-type Tiles
-    = Tiles (Array Tile)
-
-
-map : (Tile -> a) -> Tiles -> Array a
-map mapper tiles =
-    case tiles of
-        Tiles ts ->
-            Array.map mapper ts
-
-
-get : Tiles -> X -> Y -> Tile
-get tiles x y =
-    case tiles of
-        Tiles ts ->
-            let
-                m : Maybe Tile
-                m =
-                    toIndex { x = x, y = y }
-                        |> Maybe.andThen (\i -> Array.get i ts)
-            in
-            case m of
-                Just t ->
-                    t
-
-                Nothing ->
-                    Tile.wall x y
-
-
-set : Tile -> Tiles -> Tiles
-set tile tiles =
-    case tiles of
-        Tiles ts ->
-            Tiles
-                (case toIndex tile of
-                    Just i ->
-                        Array.set i tile ts
-
-                    Nothing ->
-                        ts
-                )
-
-
-inBounds : Located a -> Bool
-inBounds xy =
-    case ( xy.x, xy.y ) of
-        ( X x, Y y ) ->
-            x > 0 && y > 0 && x < Game.numTiles - 1 && y < Game.numTiles - 1
-
-
-toXY : Int -> Located {}
-toXY index =
-    { x =
-        X
-            (modBy Game.numTiles index
-                |> toFloat
-            )
-    , y =
-        Y
-            (index
-                // Game.numTiles
-                |> toFloat
-            )
-    }
-
-
-toIndex : Located a -> Maybe Int
-toIndex xy =
-    if inBounds xy then
-        Just
-            (case ( xy.x, xy.y ) of
-                ( X x, Y y ) ->
-                    y
-                        * Game.numTiles
-                        + x
-                        |> round
-            )
-
-    else
-        Nothing
+        Tiles.possiblyDisconnectedTilesGen
 
 
 getConnectedTiles : Tiles -> Tile -> Generator (List Tile)
@@ -276,25 +209,68 @@ swapAt i j list =
                 list
 
 
-getNeighbor : Tiles -> Located a -> DeltaX -> DeltaY -> Tile
-getNeighbor tiles { x, y } dx dy =
-    get tiles (moveX dx x) (moveY dy y)
+shuffleNonEmpty : ( a, List a ) -> Generator ( a, List a )
+shuffleNonEmpty list =
+    shuffleNonEmptyHelper list 0
 
 
-getAdjacentNeighbors : Tiles -> Tile -> Generator (List Tile)
-getAdjacentNeighbors tiles tile =
-    shuffle
-        [ getNeighbor tiles tile DX0 DYm1
-        , getNeighbor tiles tile DX0 DY1
-        , getNeighbor tiles tile DXm1 DY0
-        , getNeighbor tiles tile DX1 DY0
-        ]
+shuffleNonEmptyHelper : ( a, List a ) -> Int -> Generator ( a, List a )
+shuffleNonEmptyHelper list i =
+    Random.int 0 i
+        |> Random.andThen
+            (\randomIndex ->
+                let
+                    newList =
+                        swapAtNonEmpty i randomIndex list
+
+                    newI =
+                        i + 1
+                in
+                if newI < lengthNonEmpty newList then
+                    shuffleNonEmptyHelper newList newI
+
+                else
+                    Random.constant newList
+            )
 
 
-getAdjacentPassableNeighbors : Tiles -> Tile -> Generator (List Tile)
-getAdjacentPassableNeighbors tiles tile =
-    getAdjacentNeighbors tiles tile
-        |> Random.map (List.filter Tile.isPassable)
+lengthNonEmpty : ( a, List a ) -> Int
+lengthNonEmpty ( _, rest ) =
+    1 + List.length rest
+
+
+swapAtNonEmpty : Int -> Int -> ( a, List a ) -> ( a, List a )
+swapAtNonEmpty i j list =
+    if i == j || i < 0 then
+        list
+
+    else if i > j then
+        swapAtNonEmpty j i list
+
+    else
+        let
+            ( head, rest ) =
+                list
+        in
+        if i == 0 then
+            let
+                beforeJ =
+                    List.take (j + 1) rest
+
+                jAndAfter =
+                    List.drop (j + 1) rest
+            in
+            case jAndAfter of
+                valueAtJ :: restOfRest ->
+                    ( valueAtJ, List.concat [ beforeJ, head :: restOfRest ] )
+
+                _ ->
+                    list
+
+        else
+            ( head
+            , swapAt (i + 1) (j + 1) rest
+            )
 
 
 xyGen : Generator ( X, Y )
@@ -308,6 +284,22 @@ xyGen =
         (Random.map (toFloat >> Y) coordIntGen)
 
 
+getAdjacentNeighbors : Tiles -> Tile -> Generator (List Tile)
+getAdjacentNeighbors tiles tile =
+    shuffle
+        [ Tiles.getNeighbor tiles tile DX0 DYm1
+        , Tiles.getNeighbor tiles tile DX0 DY1
+        , Tiles.getNeighbor tiles tile DXm1 DY0
+        , Tiles.getNeighbor tiles tile DX1 DY0
+        ]
+
+
+getAdjacentPassableNeighbors : Tiles -> Tile -> Generator (List Tile)
+getAdjacentPassableNeighbors tiles tile =
+    getAdjacentNeighbors tiles tile
+        |> Random.map (List.filter Tile.isPassable)
+
+
 randomPassableTile : Tiles -> Generator (Result String Tile)
 randomPassableTile tiles =
     Random.map
@@ -315,7 +307,7 @@ randomPassableTile tiles =
             let
                 t : Tile
                 t =
-                    get tiles x y
+                    Tiles.get tiles x y
             in
             if Tile.isPassable t && not (Tile.hasMonster t) then
                 Ok t

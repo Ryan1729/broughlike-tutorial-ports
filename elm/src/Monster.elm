@@ -1,9 +1,9 @@
 module Monster exposing (HP(..), Kind(..), Monster, add, draw, isNothing, move, tryMove)
 
 import Game exposing (DeltaX(..), DeltaY(..), Located, SpriteIndex(..), X(..), Y(..))
-import Map exposing (Tiles)
 import Ports
 import Tile exposing (Tile)
+import Tiles exposing (Tiles)
 
 
 type Kind
@@ -81,7 +81,7 @@ tryMove : Tiles -> Monster -> DeltaX -> DeltaY -> Maybe ( Tiles, Monster )
 tryMove tiles monster dx dy =
     let
         newTile =
-            Map.getNeighbor tiles monster dx dy
+            Tiles.getNeighbor tiles monster dx dy
     in
     if Tile.isPassable newTile then
         Just
@@ -100,15 +100,15 @@ move : Tiles -> Monster -> Located a -> ( Tiles, Monster )
 move tiles monsterIn { x, y } =
     let
         oldTile =
-            Map.get tiles monsterIn.x monsterIn.y
+            Tiles.get tiles monsterIn.x monsterIn.y
 
         newTile =
-            Map.get tiles x y
+            Tiles.get tiles x y
 
         monster =
             { monsterIn | x = x, y = y }
     in
-    ( Map.set { oldTile | monster = Nothing } tiles
-        |> Map.set { newTile | monster = Just () }
+    ( Tiles.set { oldTile | monster = Nothing } tiles
+        |> Tiles.set { newTile | monster = Just () }
     , monster
     )

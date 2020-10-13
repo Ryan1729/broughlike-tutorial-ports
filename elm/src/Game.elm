@@ -85,3 +85,7 @@ type W
 
 type H
     = H Float
+
+
+type LevelNum
+    = LevelNum Int

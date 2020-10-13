@@ -3,14 +3,15 @@ module Main exposing (..)
 import Array
 import Browser
 import Browser.Events
-import Game exposing (DeltaX(..), DeltaY(..), H(..), W(..), X(..), Y(..), moveX, moveY)
+import Game exposing (DeltaX(..), DeltaY(..), H(..), LevelNum(..), W(..), X(..), Y(..), moveX, moveY)
 import Html
 import Json.Decode as JD
-import Map exposing (Tiles)
+import Map exposing (Monsters)
 import Monster exposing (Monster)
 import Ports
 import Random exposing (Seed)
 import Tile
+import Tiles exposing (Tiles)
 
 
 main =
@@ -30,17 +31,22 @@ type alias State =
     { player : Monster
     , seed : Seed
     , tiles : Tiles
+    , monsters : Monsters
+    , level : LevelNum
     }
 
 
 modelFromSeed : Seed -> Model
 modelFromSeed seedIn =
     let
-        ( tilesRes, seed1 ) =
-            Random.step Map.levelGen seedIn
+        levelNum =
+            LevelNum 1
+
+        ( levelRes, seed1 ) =
+            Random.step (Map.generateLevel levelNum) seedIn
     in
     Result.andThen
-        (\tilesIn ->
+        (\( tilesIn, monstersIn ) ->
             let
                 ( startingTileRes, seed ) =
                     Random.step (Map.randomPassableTile tilesIn) seed1
@@ -54,16 +60,19 @@ modelFromSeed seedIn =
                     { player = player
                     , seed = seed
                     , tiles = tiles
+                    , monsters = monstersIn
+                    , level = levelNum
                     }
                 )
                 startingTileRes
         )
-        tilesRes
+        levelRes
 
 
 draw : State -> Cmd Msg
 draw state =
-    Map.map Tile.draw state.tiles
+    Tiles.map Tile.draw state.tiles
+        |> (\prev -> Array.map Monster.draw state.monsters |> Array.append prev)
         |> Array.push (Monster.draw state.player)
         |> Ports.perform
 
