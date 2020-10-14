@@ -48,9 +48,10 @@ isPassable tile =
             False
 
 
+hasMonster { monster } =
+    case monster of
+        Just _ ->
+            True
 
--- Fill this in once we can
-
-
-hasMonster tile =
-    False
+        Nothing ->
+            False

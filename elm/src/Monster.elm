@@ -1,5 +1,6 @@
-module Monster exposing (HP(..), Kind(..), Monster, add, draw, isNothing, move, tryMove)
+module Monster exposing (HP(..), Kind(..), Monster, Monsters, add, draw, isNothing, move, tryMove)
 
+import Array exposing (Array)
 import Game exposing (DeltaX(..), DeltaY(..), Located, SpriteIndex(..), X(..), Y(..))
 import Ports
 import Tile exposing (Tile)
@@ -26,6 +27,10 @@ type alias Monster =
     , sprite : SpriteIndex
     , hp : HP
     }
+
+
+type alias Monsters =
+    Array Monster
 
 
 add : Tiles -> Located { kind : Kind } -> ( Tiles, Monster )

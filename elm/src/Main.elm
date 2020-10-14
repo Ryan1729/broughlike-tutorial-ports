@@ -6,8 +6,8 @@ import Browser.Events
 import Game exposing (DeltaX(..), DeltaY(..), H(..), LevelNum(..), W(..), X(..), Y(..), moveX, moveY)
 import Html
 import Json.Decode as JD
-import Map exposing (Monsters)
-import Monster exposing (Monster)
+import Map
+import Monster exposing (Monster, Monsters)
 import Ports
 import Random exposing (Seed)
 import Tile
@@ -49,7 +49,7 @@ modelFromSeed seedIn =
         (\( tilesIn, monstersIn ) ->
             let
                 ( startingTileRes, seed ) =
-                    Random.step (Map.randomPassableTile tilesIn) seed1
+                    Random.step (Tiles.randomPassableTile tilesIn) seed1
             in
             Result.map
                 (\startingTile ->

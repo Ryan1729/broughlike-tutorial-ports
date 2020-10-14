@@ -1,8 +1,9 @@
-module Tiles exposing (Tiles, get, getNeighbor, map, possiblyDisconnectedTilesGen, set)
+module Tiles exposing (Tiles, get, getAdjacentNeighbors, getAdjacentPassableNeighbors, getNeighbor, map, possiblyDisconnectedTilesGen, randomPassableTile, set)
 
 import Array exposing (Array)
 import Game exposing (DeltaX(..), DeltaY(..), Located, X(..), Y(..), moveX, moveY)
 import Random exposing (Generator, Seed)
+import Randomness exposing (probability, shuffle)
 import Tile exposing (Kind(..), Tile)
 
 
@@ -140,6 +141,47 @@ possiblyDisconnectedTilesGen =
     Random.map (\bools -> ( toTiles bools, toPassableCount bools )) isWallArrayGen
 
 
-probability : Generator Float
-probability =
-    Random.float 0 1
+getAdjacentNeighbors : Tiles -> Located a -> Generator (List Tile)
+getAdjacentNeighbors tiles located =
+    shuffle
+        [ getNeighbor tiles located DX0 DYm1
+        , getNeighbor tiles located DX0 DY1
+        , getNeighbor tiles located DXm1 DY0
+        , getNeighbor tiles located DX1 DY0
+        ]
+
+
+getAdjacentPassableNeighbors : Tiles -> Located a -> Generator (List Tile)
+getAdjacentPassableNeighbors tiles located =
+    getAdjacentNeighbors tiles located
+        |> Random.map (List.filter Tile.isPassable)
+
+
+randomPassableTile : Tiles -> Generator (Result String Tile)
+randomPassableTile tiles =
+    Random.map
+        (\( x, y ) ->
+            let
+                t : Tile
+                t =
+                    get tiles x y
+            in
+            if Tile.isPassable t && not (Tile.hasMonster t) then
+                Ok t
+
+            else
+                Err "get random passable tile"
+        )
+        xyGen
+        |> Randomness.tryTo
+
+
+xyGen : Generator ( X, Y )
+xyGen =
+    let
+        coordIntGen =
+            Game.numTiles - 1 |> Random.int 0
+    in
+    Random.pair
+        (Random.map (toFloat >> X) coordIntGen)
+        (Random.map (toFloat >> Y) coordIntGen)
