@@ -83,7 +83,7 @@ modelFromSeed seedIn =
 
 draw : State -> Cmd Msg
 draw state =
-    Tiles.map Tile.draw state.tiles
+    Tiles.mapToArray Tile.draw state.tiles
         |> (\prev -> Array.map Monster.draw state.monsters |> Array.append prev)
         |> Array.push (Monster.draw state.player)
         |> Ports.perform
@@ -136,7 +136,6 @@ tick state =
         )
         state
         state.monsters
-    
 
 
 update msg model =

@@ -1,4 +1,4 @@
-module Tiles exposing (Tiles, get, getAdjacentNeighbors, getAdjacentPassableNeighbors, getNeighbor, map, possiblyDisconnectedTilesGen, randomPassableTile, set)
+module Tiles exposing (Tiles, get, getAdjacentNeighbors, getAdjacentPassableNeighbors, getNeighbor, mapToArray, possiblyDisconnectedTilesGen, randomPassableTile, set)
 
 import Array exposing (Array)
 import Game exposing (DeltaX(..), DeltaY(..), Located, X(..), Y(..), moveX, moveY)
@@ -15,8 +15,8 @@ type Tiles
     = Tiles (Array Tile)
 
 
-map : (Tile -> a) -> Tiles -> Array a
-map mapper tiles =
+mapToArray : (Tile -> a) -> Tiles -> Array a
+mapToArray mapper tiles =
     case tiles of
         Tiles ts ->
             Array.map mapper ts
