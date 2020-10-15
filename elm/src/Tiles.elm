@@ -1,7 +1,8 @@
-module Tiles exposing (Tiles, get, getAdjacentNeighbors, getAdjacentPassableNeighbors, getNeighbor, mapToArray, possiblyDisconnectedTilesGen, randomPassableTile, set)
+module Tiles exposing (Tiles, addMonster, foldXY, get, getAdjacentNeighbors, getAdjacentPassableNeighbors, getNeighbor, mapToArray, possiblyDisconnectedTilesGen, randomPassableTile, set, tryMove, updateMonster)
 
 import Array exposing (Array)
-import Game exposing (DeltaX(..), DeltaY(..), Located, X(..), Y(..), moveX, moveY)
+import Game exposing (DeltaX(..), DeltaY(..), Located, SpriteIndex(..), X(..), Y(..), moveX, moveY)
+import Monster exposing (HP(..), Kind(..), Monster)
 import Random exposing (Generator, Seed)
 import Randomness exposing (probability, shuffle)
 import Tile exposing (Kind(..), Tile)
@@ -22,8 +23,28 @@ mapToArray mapper tiles =
             Array.map mapper ts
 
 
-get : Tiles -> X -> Y -> Tile
-get tiles x y =
+foldXY : (Located {} -> a -> a) -> a -> a
+foldXY folder initial =
+    List.foldl folder initial allLocations
+
+
+allLocations : List (Located {})
+allLocations =
+    List.range 0 (Game.numTiles - 1)
+        |> List.foldr
+            (\y yAcc ->
+                List.range 0 (Game.numTiles - 1)
+                    |> List.foldr
+                        (\x xAcc ->
+                            { x = X (toFloat x), y = Y (toFloat y) } :: xAcc
+                        )
+                        yAcc
+            )
+            []
+
+
+get : Tiles -> Located a -> Tile
+get tiles { x, y } =
     case tiles of
         Tiles ts ->
             let
@@ -56,7 +77,7 @@ set tile tiles =
 
 getNeighbor : Tiles -> Located a -> DeltaX -> DeltaY -> Tile
 getNeighbor tiles { x, y } dx dy =
-    get tiles (moveX dx x) (moveY dy y)
+    get tiles { x = moveX dx x, y = moveY dy y }
 
 
 inBounds : Located a -> Bool
@@ -160,11 +181,11 @@ getAdjacentPassableNeighbors tiles located =
 randomPassableTile : Tiles -> Generator (Result String Tile)
 randomPassableTile tiles =
     Random.map
-        (\( x, y ) ->
+        (\xy ->
             let
                 t : Tile
                 t =
-                    get tiles x y
+                    get tiles xy
             in
             if Tile.isPassable t && not (Tile.hasMonster t) then
                 Ok t
@@ -176,12 +197,140 @@ randomPassableTile tiles =
         |> Randomness.tryTo
 
 
-xyGen : Generator ( X, Y )
+xyGen : Generator (Located {})
 xyGen =
     let
         coordIntGen =
             Game.numTiles - 1 |> Random.int 0
     in
-    Random.pair
+    Random.map2
+        (\x y -> { x = x, y = y })
         (Random.map (toFloat >> X) coordIntGen)
         (Random.map (toFloat >> Y) coordIntGen)
+
+
+updateMonster :
+    { a
+        | player : Monster
+        , tiles : Tiles
+        , seed : Seed
+    }
+    -> Monster
+    ->
+        { a
+            | player : Monster
+            , tiles : Tiles
+            , seed : Seed
+        }
+updateMonster state monster =
+    let
+        gen =
+            getAdjacentPassableNeighbors state.tiles monster
+                |> Random.map
+                    (List.filter
+                        (\t ->
+                            case get state.tiles t |> .monster of
+                                Just m ->
+                                    Monster.isPlayer m.kind
+
+                                Nothing ->
+                                    False
+                        )
+                    )
+                |> Random.map
+                    (\neighbors ->
+                        case
+                            List.sortBy (Game.dist state.player) neighbors
+                                |> List.head
+                                |> Maybe.andThen
+                                    (\newTile ->
+                                        Game.deltasFrom newTile monster
+                                            |> Maybe.andThen
+                                                (\( dx, dy ) ->
+                                                    tryMove state.tiles monster dx dy
+                                                )
+                                    )
+                        of
+                            Just ( tiles, _ ) ->
+                                { state | tiles = tiles }
+
+                            Nothing ->
+                                state
+                    )
+
+        ( generatedState, seed ) =
+            Random.step gen state.seed
+    in
+    { generatedState | seed = seed }
+
+
+addMonster :
+    Tiles
+    -> Located { kind : Monster.Kind }
+    -> Tiles
+addMonster state monsterSpec =
+    move state (Monster.fromSpec monsterSpec) monsterSpec
+        |> (\( tiles, _ ) -> tiles)
+
+
+isNothing : Maybe a -> Bool
+isNothing maybe =
+    case maybe of
+        Just _ ->
+            False
+
+        Nothing ->
+            True
+
+
+
+-- We return the monster here mostly so we can use this function for the player too,
+-- even though we keep it separate from the `Tiles`
+
+
+tryMove :
+    Tiles
+    -> Monster
+    -> DeltaX
+    -> DeltaY
+    ->
+        Maybe
+            ( Tiles, Monster )
+tryMove tiles monster dx dy =
+    let
+        newTile =
+            getNeighbor tiles monster dx dy
+    in
+    if Tile.isPassable newTile then
+        Just
+            (if isNothing newTile.monster then
+                move tiles monster newTile
+
+             else
+                ( tiles, monster )
+            )
+
+    else
+        Nothing
+
+
+move :
+    Tiles
+    -> Monster
+    -> Located b
+    -> ( Tiles, Monster )
+move tiles monsterIn { x, y } =
+    let
+        oldTile =
+            get tiles monsterIn
+
+        newTile =
+            get tiles { x = x, y = y }
+
+        monster =
+            { monsterIn | x = x, y = y }
+    in
+    ( set { oldTile | monster = Nothing } tiles
+        |> set { newTile | monster = Just monster }
+    , monster
+    )

@@ -1,13 +1,13 @@
 module Main exposing (..)
 
-import Array
+import Array exposing (Array)
 import Browser
 import Browser.Events
 import Game exposing (DeltaX(..), DeltaY(..), H(..), LevelNum(..), SpriteIndex(..), W(..), X(..), Y(..), moveX, moveY)
 import Html
 import Json.Decode as JD
 import Map
-import Monster exposing (HP(..), Monster, Monsters)
+import Monster exposing (HP(..), Monster)
 import Ports
 import Random exposing (Seed)
 import Tile
@@ -31,7 +31,6 @@ type alias State =
     { player : Monster
     , seed : Seed
     , tiles : Tiles
-    , monsters : Monsters
     , level : LevelNum
     }
 
@@ -46,33 +45,16 @@ modelFromSeed seedIn =
             Random.step (Map.generateLevel levelNum) seedIn
     in
     Result.andThen
-        (\( tilesIn, monstersIn ) ->
+        (\tilesIn ->
             let
                 ( startingTileRes, seed ) =
                     Random.step (Tiles.randomPassableTile tilesIn) seed1
             in
             Result.map
                 (\startingTile ->
-                    let
-                        defaultPlayer =
-                            { kind = Monster.Player, x = startingTile.x, y = startingTile.y, hp = HP 0, sprite = SpriteIndex 1 }
-
-                        ( tiles, monstersPlusPlayer ) =
-                            Monster.add { tiles = tilesIn, monsters = monstersIn } { kind = Monster.Player, x = startingTile.x, y = startingTile.y }
-                                |> (\r -> ( r.tiles, r.monsters ))
-
-                        monsters =
-                            Array.filter (\m -> Monster.isPlayer m.kind |> not) monstersPlusPlayer
-
-                        player =
-                            Array.filter (\m -> Monster.isPlayer m.kind) monstersPlusPlayer
-                                |> Array.get 0
-                                |> Maybe.withDefault defaultPlayer
-                    in
-                    { player = player
+                    { player = Monster.fromSpec { kind = Monster.Player, x = startingTile.x, y = startingTile.y }
                     , seed = seed
-                    , tiles = tiles
-                    , monsters = monsters
+                    , tiles = tilesIn
                     , level = levelNum
                     }
                 )
@@ -84,9 +66,28 @@ modelFromSeed seedIn =
 draw : State -> Cmd Msg
 draw state =
     Tiles.mapToArray Tile.draw state.tiles
-        |> (\prev -> Array.map Monster.draw state.monsters |> Array.append prev)
+        |> (\prev ->
+                Tiles.mapToArray .monster state.tiles
+                    |> filterOutNothings
+                    |> Array.map Monster.draw
+                    |> Array.append prev
+           )
         |> Array.push (Monster.draw state.player)
         |> Ports.perform
+
+
+filterOutNothings : Array (Maybe a) -> Array a
+filterOutNothings =
+    Array.foldl
+        (\maybe acc ->
+            case maybe of
+                Just x ->
+                    Array.push x acc
+
+                Nothing ->
+                    acc
+        )
+        Array.empty
 
 
 init : Int -> ( Model, Cmd Msg )
@@ -101,41 +102,36 @@ init seed =
 
 movePlayer : State -> DeltaX -> DeltaY -> State
 movePlayer state dx dy =
-    case Monster.tryMove state state.player dx dy of
+    case Tiles.tryMove state.tiles state.player dx dy of
         Nothing ->
             state
 
-        Just newState ->
-            newState
+        Just ( tiles, player ) ->
+            { state | tiles = tiles, player = player }
                 |> tick
 
 
 tick : State -> State
-tick state =
-    Array.foldr
-        (\m acc ->
-            -- Deleting monsters here would mess up all the indexes if we keep using arrays
-            -- So, our choices are:
-            --      update all indexes arfter each monster update (bleh)
-            --      use generational indexes
-            --          doesn't that still imply we should be fixing the indexes up?
-            --      store the (non-player) monsters in the tiles, so we don't need indexes at all
-            --           note that since we don't have references here in Elm, we just won't have a Monsters collection,
-            --           and we will just iterate over the tiles when drawing and updating monsters
-            --      generational *IDs*
-            --          that is, each level, assign the first monster and ID of `0`, the second the ID of `1` and so forth.
-            --          No ID should be reused within the same level. We can ensure this with a counter that we can reset each level.
-            --          Then, we'd have a dictionary one can look up monsters in by ID. We'd still need to remove monster ID from
-            --          the tile the monster was on when it died, but that's much less hassle than updating every index.
-            --      something else I haven't thought of?
-            if Monster.isDead m then
-                acc
+tick stateIn =
+    Tiles.foldXY
+        (\xy state ->
+            case
+                Tiles.get state.tiles xy
+                    |> (\t -> Maybe.map (\m -> ( t, m )) t.monster)
+            of
+                Nothing ->
+                    state
 
-            else
-                Monster.update acc
+                Just ( tile, m ) ->
+                    if Monster.isDead m then
+                        { state
+                            | tiles = Tiles.set { tile | monster = Nothing } state.tiles
+                        }
+
+                    else
+                        Tiles.updateMonster state m
         )
-        state
-        state.monsters
+        stateIn
 
 
 update msg model =

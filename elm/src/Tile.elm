@@ -2,6 +2,7 @@ module Tile exposing (..)
 
 import Array exposing (Array)
 import Game exposing (SpriteIndex(..), X(..), Y(..))
+import Monster exposing (Monster)
 import Ports
 
 
@@ -10,18 +11,12 @@ type Kind
     | Wall
 
 
-type MonsterId
-    = -- This is an index into the Monster.Monsters collection.
-      -- TODO Are we going to want a generational index here?
-      MonsterId Int
-
-
 type alias Tile =
     { kind : Kind
     , x : X
     , y : Y
     , sprite : SpriteIndex
-    , monster : Maybe MonsterId
+    , monster : Maybe Monster
     }
 
 

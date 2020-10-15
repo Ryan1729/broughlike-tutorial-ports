@@ -2,7 +2,7 @@ module Map exposing (Level, generateLevel)
 
 import Array exposing (Array)
 import Game exposing (DeltaX(..), DeltaY(..), LevelNum(..), Located, X(..), Y(..), moveX, moveY)
-import Monster exposing (Monster, Monsters)
+import Monster exposing (Monster)
 import Random exposing (Generator, Seed)
 import Randomness
 import Tile exposing (Kind(..), Tile)
@@ -10,7 +10,7 @@ import Tiles exposing (Tiles)
 
 
 type alias Level =
-    ( Tiles, Monsters )
+    Tiles
 
 
 generateLevel : LevelNum -> Generator (Result String Level)
@@ -37,35 +37,33 @@ generateMonsters levelNum tiles =
                 LevelNum level ->
                     level + 1
     in
-    addMonsters numMonsters ( tiles, Array.empty )
+    addMonsters numMonsters tiles
 
 
 addMonsters : Int -> Level -> Generator (Result String Level)
-addMonsters count ( tilesIn, monstersIn ) =
+addMonsters count tilesIn =
     if count <= 0 then
-        ( tilesIn, monstersIn )
-            |> Ok
+        Ok tilesIn
             |> Random.constant
 
     else
-        nonPlayerMonsterKindGen
-            |> Random.andThen
-                (\kind ->
-                    Tiles.randomPassableTile tilesIn
-                        |> Random.andThen
-                            (\tileResult ->
-                                case tileResult of
-                                    Err e ->
-                                        Err e
-                                            |> Random.constant
+        Random.andThen
+            (\kind ->
+                Tiles.randomPassableTile tilesIn
+                    |> Random.andThen
+                        (\tileResult ->
+                            case tileResult of
+                                Err e ->
+                                    Err e
+                                        |> Random.constant
 
-                                    Ok { x, y } ->
-                                        Monster.add { tiles = tilesIn, monsters = monstersIn } { x = x, y = y, kind = kind }
-                                            |> (\{ tiles, monsters } -> ( tiles, monsters ))
-                                            |> addMonsters
-                                                (count - 1)
-                            )
-                )
+                                Ok { x, y } ->
+                                    Tiles.addMonster tilesIn { x = x, y = y, kind = kind }
+                                        |> addMonsters
+                                            (count - 1)
+                        )
+            )
+            nonPlayerMonsterKindGen
 
 
 nonPlayerMonsterKindGen : Generator Monster.Kind
