@@ -122,6 +122,11 @@ tick state =
             --      store the (non-player) monsters in the tiles, so we don't need indexes at all
             --           note that since we don't have references here in Elm, we just won't have a Monsters collection,
             --           and we will just iterate over the tiles when drawing and updating monsters
+            --      generational *IDs*
+            --          that is, each level, assign the first monster and ID of `0`, the second the ID of `1` and so forth.
+            --          No ID should be reused within the same level. We can ensure this with a counter that we can reset each level.
+            --          Then, we'd have a dictionary one can look up monsters in by ID. We'd still need to remove monster ID from
+            --          the tile the monster was on when it died, but that's much less hassle than updating every index.
             --      something else I haven't thought of?
             if Monster.isDead m then
                 acc
