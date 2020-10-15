@@ -60,8 +60,8 @@ addMonsters count ( tilesIn, monstersIn ) =
                                             |> Random.constant
 
                                     Ok { x, y } ->
-                                        Monster.add tilesIn { x = x, y = y, kind = kind }
-                                            |> (\( tiles, monster ) -> ( tiles, Array.push monster monstersIn ))
+                                        Monster.add { tiles = tilesIn, monsters = monstersIn } { x = x, y = y, kind = kind }
+                                            |> (\{ tiles, monsters } -> ( tiles, monsters ))
                                             |> addMonsters
                                                 (count - 1)
                             )

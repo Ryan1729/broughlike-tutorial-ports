@@ -3,11 +3,11 @@ module Main exposing (..)
 import Array
 import Browser
 import Browser.Events
-import Game exposing (DeltaX(..), DeltaY(..), H(..), LevelNum(..), W(..), X(..), Y(..), moveX, moveY)
+import Game exposing (DeltaX(..), DeltaY(..), H(..), LevelNum(..), SpriteIndex(..), W(..), X(..), Y(..), moveX, moveY)
 import Html
 import Json.Decode as JD
 import Map
-import Monster exposing (Monster, Monsters)
+import Monster exposing (HP(..), Monster, Monsters)
 import Ports
 import Random exposing (Seed)
 import Tile
@@ -54,13 +54,25 @@ modelFromSeed seedIn =
             Result.map
                 (\startingTile ->
                     let
-                        ( tiles, player ) =
-                            Monster.add tilesIn { kind = Monster.Player, x = startingTile.x, y = startingTile.y }
+                        defaultPlayer =
+                            { kind = Monster.Player, x = startingTile.x, y = startingTile.y, hp = HP 0, sprite = SpriteIndex 1 }
+
+                        ( tiles, monstersPlusPlayer ) =
+                            Monster.add { tiles = tilesIn, monsters = monstersIn } { kind = Monster.Player, x = startingTile.x, y = startingTile.y }
+                                |> (\r -> ( r.tiles, r.monsters ))
+
+                        monsters =
+                            Array.filter (\m -> Monster.isPlayer m.kind |> not) monstersPlusPlayer
+
+                        player =
+                            Array.filter (\m -> Monster.isPlayer m.kind) monstersPlusPlayer
+                                |> Array.get 0
+                                |> Maybe.withDefault defaultPlayer
                     in
                     { player = player
                     , seed = seed
                     , tiles = tiles
-                    , monsters = monstersIn
+                    , monsters = monsters
                     , level = levelNum
                     }
                 )
@@ -89,12 +101,37 @@ init seed =
 
 movePlayer : State -> DeltaX -> DeltaY -> State
 movePlayer state dx dy =
-    case Monster.tryMove state.tiles state.player dx dy of
+    case Monster.tryMove state state.player dx dy of
         Nothing ->
             state
 
-        Just ( tiles, player ) ->
-            { state | tiles = tiles, player = player }
+        Just newState ->
+            newState
+                |> tick
+
+
+tick : State -> State
+tick state =
+    Array.foldr
+        (\m acc ->
+            -- Deleting monsters here would mess up all the indexes if we keep using arrays
+            -- So, our choices are:
+            --      update all indexes arfter each monster update (bleh)
+            --      use generational indexes
+            --          doesn't that still imply we should be fixing the indexes up?
+            --      store the (non-player) monsters in the tiles, so we don't need indexes at all
+            --           note that since we don't have references here in Elm, we just won't have a Monsters collection,
+            --           and we will just iterate over the tiles when drawing and updating monsters
+            --      something else I haven't thought of?
+            if Monster.isDead m then
+                acc
+
+            else
+                Monster.update acc
+        )
+        state
+        state.monsters
+    
 
 
 update msg model =

@@ -10,9 +10,10 @@ type Kind
     | Wall
 
 
-type alias MonsterId =
-    -- This will probably be an index into a monsters array later
-    ()
+type MonsterId
+    = -- This is an index into the Monster.Monsters collection.
+      -- TODO Are we going to want a generational index here?
+      MonsterId Int
 
 
 type alias Tile =

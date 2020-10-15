@@ -1,9 +1,10 @@
-module Monster exposing (HP(..), Kind(..), Monster, Monsters, add, draw, isNothing, move, tryMove)
+module Monster exposing (HP(..), Kind(..), Monster, Monsters, add, draw, isDead, isNothing, isPlayer, move, tryMove, update)
 
 import Array exposing (Array)
 import Game exposing (DeltaX(..), DeltaY(..), Located, SpriteIndex(..), X(..), Y(..))
 import Ports
-import Tile exposing (Tile)
+import Random exposing (Generator)
+import Tile exposing (MonsterId(..), Tile)
 import Tiles exposing (Tiles)
 
 
@@ -14,6 +15,16 @@ type Kind
     | Tank
     | Eater
     | Jester
+
+
+isPlayer : Kind -> Bool
+isPlayer kind =
+    case kind of
+        Player ->
+            True
+
+        _ ->
+            False
 
 
 type HP
@@ -33,8 +44,96 @@ type alias Monsters =
     Array Monster
 
 
-add : Tiles -> Located { kind : Kind } -> ( Tiles, Monster )
-add tiles monsterSpec =
+get : Monsters -> MonsterId -> Maybe Monster
+get monsters monsterId =
+    case monsterId of
+        MonsterId index ->
+            Array.get index monsters
+
+
+setOrPush : MonsterId -> Monster -> Monsters -> Monsters
+setOrPush monsterId monster monsters =
+    case monsterId of
+        MonsterId index ->
+            if index == Array.length monsters then
+                Array.push monster monsters
+
+            else
+                Array.set index monster monsters
+
+
+isDead : Monster -> Bool
+isDead monster =
+    -- TODO change when needed
+    False
+
+
+update :
+    { a
+        | player : Monster
+        , tiles : Tiles
+        , monsters : Monsters
+    }
+    -> MonsterId
+    ->
+        Generator
+            { a
+                | player : Monster
+                , tiles : Tiles
+                , monsters : Monsters
+            }
+update state monsterId =
+    case get state.monsters monsterId of
+        Nothing ->
+            Random.constant state
+
+        Just monster ->
+            Tiles.getAdjacentPassableNeighbors state.tiles monster
+                |> Random.map
+                    (List.filter
+                        (\t ->
+                            case Maybe.andThen (get state.monsters) t.monster of
+                                Just m ->
+                                    isPlayer m.kind
+
+                                Nothing ->
+                                    False
+                        )
+                    )
+                |> Random.map
+                    (\neighbors ->
+                        case
+                            List.sortBy (Game.dist state.player) neighbors
+                                |> List.head
+                                |> Maybe.andThen
+                                    (\newTile ->
+                                        Game.deltasFrom newTile monster
+                                            |> Maybe.andThen
+                                                (\( dx, dy ) ->
+                                                    tryMove state monsterId dx dy
+                                                )
+                                    )
+                        of
+                            Just newState ->
+                                newState
+
+                            Nothing ->
+                                state
+                    )
+
+
+add :
+    { a
+        | tiles : Tiles
+        , monsters : Monsters
+    }
+    -> Located { kind : Kind }
+    ->
+        { a
+            | tiles : Tiles
+            , monsters : Monsters
+        }
+add state monsterSpec =
     let
         ( sprite, hp ) =
             case monsterSpec.kind of
@@ -64,7 +163,7 @@ add tiles monsterSpec =
             , hp = hp
             }
     in
-    move tiles newMonster monsterSpec
+    move state (New newMonster) monsterSpec
 
 
 draw : Monster -> Ports.CommandRecord
@@ -82,38 +181,89 @@ isNothing maybe =
             True
 
 
-tryMove : Tiles -> Monster -> DeltaX -> DeltaY -> Maybe ( Tiles, Monster )
-tryMove tiles monster dx dy =
-    let
-        newTile =
-            Tiles.getNeighbor tiles monster dx dy
-    in
-    if Tile.isPassable newTile then
-        Just
-            (if isNothing newTile.monster then
-                move tiles monster newTile
+tryMove :
+    { a
+        | tiles : Tiles
+        , monsters : Monsters
+    }
+    -> MonsterId
+    -> DeltaX
+    -> DeltaY
+    ->
+        Maybe
+            { a
+                | tiles : Tiles
+                , monsters : Monsters
+            }
+tryMove state monsterId dx dy =
+    get state.monsters monsterId
+        |> Maybe.andThen
+            (\monster ->
+                let
+                    newTile =
+                        Tiles.getNeighbor state.tiles monster dx dy
+                in
+                if Tile.isPassable newTile then
+                    Just
+                        (if isNothing newTile.monster then
+                            move state (Old monsterId) newTile
 
-             else
-                ( tiles, monster )
+                         else
+                            state
+                        )
+
+                else
+                    Nothing
             )
 
-    else
-        Nothing
+
+type NewOrOldMonster
+    = New Monster
+    | Old MonsterId
 
 
-move : Tiles -> Monster -> Located a -> ( Tiles, Monster )
-move tiles monsterIn { x, y } =
-    let
-        oldTile =
-            Tiles.get tiles monsterIn.x monsterIn.y
+toMonsterAndId : Monsters -> NewOrOldMonster -> Maybe ( MonsterId, Monster )
+toMonsterAndId monsters newOrOld =
+    case newOrOld of
+        New m ->
+            Just ( Array.length monsters |> MonsterId, m )
 
-        newTile =
-            Tiles.get tiles x y
+        Old mId ->
+            get monsters mId
+                |> Maybe.map (\m -> ( mId, m ))
 
-        monster =
-            { monsterIn | x = x, y = y }
-    in
-    ( Tiles.set { oldTile | monster = Nothing } tiles
-        |> Tiles.set { newTile | monster = Just () }
-    , monster
-    )
+
+move :
+    { a
+        | tiles : Tiles
+        , monsters : Monsters
+    }
+    -> NewOrOldMonster
+    -> Located b
+    ->
+        { a
+            | tiles : Tiles
+            , monsters : Monsters
+        }
+move state newOrOld { x, y } =
+    case toMonsterAndId state.monsters newOrOld of
+        Nothing ->
+            state
+
+        Just ( monsterId, monsterIn ) ->
+            let
+                oldTile =
+                    Tiles.get state.tiles monsterIn.x monsterIn.y
+
+                newTile =
+                    Tiles.get state.tiles x y
+
+                monster =
+                    { monsterIn | x = x, y = y }
+            in
+            { state
+                | tiles =
+                    Tiles.set { oldTile | monster = Nothing } state.tiles
+                        |> Tiles.set { newTile | monster = Just monsterId }
+                , monsters = setOrPush monsterId monster state.monsters
+            }
