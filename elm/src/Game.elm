@@ -40,13 +40,13 @@ type DeltaY
 
 
 
--- This returns the deltas from the first param (`source`) to the second param (`target`)
--- if both deltas exist.
+-- This returns the deltas from the `source` to the `target`, if both deltas exist.
 -- That is, if `source` is at 2, 1 and `target` is at 1, 2 then `Just (DXm1, DY1)` will be returned.
+-- As another example, if `source` is at 1, 2 and `target` is at 1, 1 then `Just (DX0, DYm1)` will be returned.
 
 
-deltasFrom : Located a -> Located b -> Maybe ( DeltaX, DeltaY )
-deltasFrom source target =
+deltasFrom : { source : Located a, target : Located b } -> Maybe ( DeltaX, DeltaY )
+deltasFrom { source, target } =
     case ( delatXFrom source.x target.x, delatYFrom source.y target.y ) of
         ( Just dx, Just dy ) ->
             Just ( dx, dy )

@@ -234,7 +234,7 @@ updateMonster state monster =
                                     Monster.isPlayer m.kind
 
                                 Nothing ->
-                                    False
+                                    True
                         )
                     )
                 |> Random.map
@@ -244,7 +244,7 @@ updateMonster state monster =
                                 |> List.head
                                 |> Maybe.andThen
                                     (\newTile ->
-                                        Game.deltasFrom newTile monster
+                                        Game.deltasFrom { source = monster, target = newTile }
                                             |> Maybe.andThen
                                                 (\( dx, dy ) ->
                                                     tryMove state.tiles monster dx dy
