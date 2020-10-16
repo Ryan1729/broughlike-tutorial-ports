@@ -76,10 +76,20 @@ draw state =
         |> (\prev ->
                 Tiles.mapToArray .monster state.tiles
                     |> filterOutNothings
-                    |> Array.map Monster.draw
+                    |> arrayAndThen Monster.draw
                     |> Array.append prev
            )
         |> Ports.perform
+
+
+arrayAndThen : (a -> Array b) -> Array a -> Array b
+arrayAndThen callback array =
+    Array.foldl
+        (\a acc ->
+            Array.append acc (callback a)
+        )
+        Array.empty
+        array
 
 
 filterOutNothings : Array (Maybe a) -> Array a
@@ -194,8 +204,7 @@ update msg model =
 
 subscriptions _ =
     Sub.batch
-        [ --Browser.Events.onAnimationFrame (\_ -> Tick)
-          Browser.Events.onClick (JD.succeed Tick)
+        [ Browser.Events.onAnimationFrame (\_ -> Tick)
         , JD.field "key" JD.string
             |> JD.map toInput
             |> Browser.Events.onKeyDown

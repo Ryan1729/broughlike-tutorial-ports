@@ -1,7 +1,7 @@
 module Monster exposing (HP(..), Kind(..), Monster, draw, fromSpec, isDead, isPlayer)
 
 import Array exposing (Array)
-import Game exposing (Located, SpriteIndex(..))
+import Game exposing (Located, SpriteIndex(..), X(..), Y(..))
 import Ports
 import Random exposing (Generator, Seed)
 
@@ -68,9 +68,37 @@ fromSpec monsterSpec =
     }
 
 
-draw : Monster -> Ports.CommandRecord
+draw : Monster -> Array Ports.CommandRecord
 draw monster =
-    Ports.drawSprite monster.sprite monster.x monster.y
+    let
+        commands =
+            Array.push (Ports.drawSprite monster.sprite monster.x monster.y) Array.empty
+    in
+    case monster.hp of
+        HP hp ->
+            drawHP monster (hp - 1) commands
+
+
+drawHP : Located a -> Float -> Array Ports.CommandRecord -> Array Ports.CommandRecord
+drawHP monster i commands =
+    if i < 0 then
+        commands
+
+    else
+        case ( monster.x, monster.y ) of
+            ( X x, Y y ) ->
+                let
+                    hpX =
+                        X (x + toFloat (modBy 3 (floor i)) * (5 / 16))
+
+                    hpY =
+                        Y (y - (toFloat (floor (i / 3)) * (5 / 16)))
+
+                    hpCommand =
+                        Ports.drawSprite (SpriteIndex 9) hpX hpY
+                in
+                Array.push hpCommand commands
+                    |> drawHP monster (i - 1)
 
 
 isDead : Monster -> Bool
