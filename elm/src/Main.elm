@@ -141,7 +141,11 @@ tick stateIn =
                     state
 
                 Just ( tile, m ) ->
-                    if Monster.isDead m then
+                    if m.kind == Monster.Player then
+                        -- The player updating is handled before we call `tick`
+                        state
+
+                    else if Monster.isDead m then
                         { state
                             | tiles = Tiles.set { tile | monster = Nothing } state.tiles
                         }
