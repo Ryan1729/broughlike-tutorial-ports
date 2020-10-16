@@ -211,14 +211,14 @@ xyGen =
 
 updateMonster :
     { a
-        | player : Monster
+        | player : Located {}
         , tiles : Tiles
         , seed : Seed
     }
     -> Monster
     ->
         { a
-            | player : Monster
+            | player : Located {}
             , tiles : Tiles
             , seed : Seed
         }

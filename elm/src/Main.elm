@@ -3,7 +3,7 @@ module Main exposing (..)
 import Array exposing (Array)
 import Browser
 import Browser.Events
-import Game exposing (DeltaX(..), DeltaY(..), H(..), LevelNum(..), SpriteIndex(..), W(..), X(..), Y(..), moveX, moveY)
+import Game exposing (DeltaX(..), DeltaY(..), H(..), LevelNum(..), Located, SpriteIndex(..), W(..), X(..), Y(..), moveX, moveY)
 import Html
 import Json.Decode as JD
 import Map
@@ -28,7 +28,7 @@ type alias Model =
 
 
 type alias State =
-    { player : Monster
+    { player : Located {}
     , seed : Seed
     , tiles : Tiles
     , level : LevelNum
@@ -51,10 +51,17 @@ modelFromSeed seedIn =
                     Random.step (Tiles.randomPassableTile tilesIn) seed1
             in
             Result.map
-                (\startingTile ->
-                    { player = Monster.fromSpec { kind = Monster.Player, x = startingTile.x, y = startingTile.y }
+                (\{ x, y } ->
+                    let
+                        player =
+                            { x = x, y = y }
+
+                        tiles =
+                            Tiles.addMonster tilesIn { kind = Monster.Player, x = player.x, y = player.y }
+                    in
+                    { player = player
                     , seed = seed
-                    , tiles = tilesIn
+                    , tiles = tiles
                     , level = levelNum
                     }
                 )
@@ -72,7 +79,6 @@ draw state =
                     |> Array.map Monster.draw
                     |> Array.append prev
            )
-        |> Array.push (Monster.draw state.player)
         |> Ports.perform
 
 
@@ -102,13 +108,25 @@ init seed =
 
 movePlayer : State -> DeltaX -> DeltaY -> State
 movePlayer state dx dy =
-    case Tiles.tryMove state.tiles state.player dx dy of
+    let
+        m =
+            getPlayer state
+                |> Maybe.andThen
+                    (\player -> Tiles.tryMove state.tiles player dx dy)
+    in
+    case m of
         Nothing ->
             state
 
-        Just ( tiles, player ) ->
-            { state | tiles = tiles, player = player }
+        Just ( tiles, { x, y } ) ->
+            { state | tiles = tiles, player = { x = x, y = y } }
                 |> tick
+
+
+getPlayer : State -> Maybe Monster
+getPlayer state =
+    Tiles.get state.tiles state.player
+        |> .monster
 
 
 tick : State -> State
