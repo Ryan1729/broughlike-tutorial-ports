@@ -142,28 +142,35 @@ getPlayer state =
 tick : State -> State
 tick stateIn =
     Tiles.foldXY
-        (\xy state ->
+        (\xy list ->
             case
-                Tiles.get state.tiles xy
+                Tiles.get stateIn.tiles xy
                     |> (\t -> Maybe.map (\m -> ( t, m )) t.monster)
             of
                 Nothing ->
+                    list
+
+                Just pair ->
+                    pair :: list
+        )
+        []
+        -- We collect the tile, monster pairs into a list so that we don't hit
+        -- the same monster twice in the iteration
+        |> List.foldr
+            (\( tile, m ) state ->
+                if m.kind == Monster.Player then
+                    -- The player updating is handled before we call `tick`
                     state
 
-                Just ( tile, m ) ->
-                    if m.kind == Monster.Player then
-                        -- The player updating is handled before we call `tick`
-                        state
+                else if m.dead then
+                    { state
+                        | tiles = Tiles.set { tile | monster = Nothing } state.tiles
+                    }
 
-                    else if m.dead then
-                        { state
-                            | tiles = Tiles.set { tile | monster = Nothing } state.tiles
-                        }
-
-                    else
-                        Tiles.updateMonster state m
-        )
-        stateIn
+                else
+                    Tiles.updateMonster state m
+            )
+            stateIn
 
 
 update msg model =
