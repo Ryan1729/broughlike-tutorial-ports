@@ -128,8 +128,8 @@ movePlayer state dx dy =
         Nothing ->
             state
 
-        Just ( tiles, { x, y } ) ->
-            { state | tiles = tiles, player = { x = x, y = y } }
+        Just { tiles, moved } ->
+            { state | tiles = tiles, player = { x = moved.x, y = moved.y } }
                 |> tick
 
 

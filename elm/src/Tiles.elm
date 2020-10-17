@@ -251,7 +251,7 @@ updateMonster state monster =
                                                 )
                                     )
                         of
-                            Just ( tiles, _ ) ->
+                            Just { tiles } ->
                                 { state | tiles = tiles }
 
                             Nothing ->
@@ -270,7 +270,7 @@ addMonster :
     -> Tiles
 addMonster state monsterSpec =
     move state (Monster.fromSpec monsterSpec) monsterSpec
-        |> (\( tiles, _ ) -> tiles)
+        |> .tiles
 
 
 isNothing : Maybe a -> Bool
@@ -295,7 +295,7 @@ tryMove :
     -> DeltaY
     ->
         Maybe
-            ( Tiles, Monster )
+            { tiles : Tiles, moved : Monster }
 tryMove tiles monster dx dy =
     let
         newTile =
@@ -313,10 +313,12 @@ tryMove tiles monster dx dy =
                             newMonster =
                                 HP 1 |> Monster.hit target
                         in
-                        move tiles newMonster newMonster
+                        { tiles = move tiles newMonster newMonster |> .tiles
+                        , moved = monster
+                        }
 
                     else
-                        ( tiles, monster )
+                        { tiles = tiles, moved = monster }
             )
 
     else
@@ -327,7 +329,7 @@ move :
     Tiles
     -> Monster
     -> Located b
-    -> ( Tiles, Monster )
+    -> { tiles : Tiles, moved : Monster }
 move tiles monsterIn { x, y } =
     let
         oldTile =
@@ -339,7 +341,8 @@ move tiles monsterIn { x, y } =
         monster =
             { monsterIn | x = x, y = y }
     in
-    ( set { oldTile | monster = Nothing } tiles
-        |> set { newTile | monster = Just monster }
-    , monster
-    )
+    { tiles =
+        set { oldTile | monster = Nothing } tiles
+            |> set { newTile | monster = Just monster }
+    , moved = monster
+    }
