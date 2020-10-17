@@ -155,7 +155,7 @@ tick stateIn =
                         -- The player updating is handled before we call `tick`
                         state
 
-                    else if Monster.isDead m then
+                    else if m.dead then
                         { state
                             | tiles = Tiles.set { tile | monster = Nothing } state.tiles
                         }

@@ -1,4 +1,4 @@
-module Monster exposing (HP(..), Kind(..), Monster, draw, fromSpec, isDead, isPlayer)
+module Monster exposing (HP(..), Kind(..), Monster, draw, fromSpec, hit, isPlayer)
 
 import Array exposing (Array)
 import Game exposing (Located, SpriteIndex(..), X(..), Y(..))
@@ -34,6 +34,7 @@ type alias Monster =
         { kind : Kind
         , sprite : SpriteIndex
         , hp : HP
+        , dead : Bool
         }
 
 
@@ -65,6 +66,7 @@ fromSpec monsterSpec =
     , y = monsterSpec.y
     , sprite = sprite
     , hp = hp
+    , dead = False
     }
 
 
@@ -101,7 +103,24 @@ drawHP monster i commands =
                     |> drawHP monster (i - 1)
 
 
-isDead : Monster -> Bool
-isDead monster =
-    -- TODO change when needed
-    False
+hit : Monster -> HP -> Monster
+hit target damage =
+    case ( target.hp, damage ) of
+        ( HP hp, HP d ) ->
+            let
+                newHP =
+                    hp - d
+
+                newMonster =
+                    { target | hp = HP newHP }
+            in
+            if newHP <= 0 then
+                die newMonster
+
+            else
+                newMonster
+
+
+die : Monster -> Monster
+die monster =
+    { monster | dead = True, sprite = SpriteIndex 1 }

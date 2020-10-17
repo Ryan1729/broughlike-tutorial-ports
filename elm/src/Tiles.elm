@@ -303,11 +303,16 @@ tryMove tiles monster dx dy =
     in
     if Tile.isPassable newTile then
         Just
-            (if isNothing newTile.monster then
-                move tiles monster newTile
+            (case newTile.monster of
+                Nothing ->
+                    move tiles monster newTile
 
-             else
-                ( tiles, monster )
+                Just target ->
+                    if Monster.isPlayer monster.kind /= Monster.isPlayer target.kind then
+                        ( tiles, HP 1 |> Monster.hit target )
+
+                    else
+                        ( tiles, monster )
             )
 
     else
