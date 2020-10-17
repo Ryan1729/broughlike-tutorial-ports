@@ -309,7 +309,11 @@ tryMove tiles monster dx dy =
 
                 Just target ->
                     if Monster.isPlayer monster.kind /= Monster.isPlayer target.kind then
-                        ( tiles, HP 1 |> Monster.hit target )
+                        let
+                            newMonster =
+                                HP 1 |> Monster.hit target
+                        in
+                        move tiles newMonster newMonster
 
                     else
                         ( tiles, monster )
