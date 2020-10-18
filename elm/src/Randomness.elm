@@ -10,7 +10,7 @@ probability =
 
 shuffle : List a -> Generator (List a)
 shuffle list =
-    shuffleHelper list 0
+    shuffleHelper list 1
 
 
 shuffleHelper : List a -> Int -> Generator (List a)
@@ -68,7 +68,7 @@ swapAt i j list =
 
 shuffleNonEmpty : ( a, List a ) -> Generator ( a, List a )
 shuffleNonEmpty list =
-    shuffleNonEmptyHelper list 0
+    shuffleNonEmptyHelper list 1
 
 
 shuffleNonEmptyHelper : ( a, List a ) -> Int -> Generator ( a, List a )
@@ -112,10 +112,10 @@ swapAtNonEmpty i j list =
         if i == 0 then
             let
                 beforeJ =
-                    List.take (j + 1) rest
+                    List.take (j - 1) rest
 
                 jAndAfter =
-                    List.drop (j + 1) rest
+                    List.drop (j - 1) rest
             in
             case jAndAfter of
                 valueAtJ :: restOfRest ->
@@ -126,7 +126,7 @@ swapAtNonEmpty i j list =
 
         else
             ( head
-            , swapAt (i + 1) (j + 1) rest
+            , swapAt (i - 1) (j - 1) rest
             )
 
 
