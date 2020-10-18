@@ -222,7 +222,46 @@ updateMonster :
             , tiles : Tiles
             , seed : Seed
         }
-updateMonster state monster =
+updateMonster stateIn monster =
+    case monster.kind of
+        Monster.Bird ->
+            doStuff stateIn monster
+                |> .state
+
+        Monster.Snake ->
+            let
+                { state, moved } =
+                    doStuff stateIn { monster | attackedThisTurn = False }
+            in
+            if moved.attackedThisTurn then
+                state
+
+            else
+                doStuff state moved
+                    |> .state
+
+        _ ->
+            doStuff stateIn monster
+                |> .state
+
+
+doStuff :
+    { a
+        | player : Located {}
+        , tiles : Tiles
+        , seed : Seed
+    }
+    -> Monster
+    ->
+        { state :
+            { a
+                | player : Located {}
+                , tiles : Tiles
+                , seed : Seed
+            }
+        , moved : Monster
+        }
+doStuff state monster =
     let
         gen =
             getAdjacentPassableNeighbors state.tiles monster
@@ -251,25 +290,28 @@ updateMonster state monster =
                                                 )
                                     )
                         of
-                            Just { tiles } ->
-                                { state | tiles = tiles }
+                            Just { tiles, moved } ->
+                                { state = { state | tiles = tiles }, moved = moved }
 
                             Nothing ->
-                                state
+                                { state = state, moved = monster }
                     )
 
-        ( generatedState, seed ) =
+        ( generated, seed ) =
             Random.step gen state.seed
+
+        generatedState =
+            generated.state
     in
-    { generatedState | seed = seed }
+    { generated | state = { generatedState | seed = seed } }
 
 
 addMonster :
     Tiles
     -> Located { kind : Monster.Kind }
     -> Tiles
-addMonster state monsterSpec =
-    move state (Monster.fromSpec monsterSpec) monsterSpec
+addMonster tiles monsterSpec =
+    move (Monster.fromSpec monsterSpec) monsterSpec tiles
         |> .tiles
 
 
@@ -305,16 +347,23 @@ tryMove tiles monster dx dy =
         Just
             (case newTile.monster of
                 Nothing ->
-                    move tiles monster newTile
+                    move monster newTile tiles
 
                 Just target ->
                     if Monster.isPlayer monster.kind /= Monster.isPlayer target.kind then
                         let
                             newMonster =
+                                { monster | attackedThisTurn = True }
+
+                            newTarget =
                                 HP 1 |> Monster.hit target
                         in
-                        { tiles = move tiles newMonster newMonster |> .tiles
-                        , moved = monster
+                        { tiles =
+                            move newTarget newTarget tiles
+                                |> .tiles
+                                |> move newMonster newMonster
+                                |> .tiles
+                        , moved = newMonster
                         }
 
                     else
@@ -326,11 +375,11 @@ tryMove tiles monster dx dy =
 
 
 move :
-    Tiles
-    -> Monster
+    Monster
     -> Located b
+    -> Tiles
     -> { tiles : Tiles, moved : Monster }
-move tiles monsterIn { x, y } =
+move monsterIn { x, y } tiles =
     let
         oldTile =
             get tiles monsterIn

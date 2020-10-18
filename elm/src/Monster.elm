@@ -35,6 +35,7 @@ type alias Monster =
         , sprite : SpriteIndex
         , hp : HP
         , dead : Bool
+        , attackedThisTurn : Bool
         }
 
 
@@ -67,6 +68,7 @@ fromSpec monsterSpec =
     , sprite = sprite
     , hp = hp
     , dead = False
+    , attackedThisTurn = False
     }
 
 
