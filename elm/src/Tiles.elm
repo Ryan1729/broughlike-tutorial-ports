@@ -210,39 +210,87 @@ xyGen =
 
 
 updateMonster :
-    { a
-        | player : Located {}
-        , tiles : Tiles
-        , seed : Seed
-    }
-    -> Monster
+    Monster
     ->
         { a
             | player : Located {}
             , tiles : Tiles
             , seed : Seed
         }
-updateMonster stateIn monster =
+    ->
+        { a
+            | player : Located {}
+            , tiles : Tiles
+            , seed : Seed
+        }
+updateMonster monster stateIn =
     case monster.kind of
-        Monster.Bird ->
-            doStuff stateIn monster
-                |> .state
-
-        Monster.Snake ->
+        Monster.Tank ->
             let
+                startedStunned =
+                    monster.stunned
+
                 { state, moved } =
-                    doStuff stateIn { monster | attackedThisTurn = False }
+                    updateMonsterInner monster stateIn
             in
-            if moved.attackedThisTurn then
+            if startedStunned then
                 state
 
             else
-                doStuff state moved
+                setMonster (Monster.stun moved) state
                     |> .state
 
         _ ->
-            doStuff stateIn monster
+            updateMonsterInner monster stateIn
                 |> .state
+
+
+type alias WithMoved a =
+    { a | moved : Monster }
+
+
+updateMonsterInner :
+    Monster
+    ->
+        { a
+            | player : Located {}
+            , tiles : Tiles
+            , seed : Seed
+        }
+    ->
+        WithMoved
+            { state :
+                { a
+                    | player : Located {}
+                    , tiles : Tiles
+                    , seed : Seed
+                }
+            }
+updateMonsterInner monster stateIn =
+    if monster.stunned then
+        setMonster { monster | stunned = False } stateIn
+
+    else
+        case monster.kind of
+            Monster.Bird ->
+                doStuff stateIn monster
+
+            Monster.Snake ->
+                let
+                    { state, moved } =
+                        doStuff stateIn { monster | attackedThisTurn = False }
+                in
+                if moved.attackedThisTurn then
+                    { state = state, moved = moved }
+
+                else
+                    doStuff state moved
+
+            Monster.Tank ->
+                doStuff stateIn monster
+
+            _ ->
+                doStuff stateIn monster
 
 
 doStuff :
@@ -253,14 +301,14 @@ doStuff :
     }
     -> Monster
     ->
-        { state :
-            { a
-                | player : Located {}
-                , tiles : Tiles
-                , seed : Seed
+        WithMoved
+            { state :
+                { a
+                    | player : Located {}
+                    , tiles : Tiles
+                    , seed : Seed
+                }
             }
-        , moved : Monster
-        }
 doStuff state monster =
     let
         gen =
@@ -306,6 +354,31 @@ doStuff state monster =
     { generated | state = { generatedState | seed = seed } }
 
 
+setMonster :
+    Monster
+    ->
+        { a
+            | player : Located {}
+            , tiles : Tiles
+            , seed : Seed
+        }
+    ->
+        WithMoved
+            { state :
+                { a
+                    | player : Located {}
+                    , tiles : Tiles
+                    , seed : Seed
+                }
+            }
+setMonster monster state =
+    let
+        { tiles, moved } =
+            move monster monster state.tiles
+    in
+    { state = { state | tiles = tiles }, moved = moved }
+
+
 addMonster :
     Tiles
     -> Located { kind : Monster.Kind }
@@ -337,7 +410,7 @@ tryMove :
     -> DeltaY
     ->
         Maybe
-            { tiles : Tiles, moved : Monster }
+            (WithMoved { tiles : Tiles })
 tryMove tiles monster dx dy =
     let
         newTile =
@@ -356,7 +429,8 @@ tryMove tiles monster dx dy =
                                 { monster | attackedThisTurn = True }
 
                             newTarget =
-                                HP 1 |> Monster.hit target
+                                Monster.stun target
+                                    |> Monster.hit (HP 1)
                         in
                         { tiles =
                             move newTarget newTarget tiles
@@ -378,7 +452,7 @@ move :
     Monster
     -> Located b
     -> Tiles
-    -> { tiles : Tiles, moved : Monster }
+    -> WithMoved { tiles : Tiles }
 move monsterIn { x, y } tiles =
     let
         oldTile =

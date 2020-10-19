@@ -168,7 +168,7 @@ tick stateIn =
                     }
 
                 else
-                    Tiles.updateMonster state m
+                    Tiles.updateMonster m state
             )
             stateIn
 
