@@ -209,6 +209,11 @@ xyGen =
         (Random.map (toFloat >> Y) coordIntGen)
 
 
+replace : Kind -> Tile -> Tiles -> Tiles
+replace kind tile =
+    set { tile | kind = kind }
+
+
 updateMonster :
     Monster
     ->
@@ -271,26 +276,51 @@ updateMonsterInner monster stateIn =
         setMonster { monster | stunned = False } stateIn
 
     else
-        case monster.kind of
-            Monster.Bird ->
-                doStuff stateIn monster
+        let
+            gen =
+                case monster.kind of
+                    Monster.Player ->
+                        { state = stateIn, moved = monster }
+                            |> Random.constant
 
-            Monster.Snake ->
-                let
-                    { state, moved } =
+                    Monster.Bird ->
+                        doStuff stateIn monster
+
+                    Monster.Snake ->
                         doStuff stateIn { monster | attackedThisTurn = False }
-                in
-                if moved.attackedThisTurn then
-                    { state = state, moved = moved }
+                            |> Random.andThen
+                                (\{ state, moved } ->
+                                    if moved.attackedThisTurn then
+                                        { state = state, moved = moved }
+                                            |> Random.constant
 
-                else
-                    doStuff state moved
+                                    else
+                                        doStuff state moved
+                                )
 
-            Monster.Tank ->
-                doStuff stateIn monster
+                    Monster.Tank ->
+                        doStuff stateIn monster
 
-            _ ->
-                doStuff stateIn monster
+                    Monster.Eater ->
+                        getAdjacentNeighbors stateIn.tiles monster
+                            |> Random.map (List.filter (\t -> not (Tile.isPassable t) && inBounds t))
+                            |> Random.andThen
+                                (\neighbors ->
+                                    case neighbors of
+                                        [] ->
+                                            doStuff stateIn monster
+
+                                        head :: _ ->
+                                            { stateIn | tiles = replace Floor head stateIn.tiles }
+                                                |> setMonster (Monster.heal (HP 0.5) monster)
+                                                |> Random.constant
+                                )
+
+                    Monster.Jester ->
+                        doStuff stateIn monster
+        in
+        Random.step gen stateIn.seed
+            |> (\( { state } as output, seed ) -> { output | state = { state | seed = seed } })
 
 
 doStuff :
@@ -301,57 +331,49 @@ doStuff :
     }
     -> Monster
     ->
-        WithMoved
-            { state :
-                { a
-                    | player : Located {}
-                    , tiles : Tiles
-                    , seed : Seed
+        Generator
+            (WithMoved
+                { state :
+                    { a
+                        | player : Located {}
+                        , tiles : Tiles
+                        , seed : Seed
+                    }
                 }
-            }
+            )
 doStuff state monster =
-    let
-        gen =
-            getAdjacentPassableNeighbors state.tiles monster
-                |> Random.map
-                    (List.filter
-                        (\t ->
-                            case get state.tiles t |> .monster of
-                                Just m ->
-                                    Monster.isPlayer m.kind
+    getAdjacentPassableNeighbors state.tiles monster
+        |> Random.map
+            (List.filter
+                (\t ->
+                    case get state.tiles t |> .monster of
+                        Just m ->
+                            Monster.isPlayer m.kind
 
-                                Nothing ->
-                                    True
-                        )
-                    )
-                |> Random.map
-                    (\neighbors ->
-                        case
-                            List.sortBy (Game.dist state.player) neighbors
-                                |> List.head
-                                |> Maybe.andThen
-                                    (\newTile ->
-                                        Game.deltasFrom { source = monster, target = newTile }
-                                            |> Maybe.andThen
-                                                (\( dx, dy ) ->
-                                                    tryMove state.tiles monster dx dy
-                                                )
-                                    )
-                        of
-                            Just { tiles, moved } ->
-                                { state = { state | tiles = tiles }, moved = moved }
+                        Nothing ->
+                            True
+                )
+            )
+        |> Random.map
+            (\neighbors ->
+                case
+                    List.sortBy (Game.dist state.player) neighbors
+                        |> List.head
+                        |> Maybe.andThen
+                            (\newTile ->
+                                Game.deltasFrom { source = monster, target = newTile }
+                                    |> Maybe.andThen
+                                        (\( dx, dy ) ->
+                                            tryMove state.tiles monster dx dy
+                                        )
+                            )
+                of
+                    Just { tiles, moved } ->
+                        { state = { state | tiles = tiles }, moved = moved }
 
-                            Nothing ->
-                                { state = state, moved = monster }
-                    )
-
-        ( generated, seed ) =
-            Random.step gen state.seed
-
-        generatedState =
-            generated.state
-    in
-    { generated | state = { generatedState | seed = seed } }
+                    Nothing ->
+                        { state = state, moved = monster }
+            )
 
 
 setMonster :

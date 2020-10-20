@@ -1,4 +1,4 @@
-module Monster exposing (HP(..), Kind(..), Monster, draw, fromSpec, hit, isPlayer, stun)
+module Monster exposing (HP(..), Kind(..), Monster, draw, fromSpec, heal, hit, isPlayer, stun)
 
 import Array exposing (Array)
 import Game exposing (Located, SpriteIndex(..), X(..), Y(..))
@@ -27,6 +27,10 @@ isPlayer kind =
 
 type HP
     = HP Float
+
+
+maxHP =
+    6
 
 
 type alias Monster =
@@ -114,6 +118,26 @@ hit damage target =
             let
                 newHP =
                     hp - d
+
+                newMonster =
+                    { target | hp = HP newHP }
+            in
+            if newHP <= 0 then
+                die newMonster
+
+            else
+                newMonster
+
+
+heal : HP -> Monster -> Monster
+heal damage target =
+    case ( target.hp, damage ) of
+        ( HP hp, HP d ) ->
+            let
+                newHP =
+                    hp
+                        + d
+                        |> min maxHP
 
                 newMonster =
                     { target | hp = HP newHP }
