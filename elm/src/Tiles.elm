@@ -317,7 +317,27 @@ updateMonsterInner monster stateIn =
                                 )
 
                     Monster.Jester ->
-                        doStuff stateIn monster
+                        getAdjacentPassableNeighbors stateIn.tiles monster
+                            |> Random.map
+                                (\neighbors ->
+                                    case neighbors of
+                                        [] ->
+                                            { state = stateIn, moved = monster }
+
+                                        head :: _ ->
+                                            case
+                                                Game.deltasFrom { source = monster, target = head }
+                                                    |> Maybe.andThen (\( dx, dy ) -> tryMove stateIn.tiles monster dx dy)
+                                            of
+                                                Nothing ->
+                                                    { state = stateIn, moved = monster }
+
+                                                Just { tiles, moved } ->
+                                                    { state =
+                                                        { stateIn | tiles = tiles }
+                                                    , moved = moved
+                                                    }
+                                )
         in
         Random.step gen stateIn.seed
             |> (\( { state } as output, seed ) -> { output | state = { state | seed = seed } })
