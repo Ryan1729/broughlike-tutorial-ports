@@ -23,8 +23,11 @@ main =
         }
 
 
-type alias Model =
-    Result String State
+type Model
+    = Error String
+    | Title (Maybe State) Seed
+    | Running State
+    | Dead State
 
 
 type alias State =
@@ -43,35 +46,65 @@ modelFromSeed seedIn =
 
         ( levelRes, seed1 ) =
             Random.step (Map.generateLevel levelNum) seedIn
-    in
-    Result.andThen
-        (\tilesIn ->
-            let
-                ( startingTileRes, seed ) =
-                    Random.step (Tiles.randomPassableTile tilesIn) seed1
-            in
-            Result.map
-                (\{ x, y } ->
+
+        stateRes =
+            Result.andThen
+                (\tilesIn ->
                     let
-                        player =
-                            { x = x, y = y }
-
-                        tiles =
-                            Tiles.addMonster tilesIn { kind = Monster.Player, x = player.x, y = player.y }
+                        ( startingTileRes, seed ) =
+                            Random.step (Tiles.randomPassableTile tilesIn) seed1
                     in
-                    { player = player
-                    , seed = seed
-                    , tiles = tiles
-                    , level = levelNum
-                    }
+                    Result.map
+                        (\{ x, y } ->
+                            let
+                                player =
+                                    { x = x, y = y }
+
+                                tiles =
+                                    Tiles.addMonster tilesIn { kind = Monster.Player, x = player.x, y = player.y }
+                            in
+                            { player = player
+                            , seed = seed
+                            , tiles = tiles
+                            , level = levelNum
+                            }
+                        )
+                        startingTileRes
                 )
-                startingTileRes
+                levelRes
+    in
+    case stateRes of
+        Err e ->
+            Error e
+
+        Ok s ->
+            Running s
+
+
+draw : Model -> Cmd Msg
+draw model =
+    Ports.perform
+        (case model of
+            Title Nothing _ ->
+                Array.push Ports.drawOverlay Array.empty
+
+            Title (Just state) _ ->
+                drawState state
+                    |> Array.push Ports.drawOverlay
+
+            Running state ->
+                drawState state
+
+            Dead state ->
+                drawState state
+
+            Error _ ->
+                Array.push Ports.drawOverlay Array.empty
         )
-        levelRes
 
 
-draw : State -> Cmd Msg
-draw state =
+drawState : State -> Array Ports.CommandRecord
+drawState state =
     Tiles.mapToArray Tile.draw state.tiles
         |> (\prev ->
                 Tiles.mapToArray .monster state.tiles
@@ -79,7 +112,6 @@ draw state =
                     |> arrayAndThen Monster.draw
                     |> Array.append prev
            )
-        |> Ports.perform
 
 
 arrayAndThen : (a -> Array b) -> Array a -> Array b
@@ -109,15 +141,15 @@ filterOutNothings =
 init : Int -> ( Model, Cmd Msg )
 init seed =
     ( Random.initialSeed seed
-        |> modelFromSeed
+        |> Title Nothing
     , Ports.setCanvasDimensions ( Game.pixelWidth, Game.pixelHeight )
         |> Array.repeat 1
         |> Ports.perform
     )
 
 
-movePlayer : State -> DeltaX -> DeltaY -> State
-movePlayer state dx dy =
+movePlayer : DeltaX -> DeltaY -> State -> Model
+movePlayer dx dy state =
     let
         m =
             getPlayer state
@@ -126,7 +158,7 @@ movePlayer state dx dy =
     in
     case m of
         Nothing ->
-            state
+            Running state
 
         Just { tiles, moved } ->
             { state | tiles = tiles, player = { x = moved.x, y = moved.y } }
@@ -139,7 +171,7 @@ getPlayer state =
         |> .monster
 
 
-tick : State -> State
+tick : State -> Model
 tick stateIn =
     Tiles.foldXY
         (\xy list ->
@@ -171,40 +203,54 @@ tick stateIn =
                     Tiles.updateMonster m state
             )
             stateIn
+        |> (\s ->
+                case getPlayer s of
+                    Nothing ->
+                        Running s
+
+                    Just player ->
+                        if player.dead then
+                            Dead s
+
+                        else
+                            Running s
+           )
 
 
 update msg model =
-    case model of
-        Ok state ->
-            case msg of
-                Tick ->
-                    ( model
-                    , draw state
-                    )
-
-                Input input ->
-                    ( Ok
-                        (case input of
-                            Up ->
-                                movePlayer state DX0 DYm1
-
-                            Down ->
-                                movePlayer state DX0 DY1
-
-                            Left ->
-                                movePlayer state DXm1 DY0
-
-                            Right ->
-                                movePlayer state DX1 DY0
-
-                            Other ->
-                                state
-                        )
-                    , Cmd.none
-                    )
-
-        Err _ ->
+    case msg of
+        Tick ->
             ( model
+            , draw model
+            )
+
+        Input input ->
+            ( case model of
+                Title _ seed ->
+                    modelFromSeed seed
+
+                Running state ->
+                    case input of
+                        Up ->
+                            movePlayer DX0 DYm1 state
+
+                        Down ->
+                            movePlayer DX0 DY1 state
+
+                        Left ->
+                            movePlayer DXm1 DY0 state
+
+                        Right ->
+                            movePlayer DX1 DY0 state
+
+                        Other ->
+                            Running state
+
+                Dead state ->
+                    Title (Just state) state.seed
+
+                Error _ ->
+                    model
             , Cmd.none
             )
 
@@ -266,8 +312,8 @@ toInput s =
 
 view model =
     case model of
-        Ok _ ->
-            Html.text ""
-
-        Err e ->
+        Error e ->
             Html.text e
+
+        _ ->
+            Html.text ""

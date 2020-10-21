@@ -1,4 +1,4 @@
-port module Ports exposing (CommandRecord, drawSprite, perform, setCanvasDimensions)
+port module Ports exposing (CommandRecord, drawOverlay, drawSprite, perform, setCanvasDimensions)
 
 import Array exposing (Array)
 import Game exposing (H(..), SpriteIndex(..), W(..), X(..), Y(..))
@@ -47,6 +47,13 @@ drawSprite spriteIndex xx yy =
           , JE.float Game.tileSize
           )
         ]
+        |> CommandRecord
+
+
+drawOverlay : CommandRecord
+drawOverlay =
+    JE.object
+        [ ( "kind", JE.string "drawOverlay" ) ]
         |> CommandRecord
 
 

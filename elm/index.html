@@ -45,6 +45,10 @@ const actions = {
             tileSize
         );
     },
+    "drawOverlay": () => {
+        ctx.fillStyle = 'rgba(0,0,0,.75)';
+        ctx.fillRect(0,0,canvas.width, canvas.height);
+    },
     "setCanvasDimensions": ({w, h}) => {
         canvas.width = w;
         canvas.height = h;
