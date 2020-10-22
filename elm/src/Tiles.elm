@@ -1,4 +1,4 @@
-module Tiles exposing (Tiles, addMonster, foldXY, get, getAdjacentNeighbors, getAdjacentPassableNeighbors, getNeighbor, mapToArray, possiblyDisconnectedTilesGen, randomPassableTile, set, tryMove, updateMonster)
+module Tiles exposing (NoPassableTile(..), Tiles, addMonster, foldXY, get, getAdjacentNeighbors, getAdjacentPassableNeighbors, getNeighbor, mapToArray, noPassableTileToString, possiblyDisconnectedTilesGen, randomPassableTile, set, tryMove, updateMonster)
 
 import Array exposing (Array)
 import Game exposing (DeltaX(..), DeltaY(..), Located, SpriteIndex(..), X(..), Y(..), moveX, moveY)
@@ -178,7 +178,16 @@ getAdjacentPassableNeighbors tiles located =
         |> Random.map (List.filter Tile.isPassable)
 
 
-randomPassableTile : Tiles -> Generator (Result String Tile)
+type NoPassableTile
+    = NoPassableTile
+
+
+noPassableTileToString : NoPassableTile -> String
+noPassableTileToString _ =
+    "get random passable tile"
+
+
+randomPassableTile : Tiles -> Generator (Result NoPassableTile Tile)
 randomPassableTile tiles =
     Random.map
         (\xy ->
@@ -191,10 +200,10 @@ randomPassableTile tiles =
                 Ok t
 
             else
-                Err "get random passable tile"
+                Err NoPassableTile
         )
         xyGen
-        |> Randomness.tryTo
+        |> Randomness.tryToCustom
 
 
 xyGen : Generator (Located {})

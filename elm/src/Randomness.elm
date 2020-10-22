@@ -1,4 +1,4 @@
-module Randomness exposing (probability, shuffle, shuffleNonEmpty, tryTo)
+module Randomness exposing (probability, shuffle, shuffleNonEmpty, tryTo, tryToCustom)
 
 import Random exposing (Generator)
 
@@ -133,9 +133,15 @@ swapAtNonEmpty i j list =
 tryTo : Generator (Result String a) -> Generator (Result String a)
 tryTo generator =
     tryToHelper generator 1000
+        |> Random.map (Result.mapError ((++) "Timeout while trying to "))
 
 
-tryToHelper : Generator (Result String a) -> Int -> Generator (Result String a)
+tryToCustom : Generator (Result e a) -> Generator (Result e a)
+tryToCustom generator =
+    tryToHelper generator 1000
+
+
+tryToHelper : Generator (Result e a) -> Int -> Generator (Result e a)
 tryToHelper generator timeout =
     Random.andThen
         (\result ->
@@ -144,11 +150,9 @@ tryToHelper generator timeout =
                     Ok a
                         |> Random.constant
 
-                Err description ->
+                Err e ->
                     if timeout <= 0 then
-                        "Timeout while trying to "
-                            ++ description
-                            |> Err
+                        Err e
                             |> Random.constant
 
                     else

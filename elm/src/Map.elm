@@ -1,4 +1,4 @@
-module Map exposing (Level, generateLevel)
+module Map exposing (Level, generateLevel, spawnMonster)
 
 import Array exposing (Array)
 import Game exposing (DeltaX(..), DeltaY(..), LevelNum(..), Located, X(..), Y(..), moveX, moveY)
@@ -24,12 +24,13 @@ generateLevel level =
 
                 Ok tiles ->
                     generateMonsters level tiles
+                        |> Random.map (Result.mapError Tiles.noPassableTileToString)
         )
         tilesGen
         |> Randomness.tryTo
 
 
-generateMonsters : LevelNum -> Tiles -> Generator (Result String Level)
+generateMonsters : LevelNum -> Tiles -> Generator (Result Tiles.NoPassableTile Level)
 generateMonsters levelNum tiles =
     let
         numMonsters =
@@ -40,7 +41,7 @@ generateMonsters levelNum tiles =
     addMonsters numMonsters tiles
 
 
-addMonsters : Int -> Level -> Generator (Result String Level)
+addMonsters : Int -> Level -> Generator (Result Tiles.NoPassableTile Level)
 addMonsters count tilesIn =
     if count <= 0 then
         Ok tilesIn
@@ -66,6 +67,11 @@ addMonsters count tilesIn =
             nonPlayerMonsterKindGen
 
 
+spawnMonster : Level -> Generator (Result Tiles.NoPassableTile Level)
+spawnMonster tiles =
+    addMonsters 1 tiles
+
+
 nonPlayerMonsterKindGen : Generator Monster.Kind
 nonPlayerMonsterKindGen =
     Randomness.shuffleNonEmpty
@@ -88,7 +94,8 @@ tilesGen =
                     (\tileResult ->
                         case tileResult of
                             Err e ->
-                                Err e
+                                Tiles.noPassableTileToString e
+                                    |> Err
                                     |> Random.constant
 
                             Ok tile ->

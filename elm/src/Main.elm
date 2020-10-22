@@ -35,7 +35,13 @@ type alias State =
     , seed : Seed
     , tiles : Tiles
     , level : LevelNum
+    , spawnCounter : Int
+    , spawnRate : Int
     }
+
+
+initialSpawnRate =
+    15
 
 
 modelFromSeed : Seed -> Model
@@ -54,22 +60,24 @@ modelFromSeed seedIn =
                         ( startingTileRes, seed ) =
                             Random.step (Tiles.randomPassableTile tilesIn) seed1
                     in
-                    Result.map
-                        (\{ x, y } ->
-                            let
-                                player =
-                                    { x = x, y = y }
+                    Result.mapError Tiles.noPassableTileToString startingTileRes
+                        |> Result.map
+                            (\{ x, y } ->
+                                let
+                                    player =
+                                        { x = x, y = y }
 
-                                tiles =
-                                    Tiles.addMonster tilesIn { kind = Monster.Player, x = player.x, y = player.y }
-                            in
-                            { player = player
-                            , seed = seed
-                            , tiles = tiles
-                            , level = levelNum
-                            }
-                        )
-                        startingTileRes
+                                    tiles =
+                                        Tiles.addMonster tilesIn { kind = Monster.Player, x = player.x, y = player.y }
+                                in
+                                { player = player
+                                , seed = seed
+                                , tiles = tiles
+                                , level = levelNum
+                                , spawnRate = initialSpawnRate
+                                , spawnCounter = initialSpawnRate
+                                }
+                            )
                 )
                 levelRes
     in
@@ -203,6 +211,33 @@ tick stateIn =
                     Tiles.updateMonster m state
             )
             stateIn
+        |> (\state ->
+                let
+                    s =
+                        { state | spawnCounter = state.spawnCounter - 1 }
+                in
+                if s.spawnCounter <= 0 then
+                    Map.spawnMonster s.tiles
+                        |> (\tilesGen -> Random.step tilesGen s.seed)
+                        |> (\( tilesRes, seed ) ->
+                                { s
+                                    | seed = seed
+                                    , tiles =
+                                        case tilesRes of
+                                            Ok tiles ->
+                                                tiles
+
+                                            Err Tiles.NoPassableTile ->
+                                                -- the player won't mind us not spawning a monster if we run out of room
+                                                s.tiles
+                                    , spawnCounter = s.spawnRate
+                                    , spawnRate = s.spawnRate - 1
+                                }
+                           )
+
+                else
+                    s
+           )
         |> (\s ->
                 case getPlayer s of
                     Nothing ->
