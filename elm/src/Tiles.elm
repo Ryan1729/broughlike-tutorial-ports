@@ -280,8 +280,12 @@ updateMonsterInner :
                     , seed : Seed
                 }
             }
-updateMonsterInner monster stateIn =
-    if monster.stunned then
+updateMonsterInner monsterIn stateIn =
+    let
+        monster =
+            { monsterIn | teleportCounter = monsterIn.teleportCounter - 1 }
+    in
+    if monster.stunned || monster.teleportCounter > 0 then
         setMonster { monster | stunned = False } stateIn
 
     else

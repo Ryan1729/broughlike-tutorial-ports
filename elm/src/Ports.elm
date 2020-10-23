@@ -24,8 +24,8 @@ perform records =
         |> platform
 
 
-drawSprite : SpriteIndex -> X -> Y -> CommandRecord
-drawSprite spriteIndex xx yy =
+drawSprite : X -> Y -> SpriteIndex -> CommandRecord
+drawSprite xx yy spriteIndex =
     JE.object
         [ ( "kind", JE.string "drawSprite" )
         , ( "sprite"

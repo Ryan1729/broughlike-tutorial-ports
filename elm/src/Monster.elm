@@ -41,31 +41,36 @@ type alias Monster =
         , dead : Bool
         , attackedThisTurn : Bool
         , stunned : Bool
+        , teleportCounter : Int
         }
+
+
+teleportCounterDefault =
+    2
 
 
 fromSpec : Located { kind : Kind } -> Monster
 fromSpec monsterSpec =
     let
-        ( sprite, hp ) =
+        ( sprite, hp, teleportCounter ) =
             case monsterSpec.kind of
                 Player ->
-                    ( SpriteIndex 0, HP 3 )
+                    ( SpriteIndex 0, HP 3, 0 )
 
                 Bird ->
-                    ( SpriteIndex 4, HP 3 )
+                    ( SpriteIndex 4, HP 3, teleportCounterDefault )
 
                 Snake ->
-                    ( SpriteIndex 5, HP 1 )
+                    ( SpriteIndex 5, HP 1, teleportCounterDefault )
 
                 Tank ->
-                    ( SpriteIndex 6, HP 2 )
+                    ( SpriteIndex 6, HP 2, teleportCounterDefault )
 
                 Eater ->
-                    ( SpriteIndex 7, HP 1 )
+                    ( SpriteIndex 7, HP 1, teleportCounterDefault )
 
                 Jester ->
-                    ( SpriteIndex 8, HP 2 )
+                    ( SpriteIndex 8, HP 2, teleportCounterDefault )
     in
     { kind = monsterSpec.kind
     , x = monsterSpec.x
@@ -75,18 +80,27 @@ fromSpec monsterSpec =
     , dead = False
     , attackedThisTurn = False
     , stunned = False
+    , teleportCounter = teleportCounter
     }
 
 
 draw : Monster -> Array Ports.CommandRecord
 draw monster =
-    let
-        commands =
-            Array.push (Ports.drawSprite monster.sprite monster.x monster.y) Array.empty
-    in
-    case monster.hp of
-        HP hp ->
-            drawHP monster (hp - 1) commands
+    if monster.teleportCounter > 0 then
+        Array.push
+            (SpriteIndex 10
+                |> Ports.drawSprite monster.x monster.y
+            )
+            Array.empty
+
+    else
+        let
+            commands =
+                Array.push (Ports.drawSprite monster.x monster.y monster.sprite) Array.empty
+        in
+        case monster.hp of
+            HP hp ->
+                drawHP monster (hp - 1) commands
 
 
 drawHP : Located a -> Float -> Array Ports.CommandRecord -> Array Ports.CommandRecord
@@ -105,7 +119,8 @@ drawHP monster i commands =
                         Y (y - (toFloat (floor (i / 3)) * (5 / 16)))
 
                     hpCommand =
-                        Ports.drawSprite (SpriteIndex 9) hpX hpY
+                        SpriteIndex 9
+                            |> Ports.drawSprite hpX hpY
                 in
                 Array.push hpCommand commands
                     |> drawHP monster (i - 1)

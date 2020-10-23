@@ -21,7 +21,8 @@ type alias Tile =
 
 draw : Tile -> Ports.CommandRecord
 draw tile =
-    Ports.drawSprite (sprite tile.kind) tile.x tile.y
+    sprite tile.kind
+        |> Ports.drawSprite tile.x tile.y
 
 
 sprite : Kind -> SpriteIndex
