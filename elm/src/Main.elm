@@ -44,8 +44,17 @@ initialSpawnRate =
     15
 
 
-modelFromSeed : Seed -> Model
-modelFromSeed seedIn =
+startingHp =
+    HP 3
+
+
+startGame : Seed -> Model
+startGame seedIn =
+    startLevel seedIn startingHp
+
+
+startLevel : Seed -> HP -> Model
+startLevel seedIn hp =
     let
         levelNum =
             LevelNum 1
@@ -68,7 +77,11 @@ modelFromSeed seedIn =
                                         { x = x, y = y }
 
                                     tiles =
-                                        Tiles.addMonster tilesIn { kind = Monster.Player, x = player.x, y = player.y }
+                                        Tiles.addMonster tilesIn
+                                            { kind = Monster.Player hp
+                                            , x = player.x
+                                            , y = player.y
+                                            }
                                 in
                                 { player = player
                                 , seed = seed
@@ -198,7 +211,7 @@ tick stateIn =
         -- the same monster twice in the iteration
         |> List.foldr
             (\( tile, m ) state ->
-                if m.kind == Monster.Player then
+                if Monster.isPlayer m.kind then
                     -- The player updating is handled before we call `tick`
                     state
 
@@ -262,7 +275,7 @@ update msg model =
         Input input ->
             ( case model of
                 Title _ seed ->
-                    modelFromSeed seed
+                    startGame seed
 
                 Running state ->
                     case input of

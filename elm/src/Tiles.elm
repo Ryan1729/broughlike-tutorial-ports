@@ -292,7 +292,7 @@ updateMonsterInner monsterIn stateIn =
         let
             gen =
                 case monster.kind of
-                    Monster.Player ->
+                    Monster.Player _ ->
                         { state = stateIn, moved = monster }
                             |> Random.constant
 
@@ -436,7 +436,7 @@ setMonster monster state =
 
 addMonster :
     Tiles
-    -> Located { kind : Monster.Kind }
+    -> Monster.Spec
     -> Tiles
 addMonster tiles monsterSpec =
     move (Monster.fromSpec monsterSpec) monsterSpec tiles

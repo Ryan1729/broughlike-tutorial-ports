@@ -1,4 +1,4 @@
-module Monster exposing (HP(..), Kind(..), Monster, draw, fromSpec, heal, hit, isPlayer, stun)
+module Monster exposing (HP(..), Kind(..), Monster, Spec, draw, fromSpec, heal, hit, isPlayer, stun)
 
 import Array exposing (Array)
 import Game exposing (Located, SpriteIndex(..), X(..), Y(..))
@@ -7,7 +7,7 @@ import Random exposing (Generator, Seed)
 
 
 type Kind
-    = Player
+    = Player HP
     | Bird
     | Snake
     | Tank
@@ -18,7 +18,7 @@ type Kind
 isPlayer : Kind -> Bool
 isPlayer kind =
     case kind of
-        Player ->
+        Player _ ->
             True
 
         _ ->
@@ -49,13 +49,17 @@ teleportCounterDefault =
     2
 
 
-fromSpec : Located { kind : Kind } -> Monster
+type alias Spec =
+    Located { kind : Kind }
+
+
+fromSpec : Spec -> Monster
 fromSpec monsterSpec =
     let
         ( sprite, hp, teleportCounter ) =
             case monsterSpec.kind of
-                Player ->
-                    ( SpriteIndex 0, HP 3, 0 )
+                Player startingHp ->
+                    ( SpriteIndex 0, startingHp, 0 )
 
                 Bird ->
                     ( SpriteIndex 4, HP 3, teleportCounterDefault )
