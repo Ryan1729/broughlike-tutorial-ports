@@ -162,7 +162,7 @@ movePlayer dx dy state =
         m =
             getPlayer state
                 |> Maybe.andThen
-                    (\player -> Tiles.tryMove state.tiles player dx dy)
+                    (\player -> Tiles.tryMove player dx dy state.tiles)
     in
     case m of
         Nothing ->

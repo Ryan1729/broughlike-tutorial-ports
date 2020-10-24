@@ -340,7 +340,7 @@ updateMonsterInner monsterIn stateIn =
                                         head :: _ ->
                                             case
                                                 Game.deltasFrom { source = monster, target = head }
-                                                    |> Maybe.andThen (\( dx, dy ) -> tryMove stateIn.tiles monster dx dy)
+                                                    |> Maybe.andThen (\( dx, dy ) -> tryMove monster dx dy stateIn.tiles)
                                             of
                                                 Nothing ->
                                                     { state = stateIn, moved = monster }
@@ -397,7 +397,7 @@ doStuff state monster =
                                 Game.deltasFrom { source = monster, target = newTile }
                                     |> Maybe.andThen
                                         (\( dx, dy ) ->
-                                            tryMove state.tiles monster dx dy
+                                            tryMove monster dx dy state.tiles
                                         )
                             )
                 of
@@ -459,14 +459,14 @@ isNothing maybe =
 
 
 tryMove :
-    Tiles
-    -> Monster
+    Monster
     -> DeltaX
     -> DeltaY
+    -> Tiles
     ->
         Maybe
             (WithMoved { tiles : Tiles })
-tryMove tiles monster dx dy =
+tryMove monster dx dy tiles =
     let
         newTile =
             getNeighbor tiles monster dx dy
