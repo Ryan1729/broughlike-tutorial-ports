@@ -1,4 +1,4 @@
-module Tiles exposing (NoPassableTile(..), Tiles, addMonster, foldXY, get, getAdjacentNeighbors, getAdjacentPassableNeighbors, getNeighbor, mapToArray, noPassableTileToString, possiblyDisconnectedTilesGen, randomPassableTile, set, tryMove, updateMonster)
+module Tiles exposing (NoPassableTile(..), Tiles, addMonster, foldXY, get, getAdjacentNeighbors, getAdjacentPassableNeighbors, getNeighbor, mapToArray, noPassableTileToString, possiblyDisconnectedTilesGen, randomPassableTile, replace, set, tryMove, updateMonster)
 
 import Array exposing (Array)
 import Game exposing (DeltaX(..), DeltaY(..), Located, SpriteIndex(..), X(..), Y(..), moveX, moveY)

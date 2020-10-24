@@ -157,3 +157,10 @@ type H
 
 type LevelNum
     = LevelNum Int
+
+
+incLevel : LevelNum -> LevelNum
+incLevel levelNum =
+    case levelNum of
+        LevelNum l ->
+            LevelNum (l + 1)

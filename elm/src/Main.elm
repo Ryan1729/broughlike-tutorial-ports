@@ -48,40 +48,60 @@ startingHp =
     HP 3
 
 
+numLevels =
+    LevelNum 6
+
+
 startGame : Seed -> Model
 startGame seedIn =
-    startLevel seedIn startingHp
+    LevelNum 1
+        |> startLevel seedIn startingHp
 
 
-startLevel : Seed -> HP -> Model
-startLevel seedIn hp =
+startLevel : Seed -> HP -> LevelNum -> Model
+startLevel seedIn hp levelNum =
     let
-        levelNum =
-            LevelNum 1
-
         ( levelRes, seed1 ) =
             Random.step (Map.generateLevel levelNum) seedIn
 
+        stateRes : Result String State
         stateRes =
             Result.andThen
                 (\tilesIn ->
                     let
-                        ( startingTileRes, seed ) =
-                            Random.step (Tiles.randomPassableTile tilesIn) seed1
+                        tileGen =
+                            Tiles.randomPassableTile tilesIn
+
+                        ( startingTilesRes, seed ) =
+                            Random.step
+                                (Random.pair tileGen tileGen
+                                    |> Random.map
+                                        (\pair ->
+                                            case pair of
+                                                ( Ok t1, Ok t2 ) ->
+                                                    Ok ( t1, t2 )
+
+                                                _ ->
+                                                    Err Tiles.NoPassableTile
+                                        )
+                                )
+                                seed1
                     in
-                    Result.mapError Tiles.noPassableTileToString startingTileRes
+                    Result.mapError Tiles.noPassableTileToString startingTilesRes
                         |> Result.map
-                            (\{ x, y } ->
+                            (\( playerTile, exitTile ) ->
                                 let
                                     player =
-                                        { x = x, y = y }
+                                        { x = playerTile.x, y = playerTile.y }
 
+                                    tiles : Tiles
                                     tiles =
                                         Tiles.addMonster tilesIn
                                             { kind = Monster.Player hp
                                             , x = player.x
                                             , y = player.y
                                             }
+                                            |> Tiles.replace Tile.Exit exitTile
                                 in
                                 { player = player
                                 , seed = seed
@@ -175,15 +195,59 @@ movePlayer dx dy state =
         m =
             getPlayer state
                 |> Maybe.andThen
-                    (\player -> Tiles.tryMove player dx dy state.tiles)
+                    (\p ->
+                        Tiles.tryMove p dx dy state.tiles
+                            |> Maybe.map (\record -> ( record, p ))
+                    )
     in
     case m of
         Nothing ->
             Running state
 
-        Just { tiles, moved } ->
-            { state | tiles = tiles, player = { x = moved.x, y = moved.y } }
-                |> tick
+        Just ( { tiles, moved }, player ) ->
+            let
+                movedState =
+                    { state | tiles = tiles, player = { x = moved.x, y = moved.y } }
+
+                tile =
+                    Tiles.get tiles moved
+
+                preTickModel =
+                    case tile.kind of
+                        Tile.Exit ->
+                            if movedState.level == numLevels then
+                                movedState
+                                    |> (\s ->
+                                            Title (Just s) s.seed
+                                       )
+
+                            else
+                                let
+                                    hp =
+                                        case player.hp of
+                                            HP h ->
+                                                (h + 1)
+                                                    |> min Monster.maxHP
+                                                    |> HP
+                                in
+                                Game.incLevel movedState.level
+                                    |> startLevel movedState.seed hp
+
+                        _ ->
+                            Running movedState
+            in
+            case preTickModel of
+                Running s ->
+                    tick s
+
+                Dead s ->
+                    tick s
+
+                Title (Just s) _ ->
+                    tick s
+
+                _ ->
+                    preTickModel
 
 
 getPlayer : State -> Maybe Monster

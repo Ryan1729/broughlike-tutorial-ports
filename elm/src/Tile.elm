@@ -9,6 +9,7 @@ import Ports
 type Kind
     = Floor
     | Wall
+    | Exit
 
 
 type alias Tile =
@@ -34,6 +35,9 @@ sprite kind =
         Wall ->
             SpriteIndex 3
 
+        Exit ->
+            SpriteIndex 11
+
 
 floor : X -> Y -> Tile
 floor x y =
@@ -52,6 +56,9 @@ isPassable tile =
 
         Wall ->
             False
+
+        Exit ->
+            True
 
 
 hasMonster { monster } =

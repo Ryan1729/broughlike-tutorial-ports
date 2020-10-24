@@ -1,4 +1,4 @@
-module Monster exposing (HP(..), Kind(..), Monster, Spec, draw, fromSpec, heal, hit, isPlayer, stun)
+module Monster exposing (HP(..), Kind(..), Monster, Spec, draw, fromSpec, heal, hit, isPlayer, maxHP, stun)
 
 import Array exposing (Array)
 import Game exposing (Located, SpriteIndex(..), X(..), Y(..))
