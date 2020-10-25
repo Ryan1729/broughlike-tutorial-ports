@@ -55,6 +55,18 @@ const actions = {
         canvas.style.width = canvas.width + 'px';
         canvas.style.height = canvas.height + 'px';
         ctx.imageSmoothingEnabled = false;
+    },
+    "drawText": ({text, size, centered, textY, colour}) => {
+        ctx.fillStyle = colour;
+        ctx.font = size + "px monospace";
+        let textX;
+        if(centered){
+            textX = (canvas.width-ctx.measureText(text).width)/2;
+        }else{
+            textX = canvas.width-uiWidth*tileSize+25;
+        }
+
+        ctx.fillText(text, textX, textY);
     }
 }
 

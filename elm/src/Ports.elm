@@ -1,4 +1,4 @@
-port module Ports exposing (CommandRecord, drawOverlay, drawSprite, perform, setCanvasDimensions)
+port module Ports exposing (Colour(..), CommandRecord, TextSpec, drawOverlay, drawSprite, drawText, perform, setCanvasDimensions)
 
 import Array exposing (Array)
 import Game exposing (H(..), SpriteIndex(..), W(..), X(..), Y(..))
@@ -55,6 +55,48 @@ drawOverlay =
     JE.object
         [ ( "kind", JE.string "drawOverlay" ) ]
         |> CommandRecord
+
+
+type Colour
+    = White
+    | Violet
+    | Aqua
+
+
+type alias TextSpec =
+    { text : String
+    , size : Int
+    , centered : Bool
+    , y : Y
+    , colour : Colour
+    }
+
+
+drawText : TextSpec -> CommandRecord
+drawText { text, size, centered, y, colour } =
+    case y of
+        Y textY ->
+            JE.object
+                [ ( "kind", JE.string "drawText" )
+                , ( "text", JE.string text )
+                , ( "size", JE.int size )
+                , ( "centered", JE.bool centered )
+                , ( "textY", JE.float textY )
+                , ( "colour"
+                  , JE.string
+                        (case colour of
+                            White ->
+                                "white"
+
+                            Violet ->
+                                "violet"
+
+                            Aqua ->
+                                "aqua"
+                        )
+                  )
+                ]
+                |> CommandRecord
 
 
 setCanvasDimensions : ( W, H ) -> CommandRecord
