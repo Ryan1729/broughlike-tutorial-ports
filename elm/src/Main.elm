@@ -3,12 +3,12 @@ module Main exposing (..)
 import Array exposing (Array)
 import Browser
 import Browser.Events
-import Game exposing (DeltaX(..), DeltaY(..), H(..), LevelNum(..), Located, SpriteIndex(..), W(..), X(..), Y(..), moveX, moveY)
+import Game exposing (DeltaX(..), DeltaY(..), H(..), LevelNum(..), Located, SpriteIndex(..), W(..), X(..), Y(..), levelNumToString, moveX, moveY)
 import Html
 import Json.Decode as JD
 import Map
 import Monster exposing (HP(..), Monster)
-import Ports
+import Ports exposing (Colour(..), TextSpec)
 import Random exposing (Seed)
 import Tile
 import Tiles exposing (Tiles)
@@ -127,11 +127,11 @@ draw model =
     Ports.perform
         (case model of
             Title Nothing _ ->
-                Array.push Ports.drawOverlay Array.empty
+                drawTitle Array.empty
 
             Title (Just state) _ ->
                 drawState state
-                    |> Array.push Ports.drawOverlay
+                    |> drawTitle
 
             Running state ->
                 drawState state
@@ -144,6 +144,37 @@ draw model =
         )
 
 
+drawTitle : Array Ports.CommandRecord -> Array Ports.CommandRecord
+drawTitle =
+    let
+        halfWidth =
+            case Game.pixelWidth of
+                W w ->
+                    w / 2
+    in
+    Array.push Ports.drawOverlay
+        >> pushText
+            { text = "BROUGHLIKE"
+            , size = 70
+            , centered = True
+            , y = halfWidth - 110 |> Y
+            , colour = White
+            }
+        >> pushText
+            { text = "tutori-elm"
+            , size = 40
+            , centered = True
+            , y = halfWidth - 55 |> Y
+            , colour = White
+            }
+
+
+pushText : TextSpec -> Array Ports.CommandRecord -> Array Ports.CommandRecord
+pushText textSpec =
+    Ports.drawText textSpec
+        |> Array.push
+
+
 drawState : State -> Array Ports.CommandRecord
 drawState state =
     Tiles.mapToArray Tile.draw state.tiles
@@ -153,6 +184,13 @@ drawState state =
                     |> arrayAndThen Monster.draw
                     |> Array.append prev
            )
+        |> pushText
+            { text = "Level " ++ levelNumToString state.level
+            , size = 30
+            , centered = False
+            , y = Y 40
+            , colour = Violet
+            }
 
 
 arrayAndThen : (a -> Array b) -> Array a -> Array b
@@ -183,7 +221,7 @@ init : Int -> ( Model, Cmd Msg )
 init seed =
     ( Random.initialSeed seed
         |> Title Nothing
-    , Ports.setCanvasDimensions ( Game.pixelWidth, Game.pixelHeight )
+    , Ports.setCanvasDimensions ( Game.pixelWidth, Game.pixelHeight, Game.pixelUIWidth )
         |> Array.repeat 1
         |> Ports.perform
     )

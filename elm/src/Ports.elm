@@ -99,10 +99,10 @@ drawText { text, size, centered, y, colour } =
                 |> CommandRecord
 
 
-setCanvasDimensions : ( W, H ) -> CommandRecord
+setCanvasDimensions : ( W, H, W ) -> CommandRecord
 setCanvasDimensions dimensions =
     case dimensions of
-        ( W w, H h ) ->
+        ( W w, H h, W uiWidth ) ->
             JE.object
                 [ ( "kind", JE.string "setCanvasDimensions" )
                 , ( "w"
@@ -110,6 +110,9 @@ setCanvasDimensions dimensions =
                   )
                 , ( "h"
                   , JE.float h
+                  )
+                , ( "uiW"
+                  , JE.float uiWidth
                   )
                 ]
                 |> CommandRecord

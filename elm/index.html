@@ -31,6 +31,8 @@ var app = Elm.Main.init({
     flags: seed
 });
 
+let uiWidth = canvas.width / 2
+
 const actions = {
     "drawSprite": ({sprite, x, y, tileSize}) => {
         ctx.drawImage(
@@ -49,7 +51,8 @@ const actions = {
         ctx.fillStyle = 'rgba(0,0,0,.75)';
         ctx.fillRect(0,0,canvas.width, canvas.height);
     },
-    "setCanvasDimensions": ({w, h}) => {
+    "setCanvasDimensions": ({w, h, uiW}) => {
+        uiWidth = uiW
         canvas.width = w;
         canvas.height = h;
         canvas.style.width = canvas.width + 'px';
@@ -63,7 +66,7 @@ const actions = {
         if(centered){
             textX = (canvas.width-ctx.measureText(text).width)/2;
         }else{
-            textX = canvas.width-uiWidth*tileSize+25;
+            textX = canvas.width-uiWidth+25;
         }
 
         ctx.fillText(text, textX, textY);

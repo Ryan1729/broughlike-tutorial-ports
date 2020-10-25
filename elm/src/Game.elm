@@ -27,6 +27,10 @@ pixelHeight =
     H (tileSize * numTiles)
 
 
+pixelUIWidth =
+    W (tileSize * uiWidth)
+
+
 type DeltaX
     = DX0
     | DX1
@@ -164,3 +168,10 @@ incLevel levelNum =
     case levelNum of
         LevelNum l ->
             LevelNum (l + 1)
+
+
+levelNumToString : LevelNum -> String
+levelNumToString levelNum =
+    case levelNum of
+        LevelNum l ->
+            String.fromInt l
