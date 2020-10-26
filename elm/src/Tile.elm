@@ -17,14 +17,23 @@ type alias Tile =
     , x : X
     , y : Y
     , monster : Maybe Monster
+    , treasure : Bool
     }
 
 
 draw : Tile -> Array Ports.CommandRecord
 draw tile =
-    sprite tile.kind
-        |> Ports.drawSprite tile.x tile.y
-        |> Array.repeat 1
+    let
+        commands =
+            sprite tile.kind
+                |> Ports.drawSprite tile.x tile.y
+                |> Array.repeat 1
+    in
+    if tile.treasure then
+        Array.push (SpriteIndex 12 |> Ports.drawSprite tile.x tile.y) commands
+
+    else
+        commands
 
 
 sprite : Kind -> SpriteIndex
@@ -42,12 +51,12 @@ sprite kind =
 
 floor : X -> Y -> Tile
 floor x y =
-    { kind = Floor, x = x, y = y, monster = Nothing }
+    { kind = Floor, x = x, y = y, monster = Nothing, treasure = False }
 
 
 wall : X -> Y -> Tile
 wall x y =
-    { kind = Wall, x = x, y = y, monster = Nothing }
+    { kind = Wall, x = x, y = y, monster = Nothing, treasure = False }
 
 
 isPassable tile =
