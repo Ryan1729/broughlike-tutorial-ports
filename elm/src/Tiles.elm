@@ -1,4 +1,4 @@
-module Tiles exposing (NoPassableTile(..), Tiles, addMonster, foldXY, get, getAdjacentNeighbors, getAdjacentPassableNeighbors, getNeighbor, mapToArray, noPassableTileToString, possiblyDisconnectedTilesGen, randomPassableTile, replace, set, tryMove, updateMonster)
+module Tiles exposing (NoPassableTile(..), Tiles, addMonster, foldXY, get, getAdjacentNeighbors, getAdjacentPassableNeighbors, getNeighbor, noPassableTileToString, possiblyDisconnectedTilesGen, randomPassableTile, replace, set, toArray, tryMove, updateMonster)
 
 import Array exposing (Array)
 import Game exposing (DeltaX(..), DeltaY(..), Located, SpriteIndex(..), X(..), Y(..), moveX, moveY)
@@ -16,11 +16,11 @@ type Tiles
     = Tiles (Array Tile)
 
 
-mapToArray : (Tile -> a) -> Tiles -> Array a
-mapToArray mapper tiles =
+toArray : Tiles -> Array Tile
+toArray tiles =
     case tiles of
         Tiles ts ->
-            Array.map mapper ts
+            ts
 
 
 foldXY : (Located {} -> a -> a) -> a -> a

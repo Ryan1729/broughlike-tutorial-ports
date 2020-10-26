@@ -20,10 +20,11 @@ type alias Tile =
     }
 
 
-draw : Tile -> Ports.CommandRecord
+draw : Tile -> Array Ports.CommandRecord
 draw tile =
     sprite tile.kind
         |> Ports.drawSprite tile.x tile.y
+        |> Array.repeat 1
 
 
 sprite : Kind -> SpriteIndex

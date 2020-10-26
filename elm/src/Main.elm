@@ -177,9 +177,11 @@ pushText textSpec =
 
 drawState : State -> Array Ports.CommandRecord
 drawState state =
-    Tiles.mapToArray Tile.draw state.tiles
+    Tiles.toArray state.tiles
+        |> arrayAndThen Tile.draw
         |> (\prev ->
-                Tiles.mapToArray .monster state.tiles
+                Tiles.toArray state.tiles
+                    |> Array.map .monster
                     |> filterOutNothings
                     |> arrayAndThen Monster.draw
                     |> Array.append prev
