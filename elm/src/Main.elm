@@ -74,12 +74,20 @@ startLevel seedIn hp levelNum =
 
                         ( startingTilesRes, seed ) =
                             Random.step
-                                (Random.pair tileGen tileGen
+                                (Random.pair tileGen
+                                    tileGen
+                                    |> Random.pair
+                                        (Random.list 3 tileGen)
                                     |> Random.map
                                         (\pair ->
                                             case pair of
-                                                ( Ok t1, Ok t2 ) ->
-                                                    Ok ( t1, t2 )
+                                                ( listOfResults, ( Ok t1, Ok t2 ) ) ->
+                                                    case toResultOfList listOfResults of
+                                                        Ok list ->
+                                                            Ok ( t1, t2, list )
+
+                                                        _ ->
+                                                            Err Tiles.NoPassableTile
 
                                                 _ ->
                                                     Err Tiles.NoPassableTile
@@ -89,7 +97,7 @@ startLevel seedIn hp levelNum =
                     in
                     Result.mapError Tiles.noPassableTileToString startingTilesRes
                         |> Result.map
-                            (\( playerTile, exitTile ) ->
+                            (\( playerTile, exitTile, treasureTiles ) ->
                                 let
                                     player =
                                         { x = playerTile.x, y = playerTile.y }
@@ -101,6 +109,14 @@ startLevel seedIn hp levelNum =
                                             , x = player.x
                                             , y = player.y
                                             }
+                                            |> (\ts ->
+                                                    List.foldl
+                                                        (\tt ->
+                                                            Tiles.set { tt | treasure = True }
+                                                        )
+                                                        ts
+                                                        treasureTiles
+                                               )
                                             |> Tiles.replace Tile.exit exitTile
                                 in
                                 { player = player
@@ -120,6 +136,30 @@ startLevel seedIn hp levelNum =
 
         Ok s ->
             Running s
+
+
+
+-- I think this might reverse the order of the list, but for my current purposes,
+-- I don't care whether it does or not.
+
+
+toResultOfList : List (Result e a) -> Result e (List a)
+toResultOfList results =
+    toResultOfListHelper results []
+
+
+toResultOfListHelper results output =
+    case results of
+        [] ->
+            Ok output
+
+        (Ok a) :: rest ->
+            a
+                :: output
+                |> toResultOfListHelper rest
+
+        (Err e) :: _ ->
+            Err e
 
 
 draw : Model -> Cmd Msg
