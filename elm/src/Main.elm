@@ -101,7 +101,7 @@ startLevel seedIn hp levelNum =
                                             , x = player.x
                                             , y = player.y
                                             }
-                                            |> Tiles.replace Tile.Exit exitTile
+                                            |> Tiles.replace Tile.exit exitTile
                                 in
                                 { player = player
                                 , seed = seed

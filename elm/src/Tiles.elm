@@ -44,13 +44,13 @@ allLocations =
 
 
 get : Tiles -> Located a -> Tile
-get tiles { x, y } =
+get tiles xy =
     case tiles of
         Tiles ts ->
             let
                 m : Maybe Tile
                 m =
-                    toIndex { x = x, y = y }
+                    toIndex xy
                         |> Maybe.andThen (\i -> Array.get i ts)
             in
             case m of
@@ -58,7 +58,7 @@ get tiles { x, y } =
                     t
 
                 Nothing ->
-                    Tile.wall x y
+                    Tile.wall xy
 
 
 set : Tile -> Tiles -> Tiles
@@ -73,6 +73,21 @@ set tile tiles =
                     Nothing ->
                         ts
                 )
+
+
+
+-- `replace` is distinct from `set` in that it makes it more convenient to
+-- create a fresh tile than a transformation of an existing tile
+
+
+replace : (Located {} -> Tile) -> Tile -> Tiles -> Tiles
+replace constructor { x, y } =
+    let
+        located : Located {}
+        located =
+            { x = x, y = y }
+    in
+    constructor located |> set
 
 
 getNeighbor : Tiles -> Located a -> DeltaX -> DeltaY -> Tile
@@ -133,14 +148,14 @@ possiblyDisconnectedTilesGen =
 
         toTile index isWall =
             let
-                { x, y } =
+                xy =
                     toXY index
             in
             if isWall then
-                Tile.wall x y
+                Tile.wall xy
 
             else
-                Tile.floor x y
+                Tile.floor xy
 
         toTiles : Array Bool -> Tiles
         toTiles =
@@ -216,11 +231,6 @@ xyGen =
         (\x y -> { x = x, y = y })
         (Random.map (toFloat >> X) coordIntGen)
         (Random.map (toFloat >> Y) coordIntGen)
-
-
-replace : Kind -> Tile -> Tiles -> Tiles
-replace kind tile =
-    set { tile | kind = kind }
 
 
 updateMonster :
@@ -324,7 +334,7 @@ updateMonsterInner monsterIn stateIn =
                                             doStuff stateIn monster
 
                                         head :: _ ->
-                                            { stateIn | tiles = replace Floor head stateIn.tiles }
+                                            { stateIn | tiles = replace Tile.floor head stateIn.tiles }
                                                 |> setMonster (Monster.heal (HP 0.5) monster)
                                                 |> Random.constant
                                 )

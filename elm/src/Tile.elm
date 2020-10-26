@@ -1,7 +1,7 @@
 module Tile exposing (..)
 
 import Array exposing (Array)
-import Game exposing (SpriteIndex(..), X(..), Y(..))
+import Game exposing (Located, SpriteIndex(..), X(..), Y(..))
 import Monster exposing (Monster)
 import Ports
 
@@ -13,12 +13,11 @@ type Kind
 
 
 type alias Tile =
-    { kind : Kind
-    , x : X
-    , y : Y
-    , monster : Maybe Monster
-    , treasure : Bool
-    }
+    Located
+        { kind : Kind
+        , monster : Maybe Monster
+        , treasure : Bool
+        }
 
 
 draw : Tile -> Array Ports.CommandRecord
@@ -49,14 +48,24 @@ sprite kind =
             SpriteIndex 11
 
 
-floor : X -> Y -> Tile
-floor x y =
-    { kind = Floor, x = x, y = y, monster = Nothing, treasure = False }
+floor : Located a -> Tile
+floor =
+    withKind Floor
 
 
-wall : X -> Y -> Tile
-wall x y =
-    { kind = Wall, x = x, y = y, monster = Nothing, treasure = False }
+wall : Located a -> Tile
+wall =
+    withKind Wall
+
+
+exit : Located a -> Tile
+exit =
+    withKind Exit
+
+
+withKind : Kind -> (Located a -> Tile)
+withKind kind { x, y } =
+    { kind = kind, x = x, y = y, monster = Nothing, treasure = False }
 
 
 isPassable tile =
