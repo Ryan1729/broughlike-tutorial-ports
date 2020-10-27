@@ -104,12 +104,12 @@ draw monster =
         in
         case monster.hp of
             HP hp ->
-                drawHP monster (hp - 1) commands
+                drawHP monster hp 0 commands
 
 
-drawHP : Located a -> Float -> Array Ports.CommandRecord -> Array Ports.CommandRecord
-drawHP monster i commands =
-    if i < 0 then
+drawHP : Located a -> Float -> Float -> Array Ports.CommandRecord -> Array Ports.CommandRecord
+drawHP monster hp i commands =
+    if i >= hp then
         commands
 
     else
@@ -127,7 +127,7 @@ drawHP monster i commands =
                             |> Ports.drawSprite hpX hpY
                 in
                 Array.push hpCommand commands
-                    |> drawHP monster (i - 1)
+                    |> drawHP monster hp (i + 1)
 
 
 hit : HP -> Monster -> Monster
