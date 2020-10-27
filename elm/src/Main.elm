@@ -30,6 +30,24 @@ type Model
     | Dead State
 
 
+type Score
+    = Score Int
+
+
+incScore score =
+    case score of
+        Score s ->
+            s
+                + 1
+                |> Score
+
+
+scoreToString score =
+    case score of
+        Score s ->
+            String.fromInt s
+
+
 type alias State =
     { player : Located {}
     , seed : Seed
@@ -37,6 +55,7 @@ type alias State =
     , level : LevelNum
     , spawnCounter : Int
     , spawnRate : Int
+    , score : Score
     }
 
 
@@ -125,6 +144,7 @@ startLevel seedIn hp levelNum =
                                 , level = levelNum
                                 , spawnRate = initialSpawnRate
                                 , spawnCounter = initialSpawnRate
+                                , score = Score 0
                                 }
                             )
                 )
@@ -233,6 +253,13 @@ drawState state =
             , y = Y 40
             , colour = Violet
             }
+        |> pushText
+            { text = "Score: " ++ scoreToString state.score
+            , size = 30
+            , centered = False
+            , y = Y 70
+            , colour = Violet
+            }
 
 
 arrayAndThen : (a -> Array b) -> Array a -> Array b
@@ -261,7 +288,8 @@ filterOutNothings =
 
 init : Int -> ( Model, Cmd Msg )
 init seed =
-    ( Random.initialSeed seed
+    ( Random.initialSeed 1603571522155
+        --seed
         |> Title Nothing
     , Ports.setCanvasDimensions ( Game.pixelWidth, Game.pixelHeight, Game.pixelUIWidth )
         |> Array.repeat 1
@@ -270,27 +298,33 @@ init seed =
 
 
 movePlayer : DeltaX -> DeltaY -> State -> Model
-movePlayer dx dy state =
+movePlayer dx dy stateIn =
     let
         m =
-            getPlayer state
+            getPlayer stateIn
                 |> Maybe.andThen
                     (\p ->
-                        Tiles.tryMove p dx dy state.tiles
+                        Tiles.tryMove p dx dy stateIn.tiles
                             |> Maybe.map (\record -> ( record, p ))
                     )
     in
     case m of
         Nothing ->
-            Running state
+            Running stateIn
 
-        Just ( { tiles, moved }, player ) ->
+        Just ( record, player ) ->
             let
+                movedTiles =
+                    record.tiles
+
+                moved =
+                    record.moved
+
                 movedState =
-                    { state | tiles = tiles, player = { x = moved.x, y = moved.y } }
+                    { stateIn | tiles = movedTiles, player = { x = moved.x, y = moved.y } }
 
                 tile =
-                    Tiles.get tiles moved
+                    Tiles.get movedTiles moved
 
                 preTickModel =
                     case tile.kind of
@@ -312,6 +346,34 @@ movePlayer dx dy state =
                                 in
                                 Game.incLevel movedState.level
                                     |> startLevel movedState.seed hp
+
+                        Tile.Floor ->
+                            if tile.treasure then
+                                let
+                                    collectedTiles =
+                                        Tiles.set { tile | treasure = False } movedState.tiles
+
+                                    ( tilesRes, seed ) =
+                                        Random.step (Map.spawnMonster collectedTiles) movedState.seed
+
+                                    tiles =
+                                        case tilesRes of
+                                            -- The player won't mind if we don't spawn a monster if there is no room.
+                                            Err _ ->
+                                                collectedTiles
+
+                                            Ok ts ->
+                                                ts
+                                in
+                                Running
+                                    { movedState
+                                        | score = incScore movedState.score
+                                        , tiles = tiles
+                                        , seed = seed
+                                    }
+
+                            else
+                                Running movedState
 
                         _ ->
                             Running movedState
@@ -449,7 +511,8 @@ update msg model =
 
 subscriptions _ =
     Sub.batch
-        [ Browser.Events.onAnimationFrame (\_ -> Tick)
+        [ --Browser.Events.onAnimationFrame (\_ -> Tick)
+          Browser.Events.onClick (JD.succeed Tick)
         , JD.field "key" JD.string
             |> JD.map toInput
             |> Browser.Events.onKeyDown
