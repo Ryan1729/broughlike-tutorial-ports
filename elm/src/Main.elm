@@ -293,13 +293,36 @@ filterOutNothings =
         Array.empty
 
 
-init : Int -> ( Model, Cmd Msg )
-init seed =
-    ( { scores = Debug.todo "take currrent scores from flags"
-      , game =
-            Random.initialSeed seed
-                |> Title Nothing
-      }
+type alias Flags =
+    { scores : List ScoreRow
+    , seed : Int
+    }
+
+
+decodeFlags : JD.Decoder Flags
+decodeFlags =
+    JD.map2 Flags
+        (JD.field "scores" Ports.decodeScoreRows)
+        (JD.field "seed" JD.int)
+
+
+init : JD.Value -> ( Model, Cmd Msg )
+init flags =
+    ( case JD.decodeValue decodeFlags flags of
+        Ok { seed, scores } ->
+            { scores = scores
+            , game =
+                Random.initialSeed seed
+                    |> Title Nothing
+            }
+
+        Err error ->
+            { scores = []
+            , game =
+                "Error decoding flags: "
+                    ++ JD.errorToString error
+                    |> Error
+            }
     , Ports.setCanvasDimensions ( Game.pixelWidth, Game.pixelHeight, Game.pixelUIWidth )
         |> Array.repeat 1
         |> Ports.perform
@@ -492,8 +515,16 @@ update msg model =
             , Cmd.none
             )
 
-        ScoreRows scores ->
+        ScoreRows (Ok scores) ->
             ( { model | scores = scores }
+            , Cmd.none
+            )
+
+        ScoreRows (Err _) ->
+            -- If there is a decoding problem, (indicating a saving problem?
+            -- maybe the disk is full?) the current score would be worth
+            -- preserving in memory, since they could be saved later.
+            ( model
             , Cmd.none
             )
 
@@ -542,7 +573,7 @@ subscriptions _ =
 type Msg
     = Tick
     | Input Input
-    | ScoreRows (List ScoreRow)
+    | ScoreRows (Result JD.Error (List ScoreRow))
 
 
 type Input

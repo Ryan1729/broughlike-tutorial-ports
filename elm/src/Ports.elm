@@ -1,7 +1,7 @@
-port module Ports exposing (Colour(..), CommandRecord, TextSpec, drawOverlay, drawSprite, drawText, perform, scoreList, setCanvasDimensions)
+port module Ports exposing (Colour(..), CommandRecord, TextSpec, decodeScoreRows, drawOverlay, drawSprite, drawText, perform, scoreList, setCanvasDimensions)
 
 import Array exposing (Array)
-import Game exposing (H(..), SpriteIndex(..), W(..), X(..), Y(..))
+import Game exposing (H(..), Score(..), ScoreRow, SpriteIndex(..), W(..), X(..), Y(..))
 import Json.Decode as JD
 import Json.Encode as JE
 
@@ -16,15 +16,30 @@ port platform : Array JE.Value -> Cmd msg
 port scores : (JD.Value -> msg) -> Sub msg
 
 
-scoreList : (List Game.ScoreRow -> msg) -> Sub msg
+decodeScoreRows : JD.Decoder (List ScoreRow)
+decodeScoreRows =
+    JD.list decodeScoreRow
+
+
+decodeScoreRow : JD.Decoder ScoreRow
+decodeScoreRow =
+    JD.map4 ScoreRow
+        (JD.field "score" decodeScore)
+        (JD.field "run" JD.int)
+        (JD.field "totalScore" decodeScore)
+        (JD.field "active" JD.bool)
+
+
+decodeScore : JD.Decoder Score
+decodeScore =
+    JD.map Score JD.int
+
+
+scoreList : (Result JD.Error (List Game.ScoreRow) -> msg) -> Sub msg
 scoreList toMsg =
     scores
-        (\json ->
-            let
-                list =
-                    Debug.todo "decode list"
-            in
-            toMsg list
+        (JD.decodeValue decodeScoreRows
+            >> toMsg
         )
 
 
