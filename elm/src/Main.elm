@@ -288,8 +288,7 @@ filterOutNothings =
 
 init : Int -> ( Model, Cmd Msg )
 init seed =
-    ( Random.initialSeed 1603571522155
-        --seed
+    ( Random.initialSeed seed
         |> Title Nothing
     , Ports.setCanvasDimensions ( Game.pixelWidth, Game.pixelHeight, Game.pixelUIWidth )
         |> Array.repeat 1
@@ -511,8 +510,9 @@ update msg model =
 
 subscriptions _ =
     Sub.batch
-        [ --Browser.Events.onAnimationFrame (\_ -> Tick)
-          Browser.Events.onClick (JD.succeed Tick)
+        [ Browser.Events.onAnimationFrame (\_ -> Tick)
+
+        --Browser.Events.onClick (JD.succeed Tick)
         , JD.field "key" JD.string
             |> JD.map toInput
             |> Browser.Events.onKeyDown
