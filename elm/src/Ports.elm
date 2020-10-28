@@ -1,7 +1,8 @@
-port module Ports exposing (Colour(..), CommandRecord, TextSpec, drawOverlay, drawSprite, drawText, perform, setCanvasDimensions)
+port module Ports exposing (Colour(..), CommandRecord, TextSpec, drawOverlay, drawSprite, drawText, perform, scoreList, setCanvasDimensions)
 
 import Array exposing (Array)
 import Game exposing (H(..), SpriteIndex(..), W(..), X(..), Y(..))
+import Json.Decode as JD
 import Json.Encode as JE
 
 
@@ -10,6 +11,21 @@ type CommandRecord
 
 
 port platform : Array JE.Value -> Cmd msg
+
+
+port scores : (JD.Value -> msg) -> Sub msg
+
+
+scoreList : (List Game.ScoreRow -> msg) -> Sub msg
+scoreList toMsg =
+    scores
+        (\json ->
+            let
+                list =
+                    Debug.todo "decode list"
+            in
+            toMsg list
+        )
 
 
 perform : Array CommandRecord -> Cmd msg

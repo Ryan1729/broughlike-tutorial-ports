@@ -33,6 +33,12 @@ var app = Elm.Main.init({
 
 let uiWidth = canvas.width / 2
 
+const scoresKey = "scores";
+
+const sendScores = () => {
+    app.ports.scores.send(localStorage[scoresKey]);
+};
+
 const actions = {
     "drawSprite": ({sprite, x, y, tileSize}) => {
         ctx.drawImage(
@@ -70,6 +76,25 @@ const actions = {
         }
 
         ctx.fillText(text, textX, textY);
+    },
+    "getScores": sendScores,
+    "addScore": ({scoreObject}) => {
+        let scores = localStorage[scoresKey];
+        // TODO: Is there a reasonable way to move this logic into elm?
+        let lastScore = scores.pop();
+        
+        if(lastScore){
+            if(lastScore.active){
+                scoreObject.run = lastScore.run+1;
+                scoreObject.totalScore += lastScore.totalScore;
+            }else{
+                scores.push(lastScore);
+            }
+        }
+        scores.push(scoreObject);
+
+        localStorage[scoresKey] = JSON.stringify(scores);
+        sendScores()
     }
 }
 

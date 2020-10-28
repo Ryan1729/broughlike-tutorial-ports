@@ -3,7 +3,7 @@ module Main exposing (..)
 import Array exposing (Array)
 import Browser
 import Browser.Events
-import Game exposing (DeltaX(..), DeltaY(..), H(..), LevelNum(..), Located, SpriteIndex(..), W(..), X(..), Y(..), levelNumToString, moveX, moveY)
+import Game exposing (DeltaX(..), DeltaY(..), H(..), LevelNum(..), Located, Score(..), ScoreRow, SpriteIndex(..), W(..), X(..), Y(..), levelNumToString, moveX, moveY)
 import Html
 import Json.Decode as JD
 import Map
@@ -23,15 +23,17 @@ main =
         }
 
 
-type Model
+type alias Model =
+    { scores : List ScoreRow
+    , game : GameModel
+    }
+
+
+type GameModel
     = Error String
     | Title (Maybe State) Seed
     | Running State
     | Dead State
-
-
-type Score
-    = Score Int
 
 
 incScore score =
@@ -71,13 +73,13 @@ numLevels =
     LevelNum 6
 
 
-startGame : Seed -> Model
+startGame : Seed -> GameModel
 startGame seedIn =
     LevelNum 1
         |> startLevel seedIn startingHp
 
 
-startLevel : Seed -> HP -> LevelNum -> Model
+startLevel : Seed -> HP -> LevelNum -> GameModel
 startLevel seedIn hp levelNum =
     let
         ( levelRes, seed1 ) =
@@ -184,6 +186,11 @@ toResultOfListHelper results output =
 
 draw : Model -> Cmd Msg
 draw model =
+    drawGame model.game
+
+
+drawGame : GameModel -> Cmd Msg
+drawGame model =
     Ports.perform
         (case model of
             Title Nothing _ ->
@@ -288,15 +295,18 @@ filterOutNothings =
 
 init : Int -> ( Model, Cmd Msg )
 init seed =
-    ( Random.initialSeed seed
-        |> Title Nothing
+    ( { scores = Debug.todo "take currrent scores from flags"
+      , game =
+            Random.initialSeed seed
+                |> Title Nothing
+      }
     , Ports.setCanvasDimensions ( Game.pixelWidth, Game.pixelHeight, Game.pixelUIWidth )
         |> Array.repeat 1
         |> Ports.perform
     )
 
 
-movePlayer : DeltaX -> DeltaY -> State -> Model
+movePlayer : DeltaX -> DeltaY -> State -> GameModel
 movePlayer dx dy stateIn =
     let
         m =
@@ -397,7 +407,7 @@ getPlayer state =
         |> .monster
 
 
-tick : State -> Model
+tick : State -> GameModel
 tick stateIn =
     Tiles.foldXY
         (\xy list ->
@@ -478,34 +488,43 @@ update msg model =
             )
 
         Input input ->
-            ( case model of
-                Title _ seed ->
-                    startGame seed
-
-                Running state ->
-                    case input of
-                        Up ->
-                            movePlayer DX0 DYm1 state
-
-                        Down ->
-                            movePlayer DX0 DY1 state
-
-                        Left ->
-                            movePlayer DXm1 DY0 state
-
-                        Right ->
-                            movePlayer DX1 DY0 state
-
-                        Other ->
-                            Running state
-
-                Dead state ->
-                    Title (Just state) state.seed
-
-                Error _ ->
-                    model
+            ( { model | game = updateGame input model.game }
             , Cmd.none
             )
+
+        ScoreRows scores ->
+            ( { model | scores = scores }
+            , Cmd.none
+            )
+
+
+updateGame input model =
+    case model of
+        Title _ seed ->
+            startGame seed
+
+        Running state ->
+            case input of
+                Up ->
+                    movePlayer DX0 DYm1 state
+
+                Down ->
+                    movePlayer DX0 DY1 state
+
+                Left ->
+                    movePlayer DXm1 DY0 state
+
+                Right ->
+                    movePlayer DX1 DY0 state
+
+                Other ->
+                    Running state
+
+        Dead state ->
+            Title (Just state) state.seed
+
+        Error _ ->
+            model
 
 
 subscriptions _ =
@@ -516,12 +535,14 @@ subscriptions _ =
         , JD.field "key" JD.string
             |> JD.map toInput
             |> Browser.Events.onKeyDown
+        , Ports.scoreList ScoreRows
         ]
 
 
 type Msg
     = Tick
     | Input Input
+    | ScoreRows (List ScoreRow)
 
 
 type Input
@@ -566,7 +587,7 @@ toInput s =
 
 
 view model =
-    case model of
+    case model.game of
         Error e ->
             Html.text e
 

@@ -175,3 +175,15 @@ levelNumToString levelNum =
     case levelNum of
         LevelNum l ->
             String.fromInt l
+
+
+type alias ScoreRow =
+    { score : Score
+    , run : Int
+    , totalScore : Score
+    , active : Bool
+    }
+
+
+type Score
+    = Score Int
