@@ -28,18 +28,20 @@ console.log(seed)
 
 const scoresKey = "scores";
 
+const getScores = () => localStorage[scoresKey] ? JSON.parse(localStorage[scoresKey]) : [];
+
 var app = Elm.Main.init({
     node: document.getElementById("error-div"),
     flags: {
         seed,
-        scores: localStorage[scoresKey] || []
+        scores: getScores()
     }
 });
 
 let uiWidth = canvas.width / 2;
 
 const sendScores = () => {
-    app.ports.scores.send(localStorage[scoresKey]);
+    app.ports.scores.send(getScores());
 };
 
 const actions = {
@@ -82,7 +84,7 @@ const actions = {
     },
     "getScores": sendScores,
     "addScore": ({scoreObject}) => {
-        let scores = localStorage[scoresKey];
+        let scores = getScores();
         // TODO: Is there a reasonable way to move this logic into elm?
         let lastScore = scores.pop();
         

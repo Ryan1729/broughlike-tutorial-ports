@@ -1,7 +1,7 @@
-port module Ports exposing (Colour(..), CommandRecord, TextSpec, decodeScoreRows, drawOverlay, drawSprite, drawText, perform, scoreList, setCanvasDimensions)
+port module Ports exposing (Colour(..), CommandRecord, TextSpec, addScore, decodeScoreRows, drawOverlay, drawSprite, drawText, perform, scoreList, setCanvasDimensions)
 
 import Array exposing (Array)
-import Game exposing (H(..), Score(..), ScoreRow, SpriteIndex(..), W(..), X(..), Y(..))
+import Game exposing (H(..), Outcome(..), Score(..), ScoreRow, SpriteIndex(..), W(..), X(..), Y(..))
 import Json.Decode as JD
 import Json.Encode as JE
 
@@ -128,6 +128,44 @@ drawText { text, size, centered, y, colour } =
                   )
                 ]
                 |> CommandRecord
+
+
+addScore : Score -> Outcome -> CommandRecord
+addScore score outcome =
+    let
+        scoreRow =
+            { score = score
+            , run = 1
+            , totalScore = score
+            , active =
+                case outcome of
+                    Loss ->
+                        False
+
+                    Win ->
+                        True
+            }
+    in
+    JE.object
+        [ ( "kind", JE.string "addScore" )
+        , ( "scoreObject"
+          , JE.object
+                [ ( "score"
+                  , case scoreRow.score of
+                        Score s ->
+                            JE.int s
+                  )
+                , ( "run", JE.int scoreRow.run )
+                , ( "totalScore"
+                  , case scoreRow.totalScore of
+                        Score ts ->
+                            JE.int ts
+                  )
+                , ( "active", JE.bool scoreRow.active )
+                ]
+          )
+        ]
+        |> CommandRecord
 
 
 setCanvasDimensions : ( W, H, W ) -> CommandRecord

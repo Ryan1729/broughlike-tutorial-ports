@@ -187,3 +187,8 @@ type alias ScoreRow =
 
 type Score
     = Score Int
+
+
+type Outcome
+    = Loss
+    | Win

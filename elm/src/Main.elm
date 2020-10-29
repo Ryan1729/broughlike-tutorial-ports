@@ -329,7 +329,7 @@ init flags =
     )
 
 
-movePlayer : DeltaX -> DeltaY -> State -> GameModel
+movePlayer : DeltaX -> DeltaY -> State -> ( GameModel, Cmd Msg )
 movePlayer dx dy stateIn =
     let
         m =
@@ -343,6 +343,7 @@ movePlayer dx dy stateIn =
     case m of
         Nothing ->
             Running stateIn
+                |> withNoCmd
 
         Just ( record, player ) ->
             let
@@ -358,13 +359,13 @@ movePlayer dx dy stateIn =
                 tile =
                     Tiles.get movedTiles moved
 
-                preTickModel =
+                ( preTickModel, preTickCmd ) =
                     case tile.kind of
                         Tile.Exit ->
                             if movedState.level == numLevels then
                                 movedState
                                     |> (\s ->
-                                            Title (Just s) s.seed
+                                            ( Title (Just s) s.seed, Ports.addScore s.score Game.Win |> Array.repeat 1 |> Ports.perform )
                                        )
 
                             else
@@ -378,6 +379,7 @@ movePlayer dx dy stateIn =
                                 in
                                 Game.incLevel movedState.level
                                     |> startLevel movedState.seed hp
+                                    |> withNoCmd
 
                         Tile.Floor ->
                             if tile.treasure then
@@ -403,25 +405,31 @@ movePlayer dx dy stateIn =
                                         , tiles = tiles
                                         , seed = seed
                                     }
+                                    |> withNoCmd
 
                             else
                                 Running movedState
+                                    |> withNoCmd
 
                         _ ->
                             Running movedState
+                                |> withNoCmd
+
+                ( postTickModel, postTickCmd ) =
+                    case preTickModel of
+                        Running s ->
+                            tick s
+
+                        Dead s ->
+                            tick s
+
+                        Title (Just s) _ ->
+                            tick s
+
+                        _ ->
+                            withNoCmd preTickModel
             in
-            case preTickModel of
-                Running s ->
-                    tick s
-
-                Dead s ->
-                    tick s
-
-                Title (Just s) _ ->
-                    tick s
-
-                _ ->
-                    preTickModel
+            ( postTickModel, Cmd.batch [ preTickCmd, postTickCmd ] )
 
 
 getPlayer : State -> Maybe Monster
@@ -430,7 +438,7 @@ getPlayer state =
         |> .monster
 
 
-tick : State -> GameModel
+tick : State -> ( GameModel, Cmd Msg )
 tick stateIn =
     Tiles.foldXY
         (\xy list ->
@@ -493,13 +501,15 @@ tick stateIn =
                 case getPlayer s of
                     Nothing ->
                         Running s
+                            |> withNoCmd
 
                     Just player ->
                         if player.dead then
-                            Dead s
+                            ( Dead s, Ports.addScore s.score Game.Loss |> Array.repeat 1 |> Ports.perform )
 
                         else
                             Running s
+                                |> withNoCmd
            )
 
 
@@ -511,8 +521,12 @@ update msg model =
             )
 
         Input input ->
-            ( { model | game = updateGame input model.game }
-            , Cmd.none
+            let
+                ( game, cmd ) =
+                    updateGame input model.game
+            in
+            ( { model | game = game }
+            , cmd
             )
 
         ScoreRows (Ok scores) ->
@@ -529,10 +543,16 @@ update msg model =
             )
 
 
+withNoCmd : a -> ( a, Cmd msg )
+withNoCmd a =
+    ( a, Cmd.none )
+
+
 updateGame input model =
     case model of
         Title _ seed ->
             startGame seed
+                |> withNoCmd
 
         Running state ->
             case input of
@@ -549,13 +569,14 @@ updateGame input model =
                     movePlayer DX1 DY0 state
 
                 Other ->
-                    Running state
+                    Running state |> withNoCmd
 
         Dead state ->
             Title (Just state) state.seed
+                |> withNoCmd
 
         Error _ ->
-            model
+            withNoCmd model
 
 
 subscriptions _ =
