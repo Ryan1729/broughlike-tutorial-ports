@@ -185,20 +185,15 @@ toResultOfListHelper results output =
 
 
 draw : Model -> Cmd Msg
-draw model =
-    drawGame model.game
-
-
-drawGame : GameModel -> Cmd Msg
-drawGame model =
+draw { scores, game } =
     Ports.perform
-        (case model of
+        (case game of
             Title Nothing _ ->
-                drawTitle Array.empty
+                drawTitle scores Array.empty
 
             Title (Just state) _ ->
                 drawState state
-                    |> drawTitle
+                    |> drawTitle scores
 
             Running state ->
                 drawState state
@@ -211,8 +206,8 @@ drawGame model =
         )
 
 
-drawTitle : Array Ports.CommandRecord -> Array Ports.CommandRecord
-drawTitle =
+drawTitle : List ScoreRow -> Array Ports.CommandRecord -> Array Ports.CommandRecord
+drawTitle scores =
     let
         halfWidth =
             case Game.pixelWidth of
@@ -234,12 +229,97 @@ drawTitle =
             , y = halfWidth - 55 |> Y
             , colour = White
             }
+        >> drawScores scores
 
 
 pushText : TextSpec -> Array Ports.CommandRecord -> Array Ports.CommandRecord
 pushText textSpec =
     Ports.drawText textSpec
         |> Array.push
+
+
+drawScores : List ScoreRow -> Array Ports.CommandRecord -> Array Ports.CommandRecord
+drawScores scoresIn commandsIn =
+    let
+        lastIndex =
+            List.length scoresIn - 1
+    in
+    case ( List.take lastIndex scoresIn, List.drop lastIndex scoresIn ) of
+        ( scores, newestScore :: [] ) ->
+            let
+                halfWidth =
+                    case Game.pixelWidth of
+                        W w ->
+                            w / 2
+
+                commands =
+                    pushText
+                        { text = rightPad [ "RUN", "SCORE", "TOTAL" ]
+                        , size = 18
+                        , centered = True
+                        , y = Y halfWidth
+                        , colour = White
+                        }
+                        commandsIn
+
+                ( _, cs ) =
+                    List.sortWith
+                        (\a b ->
+                            compare
+                                (case b.totalScore of
+                                    Score tsA ->
+                                        tsA
+                                )
+                                (case a.totalScore of
+                                    Score tsB ->
+                                        tsB
+                                )
+                        )
+                        scores
+                        |> (::) newestScore
+                        |> List.take 10
+                        |> List.foldl
+                            (\{ run, score, totalScore } ( i, cmds ) ->
+                                ( i + 1
+                                , pushText
+                                    { text =
+                                        rightPad
+                                            [ String.fromInt run
+                                            , scoreToString score
+                                            , scoreToString totalScore
+                                            ]
+                                    , size = 18
+                                    , centered = True
+                                    , y = halfWidth + 24 + i * 24 |> Y
+                                    , colour =
+                                        if i == 0 then
+                                            Aqua
+
+                                        else
+                                            Violet
+                                    }
+                                    cmds
+                                )
+                            )
+                            ( 0, commands )
+            in
+            cs
+
+        _ ->
+            commandsIn
+
+
+rightPad : List String -> String
+rightPad =
+    List.foldr
+        (\text finalText ->
+            String.repeat
+                (10 - String.length text)
+                " "
+                |> String.append text
+                |> String.append finalText
+        )
+        ""
 
 
 drawState : State -> Array Ports.CommandRecord
@@ -365,7 +445,11 @@ movePlayer dx dy stateIn =
                             if movedState.level == numLevels then
                                 movedState
                                     |> (\s ->
-                                            ( Title (Just s) s.seed, Ports.addScore s.score Game.Win |> Array.repeat 1 |> Ports.perform )
+                                            ( Title (Just s) s.seed
+                                            , Ports.addScore s.score Game.Win
+                                                |> Array.repeat 1
+                                                |> Ports.perform
+                                            )
                                        )
 
                             else
