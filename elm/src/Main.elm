@@ -138,7 +138,15 @@ startLevel seedIn hp levelNum =
                                                         ts
                                                         treasureTiles
                                                )
-                                            |> Tiles.replace Tile.exit exitTile
+                                            -- We do this instead of just using replace in case
+                                            -- the player tile is the same as the exit tile
+                                            |> (\ts ->
+                                                    Tiles.set
+                                                        (Tiles.get ts exitTile
+                                                            |> (\t -> { t | kind = Tile.Exit })
+                                                        )
+                                                        ts
+                                               )
                                 in
                                 { player = player
                                 , seed = seed
@@ -666,8 +674,7 @@ updateGame input model =
 subscriptions _ =
     Sub.batch
         [ Browser.Events.onAnimationFrame (\_ -> Tick)
-
-        --Browser.Events.onClick (JD.succeed Tick)
+          --Browser.Events.onClick (JD.succeed Tick)
         , JD.field "key" JD.string
             |> JD.map toInput
             |> Browser.Events.onKeyDown
