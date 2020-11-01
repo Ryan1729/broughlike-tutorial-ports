@@ -76,11 +76,11 @@ numLevels =
 startGame : Seed -> GameModel
 startGame seedIn =
     LevelNum 1
-        |> startLevel seedIn startingHp
+        |> startLevel (Score 0) seedIn startingHp
 
 
-startLevel : Seed -> HP -> LevelNum -> GameModel
-startLevel seedIn hp levelNum =
+startLevel : Score -> Seed -> HP -> LevelNum -> GameModel
+startLevel score seedIn hp levelNum =
     let
         ( levelRes, seed1 ) =
             Random.step (Map.generateLevel levelNum) seedIn
@@ -154,7 +154,7 @@ startLevel seedIn hp levelNum =
                                 , level = levelNum
                                 , spawnRate = initialSpawnRate
                                 , spawnCounter = initialSpawnRate
-                                , score = Score 0
+                                , score = score
                                 }
                             )
                 )
@@ -240,12 +240,6 @@ drawTitle scores =
         >> drawScores scores
 
 
-pushText : TextSpec -> Array Ports.CommandRecord -> Array Ports.CommandRecord
-pushText textSpec =
-    Ports.drawText textSpec
-        |> Array.push
-
-
 drawScores : List ScoreRow -> Array Ports.CommandRecord -> Array Ports.CommandRecord
 drawScores scoresIn commandsIn =
     let
@@ -315,6 +309,12 @@ drawScores scoresIn commandsIn =
 
         _ ->
             commandsIn
+
+
+pushText : TextSpec -> Array Ports.CommandRecord -> Array Ports.CommandRecord
+pushText textSpec =
+    Ports.drawText textSpec
+        |> Array.push
 
 
 rightPad : List String -> String
@@ -470,7 +470,7 @@ movePlayer dx dy stateIn =
                                                     |> HP
                                 in
                                 Game.incLevel movedState.level
-                                    |> startLevel movedState.seed hp
+                                    |> startLevel movedState.score movedState.seed hp
                                     |> withNoCmd
 
                         Tile.Floor ->
@@ -674,7 +674,8 @@ updateGame input model =
 subscriptions _ =
     Sub.batch
         [ Browser.Events.onAnimationFrame (\_ -> Tick)
-          --Browser.Events.onClick (JD.succeed Tick)
+
+        --Browser.Events.onClick (JD.succeed Tick)
         , JD.field "key" JD.string
             |> JD.map toInput
             |> Browser.Events.onKeyDown
