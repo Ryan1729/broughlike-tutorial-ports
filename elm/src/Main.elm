@@ -217,24 +217,24 @@ draw { scores, game } =
 drawTitle : List ScoreRow -> Array Ports.CommandRecord -> Array Ports.CommandRecord
 drawTitle scores =
     let
-        halfWidth =
-            case Game.pixelWidth of
-                W w ->
-                    w / 2
+        halfHeight =
+            case Game.pixelHeight of
+                H h ->
+                    h / 2
     in
     Array.push Ports.drawOverlay
         >> pushText
             { text = "BROUGHLIKE"
             , size = 70
             , centered = True
-            , y = halfWidth - 110 |> Y
+            , y = halfHeight - 110 |> Y
             , colour = White
             }
         >> pushText
             { text = "tutori-elm"
             , size = 40
             , centered = True
-            , y = halfWidth - 55 |> Y
+            , y = halfHeight - 55 |> Y
             , colour = White
             }
         >> drawScores scores
@@ -249,17 +249,17 @@ drawScores scoresIn commandsIn =
     case ( List.take lastIndex scoresIn, List.drop lastIndex scoresIn ) of
         ( scores, newestScore :: [] ) ->
             let
-                halfWidth =
-                    case Game.pixelWidth of
-                        W w ->
-                            w / 2
+                scoresTop =
+                    case Game.pixelHeight of
+                        H h ->
+                            h / 2
 
                 commands =
                     pushText
                         { text = rightPad [ "RUN", "SCORE", "TOTAL" ]
                         , size = 18
                         , centered = True
-                        , y = Y halfWidth
+                        , y = Y scoresTop
                         , colour = White
                         }
                         commandsIn
@@ -292,7 +292,7 @@ drawScores scoresIn commandsIn =
                                             ]
                                     , size = 18
                                     , centered = True
-                                    , y = halfWidth + 24 + i * 24 |> Y
+                                    , y = scoresTop + 24 + i * 24 |> Y
                                     , colour =
                                         if i == 0 then
                                             Aqua
@@ -319,7 +319,7 @@ pushText textSpec =
 
 rightPad : List String -> String
 rightPad =
-    List.foldr
+    List.foldl
         (\text finalText ->
             String.repeat
                 (10 - String.length text)
