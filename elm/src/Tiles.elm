@@ -1,4 +1,4 @@
-module Tiles exposing (NoPassableTile(..), Tiles, addMonster, foldXY, get, getAdjacentNeighbors, getAdjacentPassableNeighbors, getNeighbor, noPassableTileToString, possiblyDisconnectedTilesGen, randomPassableTile, replace, set, toArray, tryMove, updateMonster)
+module Tiles exposing (NoPassableTile(..), Tiles, addMonster, foldXY, get, getAdjacentNeighbors, getAdjacentPassableNeighbors, getNeighbor, noPassableTileToString, possiblyDisconnectedTilesGen, randomPassableTile, replace, set, toArray, transform, tryMove, updateMonster)
 
 import Array exposing (Array)
 import Game exposing (DeltaX(..), DeltaY(..), Located, SpriteIndex(..), X(..), Y(..), moveX, moveY)
@@ -88,6 +88,15 @@ replace constructor { x, y } =
             { x = x, y = y }
     in
     constructor located |> set
+
+
+transform : (Tile -> Tile) -> Located a -> Tiles -> Tiles
+transform transformer located tiles =
+    set
+        (get tiles located
+            |> transformer
+        )
+        tiles
 
 
 getNeighbor : Tiles -> Located a -> DeltaX -> DeltaY -> Tile

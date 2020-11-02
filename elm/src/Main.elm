@@ -132,21 +132,13 @@ startLevel score seedIn hp levelNum =
                                             }
                                             |> (\ts ->
                                                     List.foldl
-                                                        (\tt ->
-                                                            Tiles.set { tt | treasure = True }
-                                                        )
+                                                        (Tiles.transform (\t -> { t | treasure = True }))
                                                         ts
                                                         treasureTiles
                                                )
                                             -- We do this instead of just using replace in case
                                             -- the player tile is the same as the exit tile
-                                            |> (\ts ->
-                                                    Tiles.set
-                                                        (Tiles.get ts exitTile
-                                                            |> (\t -> { t | kind = Tile.Exit })
-                                                        )
-                                                        ts
-                                               )
+                                            |> Tiles.transform (\t -> { t | kind = Tile.Exit }) exitTile
                                 in
                                 { player = player
                                 , seed = seed
