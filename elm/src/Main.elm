@@ -184,29 +184,31 @@ toResultOfListHelper results output =
             Err e
 
 
-draw : Model -> Cmd Msg
+draw : Model -> CommandRecords
 draw { scores, game } =
-    Ports.perform
-        (case game of
-            Title Nothing _ ->
-                drawTitle scores Array.empty
+    case game of
+        Title Nothing _ ->
+            drawTitle scores Array.empty
 
-            Title (Just state) _ ->
-                drawState state
-                    |> drawTitle scores
+        Title (Just state) _ ->
+            drawState state
+                |> drawTitle scores
 
-            Running state ->
-                drawState state
+        Running state ->
+            drawState state
 
-            Dead state ->
-                drawState state
+        Dead state ->
+            drawState state
 
-            Error _ ->
-                Array.push Ports.drawOverlay Array.empty
-        )
+        Error _ ->
+            Array.push Ports.drawOverlay Array.empty
 
 
-drawTitle : List ScoreRow -> Array Ports.CommandRecord -> Array Ports.CommandRecord
+type alias CommandRecords =
+    Array Ports.CommandRecord
+
+
+drawTitle : List ScoreRow -> CommandRecords -> CommandRecords
 drawTitle scores =
     let
         halfHeight =
@@ -232,7 +234,7 @@ drawTitle scores =
         >> drawScores scores
 
 
-drawScores : List ScoreRow -> Array Ports.CommandRecord -> Array Ports.CommandRecord
+drawScores : List ScoreRow -> CommandRecords -> CommandRecords
 drawScores scoresIn commandsIn =
     let
         lastIndex =
@@ -303,7 +305,7 @@ drawScores scoresIn commandsIn =
             commandsIn
 
 
-pushText : TextSpec -> Array Ports.CommandRecord -> Array Ports.CommandRecord
+pushText : TextSpec -> CommandRecords -> CommandRecords
 pushText textSpec =
     Ports.drawText textSpec
         |> Array.push
@@ -322,7 +324,7 @@ rightPad =
         ""
 
 
-drawState : State -> Array Ports.CommandRecord
+drawState : State -> CommandRecords
 drawState state =
     Tiles.toArray state.tiles
         |> arrayAndThen Tile.draw
@@ -409,7 +411,7 @@ init flags =
     )
 
 
-movePlayer : DeltaX -> DeltaY -> State -> ( GameModel, Cmd Msg )
+movePlayer : DeltaX -> DeltaY -> State -> ( GameModel, CommandRecords )
 movePlayer dx dy stateIn =
     let
         m =
@@ -439,7 +441,7 @@ movePlayer dx dy stateIn =
                 tile =
                     Tiles.get movedTiles moved
 
-                ( preTickModel, preTickCmd ) =
+                ( preTickModel, preTickCmds ) =
                     case tile.kind of
                         Tile.Exit ->
                             if movedState.level == numLevels then
@@ -448,7 +450,6 @@ movePlayer dx dy stateIn =
                                             ( Title (Just s) s.seed
                                             , Ports.addScore s.score Game.Win
                                                 |> Array.repeat 1
-                                                |> Ports.perform
                                             )
                                        )
 
@@ -499,7 +500,7 @@ movePlayer dx dy stateIn =
                             Running movedState
                                 |> withNoCmd
 
-                ( postTickModel, postTickCmd ) =
+                ( postTickModel, postTickCmds ) =
                     case preTickModel of
                         Running s ->
                             tick s
@@ -513,7 +514,7 @@ movePlayer dx dy stateIn =
                         _ ->
                             withNoCmd preTickModel
             in
-            ( postTickModel, Cmd.batch [ preTickCmd, postTickCmd ] )
+            ( postTickModel, Array.append preTickCmds postTickCmds )
 
 
 getPlayer : State -> Maybe Monster
@@ -522,7 +523,7 @@ getPlayer state =
         |> .monster
 
 
-tick : State -> ( GameModel, Cmd Msg )
+tick : State -> ( GameModel, CommandRecords )
 tick stateIn =
     Tiles.foldXY
         (\xy list ->
@@ -589,7 +590,7 @@ tick stateIn =
 
                     Just player ->
                         if player.dead then
-                            ( Dead s, Ports.addScore s.score Game.Loss |> Array.repeat 1 |> Ports.perform )
+                            ( Dead s, Ports.addScore s.score Game.Loss |> Array.repeat 1 )
 
                         else
                             Running s
@@ -602,15 +603,21 @@ update msg model =
         Tick ->
             ( model
             , draw model
+                |> Ports.perform
             )
 
         Input input ->
             let
-                ( game, cmd ) =
+                ( game, cmds ) =
                     updateGame input model.game
+
+                newModel =
+                    { model | game = game }
             in
-            ( { model | game = game }
-            , cmd
+            ( newModel
+            , draw newModel
+                |> Array.append cmds
+                |> Ports.perform
             )
 
         ScoreRows (Ok scores) ->
@@ -627,9 +634,9 @@ update msg model =
             )
 
 
-withNoCmd : a -> ( a, Cmd msg )
+withNoCmd : a -> ( a, CommandRecords )
 withNoCmd a =
-    ( a, Cmd.none )
+    ( a, Array.empty )
 
 
 updateGame input model =
