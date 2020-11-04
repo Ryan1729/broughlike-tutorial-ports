@@ -31,6 +31,65 @@ pixelUIWidth =
     W (tileSize * uiWidth)
 
 
+
+-- Position is the one-dimensional tile position of something on the map
+-- The type should only ever hold values inside [0, Numtiles - 1].
+
+
+type alias Position =
+    Int
+
+
+type XPos
+    = XPos Position
+
+
+moveX dx xx =
+    case xx of
+        XPos x ->
+            case dx of
+                DX0 ->
+                    XPos x
+
+                DX1 ->
+                    x + 1 |> XPos
+
+                DXm1 ->
+                    x - 1 |> XPos
+
+
+type YPos
+    = YPos Position
+
+
+moveY dy yy =
+    case yy of
+        YPos y ->
+            case dy of
+                DY0 ->
+                    YPos y
+
+                DY1 ->
+                    y + 1 |> YPos
+
+                DYm1 ->
+                    y - 1 |> YPos
+
+
+type alias Positioned a =
+    { a | xPos : XPos, yPos : YPos }
+
+
+dist : Positioned a -> Positioned b -> Int
+dist tile other =
+    case ( tile.xPos, tile.yPos ) of
+        ( XPos tX, YPos tY ) ->
+            case ( other.xPos, other.yPos ) of
+                ( XPos oX, YPos oY ) ->
+                    abs (tX - oX)
+                        + abs (tY - oY)
+
+
 type DeltaX
     = DX0
     | DX1
@@ -49,9 +108,9 @@ type DeltaY
 -- As another example, if `source` is at 1, 2 and `target` is at 1, 1 then `Just (DX0, DYm1)` will be returned.
 
 
-deltasFrom : { source : Located a, target : Located b } -> Maybe ( DeltaX, DeltaY )
+deltasFrom : { source : Positioned a, target : Positioned b } -> Maybe ( DeltaX, DeltaY )
 deltasFrom { source, target } =
-    case ( delatXFrom source.x target.x, delatYFrom source.y target.y ) of
+    case ( delatXFrom source.xPos target.xPos, delatYFrom source.yPos target.yPos ) of
         ( Just dx, Just dy ) ->
             Just ( dx, dy )
 
@@ -59,10 +118,10 @@ deltasFrom { source, target } =
             Nothing
 
 
-delatXFrom : X -> X -> Maybe DeltaX
+delatXFrom : XPos -> XPos -> Maybe DeltaX
 delatXFrom sourceX targetX =
     case ( sourceX, targetX ) of
-        ( X sX, X tX ) ->
+        ( XPos sX, XPos tX ) ->
             let
                 delta =
                     tX - sX
@@ -80,10 +139,10 @@ delatXFrom sourceX targetX =
                 Nothing
 
 
-delatYFrom : Y -> Y -> Maybe DeltaY
+delatYFrom : YPos -> YPos -> Maybe DeltaY
 delatYFrom sourceY targetY =
     case ( sourceY, targetY ) of
-        ( Y sY, Y tY ) ->
+        ( YPos sY, YPos tY ) ->
             let
                 delta =
                     tY - sY
@@ -105,50 +164,12 @@ type X
     = X Float
 
 
-moveX dx xx =
-    case xx of
-        X x ->
-            case dx of
-                DX0 ->
-                    X x
-
-                DX1 ->
-                    x + 1 |> X
-
-                DXm1 ->
-                    x - 1 |> X
-
-
 type Y
     = Y Float
 
 
-moveY dy yy =
-    case yy of
-        Y y ->
-            case dy of
-                DY0 ->
-                    Y y
-
-                DY1 ->
-                    y + 1 |> Y
-
-                DYm1 ->
-                    y - 1 |> Y
-
-
 type alias Located a =
     { a | x : X, y : Y }
-
-
-dist : Located a -> Located b -> Float
-dist tile other =
-    case ( tile.x, tile.y ) of
-        ( X tX, Y tY ) ->
-            case ( other.x, other.y ) of
-                ( X oX, Y oY ) ->
-                    abs (tX - oX)
-                        + abs (tY - oY)
 
 
 type W

@@ -1,7 +1,7 @@
 module Tile exposing (..)
 
 import Array exposing (Array)
-import Game exposing (Located, SpriteIndex(..), X(..), Y(..))
+import Game exposing (Located, Positioned, SpriteIndex(..), X(..), XPos(..), Y(..), YPos(..))
 import Monster exposing (Monster)
 import Ports
 
@@ -13,23 +13,33 @@ type Kind
 
 
 type alias Tile =
-    Located
+    Positioned
         { kind : Kind
         , monster : Maybe Monster
         , treasure : Bool
         }
 
 
+getLocated : Tile -> Located {}
+getLocated { xPos, yPos } =
+    case ( xPos, yPos ) of
+        ( XPos xP, YPos yP ) ->
+            { x = toFloat xP |> X, y = toFloat yP |> Y }
+
+
 draw : Tile -> Array Ports.CommandRecord
 draw tile =
     let
+        located =
+            getLocated tile
+
         commands =
             sprite tile.kind
-                |> Ports.drawSprite tile.x tile.y
+                |> Ports.drawSprite located
                 |> Array.repeat 1
     in
     if tile.treasure then
-        Array.push (SpriteIndex 12 |> Ports.drawSprite tile.x tile.y) commands
+        Array.push (SpriteIndex 12 |> Ports.drawSprite located) commands
 
     else
         commands
@@ -48,24 +58,24 @@ sprite kind =
             SpriteIndex 11
 
 
-floor : Located a -> Tile
+floor : Positioned a -> Tile
 floor =
     withKind Floor
 
 
-wall : Located a -> Tile
+wall : Positioned a -> Tile
 wall =
     withKind Wall
 
 
-exit : Located a -> Tile
+exit : Positioned a -> Tile
 exit =
     withKind Exit
 
 
-withKind : Kind -> (Located a -> Tile)
-withKind kind { x, y } =
-    { kind = kind, x = x, y = y, monster = Nothing, treasure = False }
+withKind : Kind -> (Positioned a -> Tile)
+withKind kind { xPos, yPos } =
+    { kind = kind, xPos = xPos, yPos = yPos, monster = Nothing, treasure = False }
 
 
 isPassable tile =

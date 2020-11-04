@@ -1,7 +1,7 @@
 module Map exposing (Level, generateLevel, spawnMonster)
 
 import Array exposing (Array)
-import Game exposing (DeltaX(..), DeltaY(..), LevelNum(..), Located, X(..), Y(..), moveX, moveY)
+import Game exposing (DeltaX(..), DeltaY(..), LevelNum(..), Located, Positioned, X(..), Y(..), moveX, moveY)
 import Monster exposing (Monster)
 import Random exposing (Generator, Seed)
 import Randomness
@@ -58,8 +58,8 @@ addMonsters count tilesIn =
                                     Err e
                                         |> Random.constant
 
-                                Ok { x, y } ->
-                                    Tiles.addMonster tilesIn { x = x, y = y, kind = kind }
+                                Ok { xPos, yPos } ->
+                                    Tiles.addMonster tilesIn { xPos = xPos, yPos = yPos, kind = kind }
                                         |> addMonsters
                                             (count - 1)
                         )

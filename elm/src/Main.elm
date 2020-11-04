@@ -3,7 +3,7 @@ module Main exposing (..)
 import Array exposing (Array)
 import Browser
 import Browser.Events
-import Game exposing (DeltaX(..), DeltaY(..), H(..), LevelNum(..), Located, Score(..), ScoreRow, SpriteIndex(..), W(..), X(..), Y(..), levelNumToString, moveX, moveY)
+import Game exposing (DeltaX(..), DeltaY(..), H(..), LevelNum(..), Located, Positioned, Score(..), ScoreRow, SpriteIndex(..), W(..), X(..), Y(..), levelNumToString, moveX, moveY)
 import Html
 import Json.Decode as JD
 import Map
@@ -51,7 +51,7 @@ scoreToString score =
 
 
 type alias State =
-    { player : Located {}
+    { player : Positioned {}
     , seed : Seed
     , tiles : Tiles
     , level : LevelNum
@@ -121,14 +121,14 @@ startLevel score seedIn hp levelNum =
                             (\( playerTile, exitTile, treasureTiles ) ->
                                 let
                                     player =
-                                        { x = playerTile.x, y = playerTile.y }
+                                        { xPos = playerTile.xPos, yPos = playerTile.yPos }
 
                                     tiles : Tiles
                                     tiles =
                                         Tiles.addMonster tilesIn
                                             { kind = Monster.Player hp
-                                            , x = player.x
-                                            , y = player.y
+                                            , xPos = player.xPos
+                                            , yPos = player.yPos
                                             }
                                             |> (\ts ->
                                                     List.foldl
@@ -184,24 +184,41 @@ toResultOfListHelper results output =
             Err e
 
 
-draw : Model -> CommandRecords
-draw { scores, game } =
+draw : Model -> ( Model, CommandRecords )
+draw model =
+    let
+        { scores, game } =
+            model
+
+        gameToModel g =
+            { model | game = g }
+    in
     case game of
         Title Nothing _ ->
-            drawTitle scores Array.empty
+            ( model
+            , drawTitle scores Array.empty
+            )
 
-        Title (Just state) _ ->
-            drawState state
-                |> drawTitle scores
+        Title (Just state) seed ->
+            let
+                ( newState, cmds ) =
+                    drawState state
+            in
+            ( newState, drawTitle scores cmds )
+                |> withCmdsMap (\s -> Title (Just s) seed |> gameToModel)
 
         Running state ->
             drawState state
+                |> withCmdsMap (Running >> gameToModel)
 
         Dead state ->
             drawState state
+                |> withCmdsMap (Dead >> gameToModel)
 
         Error _ ->
-            Array.push Ports.drawOverlay Array.empty
+            ( model
+            , Array.push Ports.drawOverlay Array.empty
+            )
 
 
 type alias CommandRecords =
@@ -324,31 +341,47 @@ rightPad =
         ""
 
 
-drawState : State -> CommandRecords
+drawState : State -> ( State, CommandRecords )
 drawState state =
-    Tiles.toArray state.tiles
-        |> arrayAndThen Tile.draw
-        |> (\prev ->
-                Tiles.toArray state.tiles
-                    |> Array.map .monster
-                    |> filterOutNothings
-                    |> arrayAndThen Monster.draw
-                    |> Array.append prev
-           )
-        |> pushText
-            { text = "Level " ++ levelNumToString state.level
-            , size = 30
-            , centered = False
-            , y = Y 40
-            , colour = Violet
-            }
-        |> pushText
-            { text = "Score: " ++ scoreToString state.score
-            , size = 30
-            , centered = False
-            , y = Y 70
-            , colour = Violet
-            }
+    let
+        prev =
+            Tiles.toArray state.tiles
+                |> arrayAndThen Tile.draw
+                |> pushText
+                    { text = "Level " ++ levelNumToString state.level
+                    , size = 30
+                    , centered = False
+                    , y = Y 40
+                    , colour = Violet
+                    }
+                |> pushText
+                    { text = "Score: " ++ scoreToString state.score
+                    , size = 30
+                    , centered = False
+                    , y = Y 70
+                    , colour = Violet
+                    }
+
+        ( newTiles, cmds ) =
+            drawMonsters state.tiles
+    in
+    ( { state | tiles = newTiles }
+    , Array.append prev cmds
+    )
+
+
+drawMonsters : Tiles -> ( Tiles, CommandRecords )
+drawMonsters tiles =
+    Tiles.foldMonsters
+        (\monster ( ts, oldCmds ) ->
+            let
+                ( newMonster, newCmds ) =
+                    Monster.draw monster oldCmds
+            in
+            ( Tiles.transform (\tile -> { tile | monster = Just newMonster }) newMonster ts, newCmds )
+        )
+        ( tiles, Array.empty )
+        tiles
 
 
 arrayAndThen : (a -> Array b) -> Array a -> Array b
@@ -359,20 +392,6 @@ arrayAndThen callback array =
         )
         Array.empty
         array
-
-
-filterOutNothings : Array (Maybe a) -> Array a
-filterOutNothings =
-    Array.foldl
-        (\maybe acc ->
-            case maybe of
-                Just x ->
-                    Array.push x acc
-
-                Nothing ->
-                    acc
-        )
-        Array.empty
 
 
 type alias Flags =
@@ -436,7 +455,7 @@ movePlayer dx dy stateIn =
                     record.moved
 
                 movedState =
-                    { stateIn | tiles = movedTiles, player = { x = moved.x, y = moved.y } }
+                    { stateIn | tiles = movedTiles, player = { xPos = moved.xPos, yPos = moved.yPos } }
 
                 tile =
                     Tiles.get movedTiles moved
@@ -598,25 +617,31 @@ tick stateIn =
            )
 
 
+performWithModel : ( Model, CommandRecords ) -> ( Model, Cmd msg )
+performWithModel ( model, cmds ) =
+    ( model, Ports.perform cmds )
+
+
 update msg model =
     case msg of
         Tick ->
-            ( model
-            , draw model
-                |> Ports.perform
-            )
+            draw model
+                |> performWithModel
 
         Input input ->
             let
-                ( game, cmds ) =
+                ( game, updateCmds ) =
                     updateGame input model.game
 
                 newModel =
                     { model | game = game }
+
+                ( finalModel, drawCmds ) =
+                    draw newModel
             in
-            ( newModel
-            , draw newModel
-                |> Array.append cmds
+            ( finalModel
+            , drawCmds
+                |> Array.append updateCmds
                 |> Ports.perform
             )
 
@@ -637,6 +662,11 @@ update msg model =
 withNoCmd : a -> ( a, CommandRecords )
 withNoCmd a =
     ( a, Array.empty )
+
+
+withCmdsMap : (a -> b) -> ( a, CommandRecords ) -> ( b, CommandRecords )
+withCmdsMap mapper ( a, cmds ) =
+    ( mapper a, cmds )
 
 
 updateGame input model =
@@ -673,8 +703,7 @@ updateGame input model =
 subscriptions _ =
     Sub.batch
         [ Browser.Events.onAnimationFrame (\_ -> Tick)
-
-        --Browser.Events.onClick (JD.succeed Tick)
+          --Browser.Events.onClick (JD.succeed Tick)
         , JD.field "key" JD.string
             |> JD.map toInput
             |> Browser.Events.onKeyDown

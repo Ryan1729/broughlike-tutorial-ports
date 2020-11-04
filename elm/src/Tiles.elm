@@ -1,7 +1,7 @@
-module Tiles exposing (NoPassableTile(..), Tiles, addMonster, foldXY, get, getAdjacentNeighbors, getAdjacentPassableNeighbors, getNeighbor, noPassableTileToString, possiblyDisconnectedTilesGen, randomPassableTile, replace, set, toArray, transform, tryMove, updateMonster)
+module Tiles exposing (NoPassableTile(..), Tiles, addMonster, foldMonsters, foldXY, get, getAdjacentNeighbors, getAdjacentPassableNeighbors, getNeighbor, noPassableTileToString, possiblyDisconnectedTilesGen, randomPassableTile, replace, set, toArray, transform, tryMove, updateMonster)
 
 import Array exposing (Array)
-import Game exposing (DeltaX(..), DeltaY(..), Located, SpriteIndex(..), X(..), Y(..), moveX, moveY)
+import Game exposing (DeltaX(..), DeltaY(..), Located, Positioned, SpriteIndex(..), X(..), XPos(..), Y(..), YPos(..), moveX, moveY)
 import Monster exposing (HP(..), Kind(..), Monster)
 import Random exposing (Generator, Seed)
 import Randomness exposing (probability, shuffle)
@@ -23,12 +23,12 @@ toArray tiles =
             ts
 
 
-foldXY : (Located {} -> a -> a) -> a -> a
+foldXY : (Positioned {} -> a -> a) -> a -> a
 foldXY folder initial =
     List.foldl folder initial allLocations
 
 
-allLocations : List (Located {})
+allLocations : List (Positioned {})
 allLocations =
     List.range 0 (Game.numTiles - 1)
         |> List.foldr
@@ -36,14 +36,14 @@ allLocations =
                 List.range 0 (Game.numTiles - 1)
                     |> List.foldr
                         (\x xAcc ->
-                            { x = X (toFloat x), y = Y (toFloat y) } :: xAcc
+                            { xPos = XPos x, yPos = YPos y } :: xAcc
                         )
                         yAcc
             )
             []
 
 
-get : Tiles -> Located a -> Tile
+get : Tiles -> Positioned a -> Tile
 get tiles xy =
     case tiles of
         Tiles ts ->
@@ -80,63 +80,83 @@ set tile tiles =
 -- create a fresh tile than a transformation of an existing tile
 
 
-replace : (Located {} -> Tile) -> Tile -> Tiles -> Tiles
-replace constructor { x, y } =
+replace : (Positioned {} -> Tile) -> Tile -> Tiles -> Tiles
+replace constructor { xPos, yPos } =
     let
-        located : Located {}
-        located =
-            { x = x, y = y }
+        positioned : Positioned {}
+        positioned =
+            { xPos = xPos, yPos = yPos }
     in
-    constructor located |> set
+    constructor positioned |> set
 
 
-transform : (Tile -> Tile) -> Located a -> Tiles -> Tiles
-transform transformer located tiles =
+transform : (Tile -> Tile) -> Positioned a -> Tiles -> Tiles
+transform transformer positioned tiles =
     set
-        (get tiles located
+        (get tiles positioned
             |> transformer
         )
         tiles
 
 
-getNeighbor : Tiles -> Located a -> DeltaX -> DeltaY -> Tile
-getNeighbor tiles { x, y } dx dy =
-    get tiles { x = moveX dx x, y = moveY dy y }
+foldMonsters : (Monster -> a -> a) -> a -> Tiles -> a
+foldMonsters folder acc tiles =
+    case tiles of
+        Tiles ts ->
+            ts
+                |> Array.map .monster
+                |> filterOutNothings
+                |> Array.foldl folder acc
 
 
-inBounds : Located a -> Bool
+filterOutNothings : Array (Maybe a) -> Array a
+filterOutNothings =
+    Array.foldl
+        (\maybe acc ->
+            case maybe of
+                Just x ->
+                    Array.push x acc
+
+                Nothing ->
+                    acc
+        )
+        Array.empty
+
+
+getNeighbor : Tiles -> Positioned a -> DeltaX -> DeltaY -> Tile
+getNeighbor tiles { xPos, yPos } dx dy =
+    get tiles { xPos = moveX dx xPos, yPos = moveY dy yPos }
+
+
+inBounds : Positioned a -> Bool
 inBounds xy =
-    case ( xy.x, xy.y ) of
-        ( X x, Y y ) ->
+    case ( xy.xPos, xy.yPos ) of
+        ( XPos x, YPos y ) ->
             x > 0 && y > 0 && x < Game.numTiles - 1 && y < Game.numTiles - 1
 
 
-toXY : Int -> Located {}
-toXY index =
-    { x =
-        X
-            (modBy Game.numTiles index
-                |> toFloat
-            )
-    , y =
-        Y
+toXYPos : Int -> Positioned {}
+toXYPos index =
+    { xPos =
+        XPos
+            (modBy Game.numTiles index)
+    , yPos =
+        YPos
             (index
                 // Game.numTiles
-                |> toFloat
             )
     }
 
 
-toIndex : Located a -> Maybe Int
+toIndex : Positioned a -> Maybe Int
 toIndex xy =
     if inBounds xy then
         Just
-            (case ( xy.x, xy.y ) of
-                ( X x, Y y ) ->
+            (case ( xy.xPos, xy.yPos ) of
+                ( XPos x, YPos y ) ->
                     y
                         * Game.numTiles
                         + x
-                        |> round
             )
 
     else
@@ -153,12 +173,12 @@ possiblyDisconnectedTilesGen =
                 probability
                 |> Random.list tileCount
                 |> Random.map Array.fromList
-                |> Random.map (Array.indexedMap (\i bool -> bool || not (toXY i |> inBounds)))
+                |> Random.map (Array.indexedMap (\i bool -> bool || not (toXYPos i |> inBounds)))
 
         toTile index isWall =
             let
                 xy =
-                    toXY index
+                    toXYPos index
             in
             if isWall then
                 Tile.wall xy
@@ -186,17 +206,21 @@ possiblyDisconnectedTilesGen =
     Random.map (\bools -> ( toTiles bools, toPassableCount bools )) isWallArrayGen
 
 
-getAdjacentNeighbors : Tiles -> Located a -> Generator (List Tile)
-getAdjacentNeighbors tiles located =
+getAdjacentNeighbors : Tiles -> Positioned a -> Generator (List Tile)
+getAdjacentNeighbors tiles positioned =
+    let
+        gn =
+            getNeighbor tiles positioned
+    in
     shuffle
-        [ getNeighbor tiles located DX0 DYm1
-        , getNeighbor tiles located DX0 DY1
-        , getNeighbor tiles located DXm1 DY0
-        , getNeighbor tiles located DX1 DY0
+        [ gn DX0 DYm1
+        , gn DX0 DY1
+        , gn DXm1 DY0
+        , gn DX1 DY0
         ]
 
 
-getAdjacentPassableNeighbors : Tiles -> Located a -> Generator (List Tile)
+getAdjacentPassableNeighbors : Tiles -> Positioned a -> Generator (List Tile)
 getAdjacentPassableNeighbors tiles located =
     getAdjacentNeighbors tiles located
         |> Random.map (List.filter Tile.isPassable)
@@ -230,29 +254,29 @@ randomPassableTile tiles =
         |> Randomness.tryToCustom
 
 
-xyGen : Generator (Located {})
+xyGen : Generator (Positioned {})
 xyGen =
     let
         coordIntGen =
             Game.numTiles - 1 |> Random.int 0
     in
     Random.map2
-        (\x y -> { x = x, y = y })
-        (Random.map (toFloat >> X) coordIntGen)
-        (Random.map (toFloat >> Y) coordIntGen)
+        (\xPos yPos -> { xPos = xPos, yPos = yPos })
+        (Random.map XPos coordIntGen)
+        (Random.map YPos coordIntGen)
 
 
 updateMonster :
     Monster
     ->
         { a
-            | player : Located {}
+            | player : Positioned {}
             , tiles : Tiles
             , seed : Seed
         }
     ->
         { a
-            | player : Located {}
+            | player : Positioned {}
             , tiles : Tiles
             , seed : Seed
         }
@@ -286,7 +310,7 @@ updateMonsterInner :
     Monster
     ->
         { a
-            | player : Located {}
+            | player : Positioned {}
             , tiles : Tiles
             , seed : Seed
         }
@@ -294,7 +318,7 @@ updateMonsterInner :
         WithMoved
             { state :
                 { a
-                    | player : Located {}
+                    | player : Positioned {}
                     , tiles : Tiles
                     , seed : Seed
                 }
@@ -377,7 +401,7 @@ updateMonsterInner monsterIn stateIn =
 
 doStuff :
     { a
-        | player : Located {}
+        | player : Positioned {}
         , tiles : Tiles
         , seed : Seed
     }
@@ -387,7 +411,7 @@ doStuff :
             (WithMoved
                 { state :
                     { a
-                        | player : Located {}
+                        | player : Positioned {}
                         , tiles : Tiles
                         , seed : Seed
                     }
@@ -432,7 +456,7 @@ setMonster :
     Monster
     ->
         { a
-            | player : Located {}
+            | player : Positioned {}
             , tiles : Tiles
             , seed : Seed
         }
@@ -440,7 +464,7 @@ setMonster :
         WithMoved
             { state :
                 { a
-                    | player : Located {}
+                    | player : Positioned {}
                     , tiles : Tiles
                     , seed : Seed
                 }
@@ -458,7 +482,11 @@ addMonster :
     -> Monster.Spec
     -> Tiles
 addMonster tiles monsterSpec =
-    move (Monster.fromSpec monsterSpec) monsterSpec tiles
+    let
+        monster =
+            Monster.fromSpec monsterSpec
+    in
+    move monster monster tiles
         |> .tiles
 
 
@@ -470,11 +498,6 @@ isNothing maybe =
 
         Nothing ->
             True
-
-
-
--- We return the monster here mostly so we can use this function for the player too,
--- even though we keep it separate from the `Tiles`
 
 
 tryMove :
@@ -524,19 +547,34 @@ tryMove monster dx dy tiles =
 
 move :
     Monster
-    -> Located b
+    -> Positioned a
     -> Tiles
     -> WithMoved { tiles : Tiles }
-move monsterIn { x, y } tiles =
+move monsterIn { xPos, yPos } tiles =
     let
         oldTile =
             get tiles monsterIn
 
         newTile =
-            get tiles { x = x, y = y }
+            get tiles { xPos = xPos, yPos = yPos }
+
+        offsetX =
+            case ( monsterIn.xPos, xPos ) of
+                ( XPos oldX, XPos newX ) ->
+                    oldX - newX |> toFloat |> X
+
+        offsetY =
+            case ( monsterIn.yPos, yPos ) of
+                ( YPos oldY, YPos newY ) ->
+                    oldY - newY |> toFloat |> Y
 
         monster =
-            { monsterIn | x = x, y = y }
+            { monsterIn
+                | xPos = xPos
+                , yPos = yPos
+                , offsetX = offsetX
+                , offsetY = offsetY
+            }
     in
     { tiles =
         set { oldTile | monster = Nothing } tiles
