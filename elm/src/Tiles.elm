@@ -528,11 +528,21 @@ tryMove monster dx dy tiles =
                             newTarget =
                                 Monster.stun target
                                     |> Monster.hit (HP 1)
+
+                            bumpMovement =
+                                Bump
+                                    ( case ( monster.xPos, target.xPos ) of
+                                        ( XPos mX, XPos tX ) ->
+                                            toFloat (tX - mX) / 2 |> X
+                                    , case ( monster.yPos, target.yPos ) of
+                                        ( YPos mY, YPos tY ) ->
+                                            toFloat (tY - mY) / 2 |> Y
+                                    )
                         in
                         { tiles =
                             move newTarget newTarget tiles
                                 |> .tiles
-                                |> move newMonster newMonster
+                                |> moveInner bumpMovement newMonster newMonster
                                 |> .tiles
                         , moved = newMonster
                         }
@@ -545,12 +555,27 @@ tryMove monster dx dy tiles =
         Nothing
 
 
+type Movement
+    = ToTile
+    | Bump ( X, Y )
+
+
 move :
     Monster
     -> Positioned a
     -> Tiles
     -> WithMoved { tiles : Tiles }
-move monsterIn { xPos, yPos } tiles =
+move =
+    moveInner ToTile
+
+
+moveInner :
+    Movement
+    -> Monster
+    -> Positioned a
+    -> Tiles
+    -> WithMoved { tiles : Tiles }
+moveInner movement monsterIn { xPos, yPos } tiles =
     let
         oldTile =
             get tiles monsterIn
@@ -558,15 +583,19 @@ move monsterIn { xPos, yPos } tiles =
         newTile =
             get tiles { xPos = xPos, yPos = yPos }
 
-        offsetX =
-            case ( monsterIn.xPos, xPos ) of
-                ( XPos oldX, XPos newX ) ->
-                    oldX - newX |> toFloat |> X
+        ( offsetX, offsetY ) =
+            case movement of
+                ToTile ->
+                    ( case ( monsterIn.xPos, xPos ) of
+                        ( XPos oldX, XPos newX ) ->
+                            oldX - newX |> toFloat |> X
+                    , case ( monsterIn.yPos, yPos ) of
+                        ( YPos oldY, YPos newY ) ->
+                            oldY - newY |> toFloat |> Y
+                    )
 
-        offsetY =
-            case ( monsterIn.yPos, yPos ) of
-                ( YPos oldY, YPos newY ) ->
-                    oldY - newY |> toFloat |> Y
+                Bump ( ox, oy ) ->
+                    ( ox, oy )
 
         monster =
             { monsterIn
