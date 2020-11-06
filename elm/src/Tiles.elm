@@ -1,7 +1,7 @@
 module Tiles exposing (NoPassableTile(..), Tiles, addMonster, foldMonsters, foldXY, get, getAdjacentNeighbors, getAdjacentPassableNeighbors, getNeighbor, noPassableTileToString, possiblyDisconnectedTilesGen, randomPassableTile, replace, set, toArray, transform, tryMove, updateMonster)
 
 import Array exposing (Array)
-import Game exposing (DeltaX(..), DeltaY(..), Located, Positioned, SpriteIndex(..), X(..), XPos(..), Y(..), YPos(..), moveX, moveY)
+import Game exposing (DeltaX(..), DeltaY(..), Located, Positioned, Shake, SpriteIndex(..), X(..), XPos(..), Y(..), YPos(..), moveX, moveY)
 import Monster exposing (HP(..), Kind(..), Monster)
 import Random exposing (Generator, Seed)
 import Randomness exposing (probability, shuffle)
@@ -266,20 +266,16 @@ xyGen =
         (Random.map YPos coordIntGen)
 
 
-updateMonster :
-    Monster
-    ->
-        { a
-            | player : Positioned {}
-            , tiles : Tiles
-            , seed : Seed
-        }
-    ->
-        { a
-            | player : Positioned {}
-            , tiles : Tiles
-            , seed : Seed
-        }
+type alias StateSubset a =
+    { a
+        | player : Positioned {}
+        , tiles : Tiles
+        , seed : Seed
+        , shake : Shake
+    }
+
+
+updateMonster : Monster -> StateSubset a -> StateSubset a
 updateMonster monster stateIn =
     case monster.kind of
         Monster.Tank ->
@@ -306,23 +302,7 @@ type alias WithMoved a =
     { a | moved : Monster }
 
 
-updateMonsterInner :
-    Monster
-    ->
-        { a
-            | player : Positioned {}
-            , tiles : Tiles
-            , seed : Seed
-        }
-    ->
-        WithMoved
-            { state :
-                { a
-                    | player : Positioned {}
-                    , tiles : Tiles
-                    , seed : Seed
-                }
-            }
+updateMonsterInner : Monster -> StateSubset a -> WithMoved { state : StateSubset a }
 updateMonsterInner monsterIn stateIn =
     let
         monster =
@@ -383,14 +363,14 @@ updateMonsterInner monsterIn stateIn =
                                         head :: _ ->
                                             case
                                                 Game.deltasFrom { source = monster, target = head }
-                                                    |> Maybe.andThen (\( dx, dy ) -> tryMove monster dx dy stateIn.tiles)
+                                                    |> Maybe.andThen (\( dx, dy ) -> tryMove stateIn.shake monster dx dy stateIn.tiles)
                                             of
                                                 Nothing ->
                                                     { state = stateIn, moved = monster }
 
-                                                Just { tiles, moved } ->
+                                                Just { tiles, moved, shake } ->
                                                     { state =
-                                                        { stateIn | tiles = tiles }
+                                                        { stateIn | tiles = tiles, shake = shake }
                                                     , moved = moved
                                                     }
                                 )
@@ -399,24 +379,7 @@ updateMonsterInner monsterIn stateIn =
             |> (\( { state } as output, seed ) -> { output | state = { state | seed = seed } })
 
 
-doStuff :
-    { a
-        | player : Positioned {}
-        , tiles : Tiles
-        , seed : Seed
-    }
-    -> Monster
-    ->
-        Generator
-            (WithMoved
-                { state :
-                    { a
-                        | player : Positioned {}
-                        , tiles : Tiles
-                        , seed : Seed
-                    }
-                }
-            )
+doStuff : StateSubset a -> Monster -> Generator (WithMoved { state : StateSubset a })
 doStuff state monster =
     getAdjacentPassableNeighbors state.tiles monster
         |> Random.map
@@ -440,12 +403,12 @@ doStuff state monster =
                                 Game.deltasFrom { source = monster, target = newTile }
                                     |> Maybe.andThen
                                         (\( dx, dy ) ->
-                                            tryMove monster dx dy state.tiles
+                                            tryMove state.shake monster dx dy state.tiles
                                         )
                             )
                 of
-                    Just { tiles, moved } ->
-                        { state = { state | tiles = tiles }, moved = moved }
+                    Just { tiles, moved, shake } ->
+                        { state = { state | tiles = tiles, shake = shake }, moved = moved }
 
                     Nothing ->
                         { state = state, moved = monster }
@@ -501,14 +464,15 @@ isNothing maybe =
 
 
 tryMove :
-    Monster
+    Shake
+    -> Monster
     -> DeltaX
     -> DeltaY
     -> Tiles
     ->
         Maybe
-            (WithMoved { tiles : Tiles })
-tryMove monster dx dy tiles =
+            (WithMoved { tiles : Tiles, shake : Shake })
+tryMove shake monster dx dy tiles =
     let
         newTile =
             getNeighbor tiles monster dx dy
@@ -517,7 +481,11 @@ tryMove monster dx dy tiles =
         Just
             (case newTile.monster of
                 Nothing ->
-                    move monster newTile tiles
+                    let
+                        tilesWithMoved =
+                            move monster newTile tiles
+                    in
+                    { moved = tilesWithMoved.moved, tiles = tilesWithMoved.tiles, shake = shake }
 
                 Just target ->
                     if Monster.isPlayer monster.kind /= Monster.isPlayer target.kind then
@@ -545,10 +513,11 @@ tryMove monster dx dy tiles =
                                 |> moveInner bumpMovement newMonster newMonster
                                 |> .tiles
                         , moved = newMonster
+                        , shake = { shake | amount = 5 }
                         }
 
                     else
-                        { tiles = tiles, moved = monster }
+                        { tiles = tiles, moved = monster, shake = shake }
             )
 
     else

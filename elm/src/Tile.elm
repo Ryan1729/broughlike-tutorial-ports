@@ -1,7 +1,7 @@
 module Tile exposing (..)
 
 import Array exposing (Array)
-import Game exposing (Located, Positioned, SpriteIndex(..), X(..), XPos(..), Y(..), YPos(..))
+import Game exposing (Located, Positioned, Shake, SpriteIndex(..), X(..), XPos(..), Y(..), YPos(..))
 import Monster exposing (Monster)
 import Ports
 
@@ -27,19 +27,19 @@ getLocated { xPos, yPos } =
             { x = toFloat xP |> X, y = toFloat yP |> Y }
 
 
-draw : Tile -> Array Ports.CommandRecord
-draw tile =
+draw : Shake -> Tile -> Array Ports.CommandRecord
+draw shake tile =
     let
         located =
             getLocated tile
 
         commands =
             sprite tile.kind
-                |> Ports.drawSprite located
+                |> Ports.drawSprite shake located
                 |> Array.repeat 1
     in
     if tile.treasure then
-        Array.push (SpriteIndex 12 |> Ports.drawSprite located) commands
+        Array.push (SpriteIndex 12 |> Ports.drawSprite shake located) commands
 
     else
         commands

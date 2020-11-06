@@ -1,6 +1,6 @@
 module Game exposing (..)
 
-import Random exposing (Seed)
+import Random exposing (Generator, Seed)
 
 
 type SpriteIndex
@@ -213,3 +213,32 @@ type Score
 type Outcome
     = Loss
     | Win
+
+
+type alias Shake =
+    { amount : Int
+    , x : X
+    , y : Y
+    }
+
+
+screenShake : Shake -> Generator Shake
+screenShake { amount, x, y } =
+    case ( x, y ) of
+        ( X bareX, Y bareY ) ->
+            Random.float 0 (2 * pi)
+                |> Random.map
+                    (\shakeAngle ->
+                        let
+                            newAmount =
+                                if amount > 0 then
+                                    amount - 1
+
+                                else
+                                    0
+                        in
+                        { amount = newAmount
+                        , x = round (cos shakeAngle * toFloat newAmount) |> toFloat |> X
+                        , y = round (sin shakeAngle * toFloat newAmount) |> toFloat |> Y
+                        }
+                    )

@@ -1,7 +1,7 @@
 port module Ports exposing (Colour(..), CommandRecord, TextSpec, addScore, decodeScoreRows, drawOverlay, drawSprite, drawText, perform, scoreList, setCanvasDimensions)
 
 import Array exposing (Array)
-import Game exposing (H(..), Located, Outcome(..), Score(..), ScoreRow, SpriteIndex(..), W(..), X(..), Y(..))
+import Game exposing (H(..), Located, Outcome(..), Score(..), ScoreRow, Shake, SpriteIndex(..), W(..), X(..), Y(..))
 import Json.Decode as JD
 import Json.Encode as JE
 
@@ -55,8 +55,8 @@ perform records =
         |> platform
 
 
-drawSprite : Located a -> SpriteIndex -> CommandRecord
-drawSprite { x, y } spriteIndex =
+drawSprite : Shake -> Located a -> SpriteIndex -> CommandRecord
+drawSprite shake { x, y } spriteIndex =
     JE.object
         [ ( "kind", JE.string "drawSprite" )
         , ( "sprite"
@@ -65,14 +65,14 @@ drawSprite { x, y } spriteIndex =
                     JE.int sprite
           )
         , ( "x"
-          , case x of
-                X bareX ->
-                    JE.float bareX
+          , case ( x, shake.x ) of
+                ( X bareX, X sX ) ->
+                    JE.float (bareX * Game.tileSize + sX)
           )
         , ( "y"
-          , case y of
-                Y bareY ->
-                    JE.float bareY
+          , case ( y, shake.y ) of
+                ( Y bareY, Y sY ) ->
+                    JE.float (bareY * Game.tileSize + sY)
           )
         , ( "tileSize"
           , JE.float Game.tileSize

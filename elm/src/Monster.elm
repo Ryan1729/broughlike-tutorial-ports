@@ -1,7 +1,7 @@
 module Monster exposing (HP(..), Kind(..), Monster, Spec, draw, fromSpec, getLocated, heal, hit, isPlayer, maxHP, stun)
 
 import Array exposing (Array)
-import Game exposing (Located, Positioned, SpriteIndex(..), X(..), XPos(..), Y(..), YPos(..))
+import Game exposing (Located, Positioned, Shake, SpriteIndex(..), X(..), XPos(..), Y(..), YPos(..))
 import Ports
 import Random exposing (Generator, Seed)
 
@@ -101,8 +101,8 @@ fromSpec monsterSpec =
     }
 
 
-draw : Monster -> Array Ports.CommandRecord -> ( Monster, Array Ports.CommandRecord )
-draw monster cmdsIn =
+draw : Shake -> Monster -> Array Ports.CommandRecord -> ( Monster, Array Ports.CommandRecord )
+draw shake monster cmdsIn =
     let
         located =
             getLocated monster
@@ -111,7 +111,7 @@ draw monster cmdsIn =
         ( monster
         , Array.push
             (SpriteIndex 10
-                |> Ports.drawSprite located
+                |> Ports.drawSprite shake located
             )
             cmdsIn
         )
@@ -139,16 +139,16 @@ draw monster cmdsIn =
           }
         , let
             commands =
-                Array.push (Ports.drawSprite located monster.sprite) cmdsIn
+                Array.push (Ports.drawSprite shake located monster.sprite) cmdsIn
           in
           case monster.hp of
             HP hp ->
-                drawHP located hp 0 commands
+                drawHP shake located hp 0 commands
         )
 
 
-drawHP : Located a -> Float -> Float -> Array Ports.CommandRecord -> Array Ports.CommandRecord
-drawHP monster hp i commands =
+drawHP : Shake -> Located a -> Float -> Float -> Array Ports.CommandRecord -> Array Ports.CommandRecord
+drawHP skake monster hp i commands =
     if i >= hp then
         commands
 
@@ -164,10 +164,10 @@ drawHP monster hp i commands =
 
                     hpCommand =
                         SpriteIndex 9
-                            |> Ports.drawSprite { x = hpX, y = hpY }
+                            |> Ports.drawSprite skake { x = hpX, y = hpY }
                 in
                 Array.push hpCommand commands
-                    |> drawHP monster hp (i + 1)
+                    |> drawHP skake monster hp (i + 1)
 
 
 hit : HP -> Monster -> Monster

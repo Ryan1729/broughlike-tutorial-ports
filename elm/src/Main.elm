@@ -3,7 +3,7 @@ module Main exposing (..)
 import Array exposing (Array)
 import Browser
 import Browser.Events
-import Game exposing (DeltaX(..), DeltaY(..), H(..), LevelNum(..), Located, Positioned, Score(..), ScoreRow, SpriteIndex(..), W(..), X(..), Y(..), levelNumToString, moveX, moveY)
+import Game exposing (DeltaX(..), DeltaY(..), H(..), LevelNum(..), Located, Positioned, Score(..), ScoreRow, Shake, SpriteIndex(..), W(..), X(..), Y(..), levelNumToString, moveX, moveY, screenShake)
 import Html
 import Json.Decode as JD
 import Map
@@ -58,6 +58,7 @@ type alias State =
     , spawnCounter : Int
     , spawnRate : Int
     , score : Score
+    , shake : Shake
     }
 
 
@@ -147,6 +148,11 @@ startLevel score seedIn hp levelNum =
                                 , spawnRate = initialSpawnRate
                                 , spawnCounter = initialSpawnRate
                                 , score = score
+                                , shake =
+                                    { amount = 0
+                                    , x = X 0
+                                    , y = Y 0
+                                    }
                                 }
                             )
                 )
@@ -342,11 +348,17 @@ rightPad =
 
 
 drawState : State -> ( State, CommandRecords )
-drawState state =
+drawState stateIn =
     let
+        ( shake, seed ) =
+            Random.step (screenShake stateIn.shake) stateIn.seed
+
+        state =
+            { stateIn | shake = shake, seed = seed }
+
         prev =
             Tiles.toArray state.tiles
-                |> arrayAndThen Tile.draw
+                |> arrayAndThen (Tile.draw shake)
                 |> pushText
                     { text = "Level " ++ levelNumToString state.level
                     , size = 30
@@ -363,20 +375,20 @@ drawState state =
                     }
 
         ( newTiles, cmds ) =
-            drawMonsters state.tiles
+            drawMonsters state.shake state.tiles
     in
     ( { state | tiles = newTiles }
     , Array.append prev cmds
     )
 
 
-drawMonsters : Tiles -> ( Tiles, CommandRecords )
-drawMonsters tiles =
+drawMonsters : Shake -> Tiles -> ( Tiles, CommandRecords )
+drawMonsters shake tiles =
     Tiles.foldMonsters
         (\monster ( ts, oldCmds ) ->
             let
                 ( newMonster, newCmds ) =
-                    Monster.draw monster oldCmds
+                    Monster.draw shake monster oldCmds
             in
             ( Tiles.transform (\tile -> { tile | monster = Just newMonster }) newMonster ts, newCmds )
         )
@@ -437,7 +449,7 @@ movePlayer dx dy stateIn =
             getPlayer stateIn
                 |> Maybe.andThen
                     (\p ->
-                        Tiles.tryMove p dx dy stateIn.tiles
+                        Tiles.tryMove stateIn.shake p dx dy stateIn.tiles
                             |> Maybe.map (\record -> ( record, p ))
                     )
     in
@@ -455,7 +467,7 @@ movePlayer dx dy stateIn =
                     record.moved
 
                 movedState =
-                    { stateIn | tiles = movedTiles, player = { xPos = moved.xPos, yPos = moved.yPos } }
+                    { stateIn | shake = record.shake, tiles = movedTiles, player = { xPos = moved.xPos, yPos = moved.yPos } }
 
                 tile =
                     Tiles.get movedTiles moved
@@ -703,7 +715,8 @@ updateGame input model =
 subscriptions _ =
     Sub.batch
         [ Browser.Events.onAnimationFrame (\_ -> Tick)
-          --Browser.Events.onClick (JD.succeed Tick)
+
+        --Browser.Events.onClick (JD.succeed Tick)
         , JD.field "key" JD.string
             |> JD.map toInput
             |> Browser.Events.onKeyDown
