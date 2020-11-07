@@ -1,4 +1,4 @@
-port module Ports exposing (Colour(..), CommandRecord, TextSpec, addScore, decodeScoreRows, drawOverlay, drawSprite, drawText, perform, scoreList, setCanvasDimensions)
+port module Ports exposing (Colour(..), CommandRecord, Sound(..), TextSpec, addScore, decodeScoreRows, drawOverlay, drawSprite, drawText, perform, playSound, scoreList, setCanvasDimensions)
 
 import Array exposing (Array)
 import Game exposing (H(..), Located, Outcome(..), Score(..), ScoreRow, Shake, SpriteIndex(..), W(..), X(..), Y(..))
@@ -185,3 +185,40 @@ setCanvasDimensions dimensions =
                   )
                 ]
                 |> CommandRecord
+
+
+type Sound
+    = Hit1
+    | Hit2
+    | Treasure
+    | NewLevel
+    | Spell
+
+
+playSound : Sound -> CommandRecord
+playSound sound =
+    let
+        soundName =
+            case sound of
+                Hit1 ->
+                    "hit1"
+
+                Hit2 ->
+                    "hit2"
+
+                Treasure ->
+                    "treasure"
+
+                NewLevel ->
+                    "newLevel"
+
+                Spell ->
+                    "spell"
+    in
+    JE.object
+        [ ( "kind", JE.string "playSound" )
+        , ( "soundName"
+          , JE.string soundName
+          )
+        ]
+        |> CommandRecord

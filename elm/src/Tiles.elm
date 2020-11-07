@@ -3,6 +3,7 @@ module Tiles exposing (NoPassableTile(..), Tiles, addMonster, foldMonsters, fold
 import Array exposing (Array)
 import Game exposing (DeltaX(..), DeltaY(..), Located, Positioned, Shake, SpriteIndex(..), X(..), XPos(..), Y(..), YPos(..), moveX, moveY)
 import Monster exposing (HP(..), Kind(..), Monster)
+import Ports
 import Random exposing (Generator, Seed)
 import Randomness exposing (probability, shuffle)
 import Tile exposing (Kind(..), Tile)
@@ -275,34 +276,41 @@ type alias StateSubset a =
     }
 
 
-updateMonster : Monster -> StateSubset a -> StateSubset a
-updateMonster monster stateIn =
+updateMonster : Monster -> ( StateSubset a, Array Ports.CommandRecord ) -> ( StateSubset a, Array Ports.CommandRecord )
+updateMonster monster ( stateIn, cmdsIn ) =
     case monster.kind of
         Monster.Tank ->
             let
                 startedStunned =
                     monster.stunned
 
-                { state, moved } =
+                { state, moved, cmds } =
                     updateMonsterInner monster stateIn
             in
             if startedStunned then
-                state
+                ( state, cmds )
 
             else
-                setMonster (Monster.stun moved) state
-                    |> .state
+                -- TODO Tank movement bug is probably due to using setMonster instead of move
+                let
+                    r =
+                        setMonster (Monster.stun moved) state
+                in
+                ( r.state, Array.append cmds r.cmds )
 
         _ ->
-            updateMonsterInner monster stateIn
-                |> .state
+            let
+                record =
+                    updateMonsterInner monster stateIn
+            in
+            ( record.state, Array.append cmdsIn record.cmds )
 
 
 type alias WithMoved a =
     { a | moved : Monster }
 
 
-updateMonsterInner : Monster -> StateSubset a -> WithMoved { state : StateSubset a }
+updateMonsterInner : Monster -> StateSubset a -> WithMoved { state : StateSubset a, cmds : Array Ports.CommandRecord }
 updateMonsterInner monsterIn stateIn =
     let
         monster =
@@ -313,11 +321,13 @@ updateMonsterInner monsterIn stateIn =
 
     else
         let
+            noChange =
+                { state = stateIn, moved = monster, cmds = Array.empty }
+
             gen =
                 case monster.kind of
                     Monster.Player _ ->
-                        { state = stateIn, moved = monster }
-                            |> Random.constant
+                        noChange |> Random.constant
 
                     Monster.Bird ->
                         doStuff stateIn monster
@@ -327,8 +337,7 @@ updateMonsterInner monsterIn stateIn =
                             |> Random.andThen
                                 (\{ state, moved } ->
                                     if moved.attackedThisTurn then
-                                        { state = state, moved = moved }
-                                            |> Random.constant
+                                        noChange |> Random.constant
 
                                     else
                                         doStuff state moved
@@ -349,6 +358,12 @@ updateMonsterInner monsterIn stateIn =
                                         head :: _ ->
                                             { stateIn | tiles = replace Tile.floor head stateIn.tiles }
                                                 |> setMonster (Monster.heal (HP 0.5) monster)
+                                                |> (\{ state, moved } ->
+                                                        { state = state
+                                                        , moved = moved
+                                                        , cmds = Array.empty
+                                                        }
+                                                   )
                                                 |> Random.constant
                                 )
 
@@ -358,7 +373,7 @@ updateMonsterInner monsterIn stateIn =
                                 (\neighbors ->
                                     case neighbors of
                                         [] ->
-                                            { state = stateIn, moved = monster }
+                                            noChange
 
                                         head :: _ ->
                                             case
@@ -366,12 +381,13 @@ updateMonsterInner monsterIn stateIn =
                                                     |> Maybe.andThen (\( dx, dy ) -> tryMove stateIn.shake monster dx dy stateIn.tiles)
                                             of
                                                 Nothing ->
-                                                    { state = stateIn, moved = monster }
+                                                    noChange
 
-                                                Just { tiles, moved, shake } ->
+                                                Just { tiles, moved, shake, cmds } ->
                                                     { state =
                                                         { stateIn | tiles = tiles, shake = shake }
                                                     , moved = moved
+                                                    , cmds = cmds
                                                     }
                                 )
         in
@@ -379,7 +395,7 @@ updateMonsterInner monsterIn stateIn =
             |> (\( { state } as output, seed ) -> { output | state = { state | seed = seed } })
 
 
-doStuff : StateSubset a -> Monster -> Generator (WithMoved { state : StateSubset a })
+doStuff : StateSubset a -> Monster -> Generator (WithMoved { state : StateSubset a, cmds : Array Ports.CommandRecord })
 doStuff state monster =
     getAdjacentPassableNeighbors state.tiles monster
         |> Random.map
@@ -407,37 +423,25 @@ doStuff state monster =
                                         )
                             )
                 of
-                    Just { tiles, moved, shake } ->
-                        { state = { state | tiles = tiles, shake = shake }, moved = moved }
+                    Just { tiles, moved, shake, cmds } ->
+                        let
+                            _ =
+                                Debug.log "cmds in doStuff" cmds
+                        in
+                        { state = { state | tiles = tiles, shake = shake }, moved = moved, cmds = cmds }
 
                     Nothing ->
-                        { state = state, moved = monster }
+                        { state = state, moved = monster, cmds = Array.empty }
             )
 
 
-setMonster :
-    Monster
-    ->
-        { a
-            | player : Positioned {}
-            , tiles : Tiles
-            , seed : Seed
-        }
-    ->
-        WithMoved
-            { state :
-                { a
-                    | player : Positioned {}
-                    , tiles : Tiles
-                    , seed : Seed
-                }
-            }
+setMonster : Monster -> StateSubset a -> WithMoved { state : StateSubset a, cmds : Array Ports.CommandRecord }
 setMonster monster state =
     let
         { tiles, moved } =
             move monster monster state.tiles
     in
-    { state = { state | tiles = tiles }, moved = moved }
+    { state = { state | tiles = tiles }, moved = moved, cmds = Array.empty }
 
 
 addMonster :
@@ -471,7 +475,7 @@ tryMove :
     -> Tiles
     ->
         Maybe
-            (WithMoved { tiles : Tiles, shake : Shake })
+            (WithMoved { tiles : Tiles, shake : Shake, cmds : Array Ports.CommandRecord })
 tryMove shake monster dx dy tiles =
     let
         newTile =
@@ -485,15 +489,19 @@ tryMove shake monster dx dy tiles =
                         tilesWithMoved =
                             move monster newTile tiles
                     in
-                    { moved = tilesWithMoved.moved, tiles = tilesWithMoved.tiles, shake = shake }
+                    { moved = tilesWithMoved.moved, tiles = tilesWithMoved.tiles, shake = shake, cmds = Array.empty }
 
                 Just target ->
+                    let
+                        _ =
+                            Debug.log "/=" ( monster.kind, target.kind )
+                    in
                     if Monster.isPlayer monster.kind /= Monster.isPlayer target.kind then
                         let
                             newMonster =
                                 { monster | attackedThisTurn = True }
 
-                            newTarget =
+                            ( newTarget, cmd ) =
                                 Monster.stun target
                                     |> Monster.hit (HP 1)
 
@@ -514,10 +522,11 @@ tryMove shake monster dx dy tiles =
                                 |> .tiles
                         , moved = newMonster
                         , shake = { shake | amount = 5 }
+                        , cmds = Array.repeat 1 cmd
                         }
 
                     else
-                        { tiles = tiles, moved = monster, shake = shake }
+                        { tiles = tiles, moved = monster, shake = shake, cmds = Array.empty }
             )
 
     else

@@ -2,7 +2,7 @@ module Monster exposing (HP(..), Kind(..), Monster, Spec, draw, fromSpec, getLoc
 
 import Array exposing (Array)
 import Game exposing (Located, Positioned, Shake, SpriteIndex(..), X(..), XPos(..), Y(..), YPos(..))
-import Ports
+import Ports exposing (Sound(..))
 import Random exposing (Generator, Seed)
 
 
@@ -170,7 +170,7 @@ drawHP skake monster hp i commands =
                     |> drawHP skake monster hp (i + 1)
 
 
-hit : HP -> Monster -> Monster
+hit : HP -> Monster -> ( Monster, Ports.CommandRecord )
 hit damage target =
     case ( target.hp, damage ) of
         ( HP hp, HP d ) ->
@@ -178,14 +178,26 @@ hit damage target =
                 newHP =
                     hp - d
 
-                newMonster =
+                hitMonster =
                     { target | hp = HP newHP }
-            in
-            if newHP <= 0 then
-                die newMonster
 
-            else
-                newMonster
+                newMonster =
+                    if newHP <= 0 then
+                        die hitMonster
+
+                    else
+                        hitMonster
+            in
+            ( newMonster
+            , case newMonster.kind of
+                Player _ ->
+                    Ports.playSound Hit1
+                        |> Debug.log "hit1"
+
+                _ ->
+                    Ports.playSound Hit2
+                        |> Debug.log "hit2"
+            )
 
 
 heal : HP -> Monster -> Monster

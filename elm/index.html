@@ -44,6 +44,14 @@ const sendScores = () => {
     app.ports.scores.send(getScores());
 };
 
+sounds = {
+    hit1: new Audio('sounds/hit1.wav'),
+    hit2: new Audio('sounds/hit2.wav'),
+    treasure: new Audio('sounds/treasure.wav'),
+    newLevel: new Audio('sounds/newLevel.wav'),
+    spell: new Audio('sounds/spell.wav'),
+};
+
 const actions = {
     "drawSprite": ({sprite, x, y, tileSize}) => {
         ctx.drawImage(
@@ -100,6 +108,10 @@ const actions = {
 
         localStorage[scoresKey] = JSON.stringify(scores);
         sendScores()
+    },
+    "playSound": ({soundName}) => {
+        sounds[soundName].currentTime = 0;
+        sounds[soundName].play();
     }
 }
 

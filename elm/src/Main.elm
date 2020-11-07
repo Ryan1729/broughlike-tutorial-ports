@@ -8,7 +8,7 @@ import Html
 import Json.Decode as JD
 import Map
 import Monster exposing (HP(..), Monster)
-import Ports exposing (Colour(..), TextSpec)
+import Ports exposing (Colour(..), Sound(..), TextSpec)
 import Random exposing (Seed)
 import Tile
 import Tiles exposing (Tiles)
@@ -450,7 +450,14 @@ movePlayer dx dy stateIn =
                 |> Maybe.andThen
                     (\p ->
                         Tiles.tryMove stateIn.shake p dx dy stateIn.tiles
-                            |> Maybe.map (\record -> ( record, p ))
+                            |> Maybe.map
+                                (\record ->
+                                    let
+                                        _ =
+                                            Debug.log "record.cmds in Maybe.map" record.cmds
+                                    in
+                                    ( record, p )
+                                )
                     )
     in
     case m of
@@ -460,6 +467,9 @@ movePlayer dx dy stateIn =
 
         Just ( record, player ) ->
             let
+                _ =
+                    Debug.log "record.cmds" record.cmds
+
                 movedTiles =
                     record.tiles
 
@@ -493,9 +503,11 @@ movePlayer dx dy stateIn =
                                                     |> min Monster.maxHP
                                                     |> HP
                                 in
-                                Game.incLevel movedState.level
+                                ( Game.incLevel movedState.level
                                     |> startLevel movedState.score movedState.seed hp
-                                    |> withNoCmd
+                                , Ports.playSound NewLevel
+                                    |> Array.repeat 1
+                                )
 
                         Tile.Floor ->
                             if tile.treasure then
@@ -515,13 +527,15 @@ movePlayer dx dy stateIn =
                                             Ok ts ->
                                                 ts
                                 in
-                                Running
+                                ( Running
                                     { movedState
                                         | score = incScore movedState.score
                                         , tiles = tiles
                                         , seed = seed
                                     }
-                                    |> withNoCmd
+                                , Ports.playSound Treasure
+                                    |> Array.repeat 1
+                                )
 
                             else
                                 Running movedState
@@ -545,7 +559,7 @@ movePlayer dx dy stateIn =
                         _ ->
                             withNoCmd preTickModel
             in
-            ( postTickModel, Array.append preTickCmds postTickCmds )
+            ( postTickModel, Array.append (Array.append record.cmds preTickCmds) postTickCmds )
 
 
 getPlayer : State -> Maybe Monster
@@ -572,26 +586,28 @@ tick stateIn =
         -- We collect the tile, monster pairs into a list so that we don't hit
         -- the same monster twice in the iteration
         |> List.foldr
-            (\( tile, m ) state ->
+            (\( tile, m ) ( state, cmds ) ->
                 if Monster.isPlayer m.kind then
                     -- The player updating is handled before we call `tick`
-                    state
+                    ( state, cmds )
 
                 else if m.dead then
-                    { state
+                    ( { state
                         | tiles = Tiles.set { tile | monster = Nothing } state.tiles
-                    }
+                      }
+                    , cmds
+                    )
 
                 else
-                    Tiles.updateMonster m state
+                    Tiles.updateMonster m ( state, cmds )
             )
-            stateIn
-        |> (\state ->
+            ( stateIn, Array.empty )
+        |> (\( state, cmds ) ->
                 let
                     s =
                         { state | spawnCounter = state.spawnCounter - 1 }
                 in
-                if s.spawnCounter <= 0 then
+                ( if s.spawnCounter <= 0 then
                     Map.spawnMonster s.tiles
                         |> (\tilesGen -> Random.step tilesGen s.seed)
                         |> (\( tilesRes, seed ) ->
@@ -610,22 +626,24 @@ tick stateIn =
                                 }
                            )
 
-                else
+                  else
                     s
+                , cmds
+                )
            )
-        |> (\s ->
+        |> (\( s, cmds ) ->
                 case getPlayer s of
                     Nothing ->
-                        Running s
-                            |> withNoCmd
+                        ( Running s, cmds )
 
                     Just player ->
                         if player.dead then
-                            ( Dead s, Ports.addScore s.score Game.Loss |> Array.repeat 1 )
+                            ( Dead s, Array.push (Ports.addScore s.score Game.Loss) cmds )
 
                         else
-                            Running s
-                                |> withNoCmd
+                            ( Running s
+                            , cmds
+                            )
            )
 
 
