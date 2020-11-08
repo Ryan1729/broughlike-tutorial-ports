@@ -291,12 +291,25 @@ updateMonster monster ( stateIn, cmdsIn ) =
                 ( state, cmds )
 
             else
-                -- TODO Tank movement bug is probably due to using setMonster instead of move
                 let
-                    r =
-                        setMonster (Monster.stun moved) state
+                    newMonster =
+                        Monster.stun moved
+
+                    { tiles } =
+                        move newMonster newMonster state.tiles
+
+                    _ =
+                        Debug.log "newMonster" newMonster
                 in
-                ( r.state, Array.append cmds r.cmds )
+                if True then
+                    let
+                        recor =
+                            updateMonsterInner monster stateIn
+                    in
+                    ( recor.state, Array.append cmdsIn recor.cmds )
+
+                else
+                    ( { state | tiles = tiles }, cmds )
 
         _ ->
             let
@@ -431,15 +444,6 @@ doStuff state monster =
             )
 
 
-setMonster : Monster -> StateSubset a -> WithMoved { state : StateSubset a, cmds : Array Ports.CommandRecord }
-setMonster monster state =
-    let
-        { tiles, moved } =
-            move monster monster state.tiles
-    in
-    { state = { state | tiles = tiles }, moved = moved, cmds = Array.empty }
-
-
 addMonster :
     Tiles
     -> Monster.Spec
@@ -530,11 +534,7 @@ type Movement
     | Bump ( X, Y )
 
 
-move :
-    Monster
-    -> Positioned a
-    -> Tiles
-    -> WithMoved { tiles : Tiles }
+move : Monster -> Positioned a -> Tiles -> WithMoved { tiles : Tiles }
 move =
     moveInner ToTile
 
@@ -547,12 +547,6 @@ moveInner :
     -> WithMoved { tiles : Tiles }
 moveInner movement monsterIn { xPos, yPos } tiles =
     let
-        oldTile =
-            get tiles monsterIn
-
-        newTile =
-            get tiles { xPos = xPos, yPos = yPos }
-
         ( offsetX, offsetY ) =
             case movement of
                 ToTile ->
@@ -569,10 +563,35 @@ moveInner movement monsterIn { xPos, yPos } tiles =
 
         monster =
             { monsterIn
+                | offsetX = offsetX
+                , offsetY = offsetY
+            }
+    in
+    moveDirectly monster { xPos = xPos, yPos = yPos } tiles
+
+
+setMonster : Monster -> StateSubset a -> WithMoved { state : StateSubset a, cmds : Array Ports.CommandRecord }
+setMonster monster state =
+    let
+        { tiles, moved } =
+            moveDirectly monster monster state.tiles
+    in
+    { state = { state | tiles = tiles }, moved = moved, cmds = Array.empty }
+
+
+moveDirectly : Monster -> Positioned a -> Tiles -> WithMoved { tiles : Tiles }
+moveDirectly monsterIn { xPos, yPos } tiles =
+    let
+        oldTile =
+            get tiles monsterIn
+
+        newTile =
+            get tiles { xPos = xPos, yPos = yPos }
+
+        monster =
+            { monsterIn
                 | xPos = xPos
                 , yPos = yPos
-                , offsetX = offsetX
-                , offsetY = offsetY
             }
     in
     { tiles =
