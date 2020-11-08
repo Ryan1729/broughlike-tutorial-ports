@@ -424,10 +424,6 @@ doStuff state monster =
                             )
                 of
                     Just { tiles, moved, shake, cmds } ->
-                        let
-                            _ =
-                                Debug.log "cmds in doStuff" cmds
-                        in
                         { state = { state | tiles = tiles, shake = shake }, moved = moved, cmds = cmds }
 
                     Nothing ->
@@ -492,10 +488,6 @@ tryMove shake monster dx dy tiles =
                     { moved = tilesWithMoved.moved, tiles = tilesWithMoved.tiles, shake = shake, cmds = Array.empty }
 
                 Just target ->
-                    let
-                        _ =
-                            Debug.log "/=" ( monster.kind, target.kind )
-                    in
                     if Monster.isPlayer monster.kind /= Monster.isPlayer target.kind then
                         let
                             newMonster =

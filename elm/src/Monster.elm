@@ -192,11 +192,9 @@ hit damage target =
             , case newMonster.kind of
                 Player _ ->
                     Ports.playSound Hit1
-                        |> Debug.log "hit1"
 
                 _ ->
                     Ports.playSound Hit2
-                        |> Debug.log "hit2"
             )
 
 

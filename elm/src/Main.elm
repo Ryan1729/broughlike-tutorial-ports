@@ -452,10 +452,6 @@ movePlayer dx dy stateIn =
                         Tiles.tryMove stateIn.shake p dx dy stateIn.tiles
                             |> Maybe.map
                                 (\record ->
-                                    let
-                                        _ =
-                                            Debug.log "record.cmds in Maybe.map" record.cmds
-                                    in
                                     ( record, p )
                                 )
                     )
@@ -467,9 +463,6 @@ movePlayer dx dy stateIn =
 
         Just ( record, player ) ->
             let
-                _ =
-                    Debug.log "record.cmds" record.cmds
-
                 movedTiles =
                     record.tiles
 
