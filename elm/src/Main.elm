@@ -4,12 +4,14 @@ import Array exposing (Array)
 import Browser
 import Browser.Events
 import Game exposing (DeltaX(..), DeltaY(..), H(..), LevelNum(..), Located, Positioned, Score(..), ScoreRow, Shake, SpriteIndex(..), W(..), X(..), Y(..), levelNumToString, moveX, moveY, screenShake)
+import GameModel exposing (GameModel(..), State)
 import Html
 import Json.Decode as JD
 import Map
 import Monster exposing (HP(..), Monster)
 import Ports exposing (Colour(..), Sound(..), TextSpec)
 import Random exposing (Seed)
+import Spells
 import Tile
 import Tiles exposing (Tiles)
 
@@ -29,13 +31,6 @@ type alias Model =
     }
 
 
-type GameModel
-    = Error String
-    | Title (Maybe State) Seed
-    | Running State
-    | Dead State
-
-
 incScore score =
     case score of
         Score s ->
@@ -48,18 +43,6 @@ scoreToString score =
     case score of
         Score s ->
             String.fromInt s
-
-
-type alias State =
-    { player : Positioned {}
-    , seed : Seed
-    , tiles : Tiles
-    , level : LevelNum
-    , spawnCounter : Int
-    , spawnRate : Int
-    , score : Score
-    , shake : Shake
-    }
 
 
 initialSpawnRate =
@@ -712,6 +695,9 @@ updateGame input model =
                 Right ->
                     movePlayer DX1 DY0 state
 
+                CastSpell spellIndex ->
+                    castSpell state spellIndex
+
                 Other ->
                     Running state |> withNoCmd
 
@@ -721,6 +707,35 @@ updateGame input model =
 
         Error _ ->
             withNoCmd model
+
+
+castSpell state spellIndex =
+    case removeSpellName state spellIndex of
+        Nothing ->
+            Running state |> withNoCmd
+
+        Just ( spellName, spellRemovedState ) ->
+            case Spells.cast spellName spellRemovedState of
+                ( Running runningState, cmds ) ->
+                    let
+                        ( runningTickState, tickCmds ) =
+                            tick runningState
+                    in
+                    ( runningTickState, Array.append tickCmds cmds |> Array.push (Ports.playSound Spell) )
+
+                ( Dead deadState, cmds ) ->
+                    let
+                        ( deadTickState, tickCmds ) =
+                            tick deadState
+                    in
+                    ( deadTickState, Array.append tickCmds cmds |> Array.push (Ports.playSound Spell) )
+
+                otherwise ->
+                    otherwise
+
+
+removeSpellName state spellIndex =
+    Debug.todo "removeSpellName"
 
 
 subscriptions _ =
@@ -741,12 +756,25 @@ type Msg
     | ScoreRows (Result JD.Error (List ScoreRow))
 
 
+type SpellIndex
+    = One
+    | Two
+    | Three
+    | Four
+    | Five
+    | Six
+    | Seven
+    | Eight
+    | Nine
+
+
 type Input
     = Other
     | Up
     | Down
     | Left
     | Right
+    | CastSpell SpellIndex
 
 
 toInput : String -> Msg
@@ -776,6 +804,33 @@ toInput s =
 
             "d" ->
                 Right
+
+            "1" ->
+                CastSpell One
+
+            "2" ->
+                CastSpell Two
+
+            "3" ->
+                CastSpell Three
+
+            "4" ->
+                CastSpell Four
+
+            "5" ->
+                CastSpell Five
+
+            "6" ->
+                CastSpell Six
+
+            "7" ->
+                CastSpell Seven
+
+            "8" ->
+                CastSpell Eight
+
+            "9" ->
+                CastSpell Nine
 
             _ ->
                 Other

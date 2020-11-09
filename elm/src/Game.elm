@@ -90,6 +90,11 @@ dist tile other =
                         + abs (tY - oY)
 
 
+plainPositioned : Positioned a -> Positioned {}
+plainPositioned { xPos, yPos } =
+    { xPos = xPos, yPos = yPos }
+
+
 type DeltaX
     = DX0
     | DX1

@@ -1,4 +1,4 @@
-port module Ports exposing (Colour(..), CommandRecord, Sound(..), TextSpec, addScore, decodeScoreRows, drawOverlay, drawSprite, drawText, perform, playSound, scoreList, setCanvasDimensions)
+port module Ports exposing (Colour(..), CommandRecord, CommandRecords, Sound(..), TextSpec, addScore, decodeScoreRows, drawOverlay, drawSprite, drawText, noCmds, perform, playSound, scoreList, setCanvasDimensions)
 
 import Array exposing (Array)
 import Game exposing (H(..), Located, Outcome(..), Score(..), ScoreRow, Shake, SpriteIndex(..), W(..), X(..), Y(..))
@@ -8,6 +8,15 @@ import Json.Encode as JE
 
 type CommandRecord
     = CommandRecord JE.Value
+
+
+type alias CommandRecords =
+    Array CommandRecord
+
+
+noCmds : CommandRecords
+noCmds =
+    Array.empty
 
 
 port platform : Array JE.Value -> Cmd msg
