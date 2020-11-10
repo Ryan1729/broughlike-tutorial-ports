@@ -296,20 +296,9 @@ updateMonster monster ( stateIn, cmdsIn ) =
                         Monster.stun moved
 
                     { tiles } =
-                        move newMonster newMonster state.tiles
-
-                    _ =
-                        Debug.log "newMonster" newMonster
+                        moveDirectly newMonster newMonster state.tiles
                 in
-                if True then
-                    let
-                        recor =
-                            updateMonsterInner monster stateIn
-                    in
-                    ( recor.state, Array.append cmdsIn recor.cmds )
-
-                else
-                    ( { state | tiles = tiles }, cmds )
+                ( { state | tiles = tiles }, cmds )
 
         _ ->
             let
