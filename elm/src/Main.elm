@@ -4,14 +4,13 @@ import Array exposing (Array)
 import Browser
 import Browser.Events
 import Game exposing (DeltaX(..), DeltaY(..), H(..), LevelNum(..), Located, Positioned, Score(..), ScoreRow, Shake, SpriteIndex(..), W(..), X(..), Y(..), levelNumToString, moveX, moveY, screenShake)
-import GameModel exposing (GameModel(..), State)
+import GameModel exposing (GameModel(..), SpellPage(..), State, cast, removeSpellName)
 import Html
 import Json.Decode as JD
 import Map
 import Monster exposing (HP(..), Monster)
 import Ports exposing (Colour(..), Sound(..), TextSpec)
 import Random exposing (Seed)
-import Spells
 import Tile
 import Tiles exposing (Tiles)
 
@@ -136,7 +135,10 @@ startLevel score seedIn hp levelNum =
                                     , x = X 0
                                     , y = Y 0
                                     }
+                                , numSpells = 1
+                                , spells = GameModel.emptySpells
                                 }
+                                    |> GameModel.refreshSpells
                             )
                 )
                 levelRes
@@ -709,13 +711,13 @@ updateGame input model =
             withNoCmd model
 
 
-castSpell state spellIndex =
-    case removeSpellName state spellIndex of
+castSpell state spellPage =
+    case removeSpellName state spellPage of
         Nothing ->
             Running state |> withNoCmd
 
         Just ( spellName, spellRemovedState ) ->
-            case Spells.cast spellName spellRemovedState of
+            case cast spellName spellRemovedState of
                 ( Running runningState, cmds ) ->
                     let
                         ( runningTickState, tickCmds ) =
@@ -732,10 +734,6 @@ castSpell state spellIndex =
 
                 otherwise ->
                     otherwise
-
-
-removeSpellName state spellIndex =
-    Debug.todo "removeSpellName"
 
 
 subscriptions _ =
@@ -756,25 +754,13 @@ type Msg
     | ScoreRows (Result JD.Error (List ScoreRow))
 
 
-type SpellIndex
-    = One
-    | Two
-    | Three
-    | Four
-    | Five
-    | Six
-    | Seven
-    | Eight
-    | Nine
-
-
 type Input
     = Other
     | Up
     | Down
     | Left
     | Right
-    | CastSpell SpellIndex
+    | CastSpell SpellPage
 
 
 toInput : String -> Msg
