@@ -74,7 +74,7 @@ spawnMonster tiles =
 
 nonPlayerMonsterKindGen : Generator Monster.Kind
 nonPlayerMonsterKindGen =
-    Randomness.shuffleNonEmpty
+    Randomness.genFromNonEmpty
         ( Monster.Bird
         , [ Monster.Snake
           , Monster.Tank
@@ -82,7 +82,6 @@ nonPlayerMonsterKindGen =
           , Monster.Jester
           ]
         )
-        |> Random.map (\( head, _ ) -> head)
 
 
 tilesGen : Generator (Result String Tiles)

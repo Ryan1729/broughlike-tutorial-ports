@@ -1,4 +1,4 @@
-module Randomness exposing (probability, shuffle, shuffleNonEmpty, tryTo, tryToCustom)
+module Randomness exposing (genFromNonEmpty, probability, shuffle, tryTo, tryToCustom)
 
 import Random exposing (Generator)
 
@@ -64,6 +64,12 @@ swapAt i j list =
 
             _ ->
                 list
+
+
+genFromNonEmpty : ( a, List a ) -> Generator a
+genFromNonEmpty nonEmptyList =
+    shuffleNonEmpty nonEmptyList
+        |> Random.map (\( head, _ ) -> head)
 
 
 shuffleNonEmpty : ( a, List a ) -> Generator ( a, List a )

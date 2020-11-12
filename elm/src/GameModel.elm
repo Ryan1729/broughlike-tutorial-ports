@@ -4,6 +4,7 @@ import Dict exposing (Dict)
 import Game exposing (LevelNum, Positioned, Score, Shake, plainPositioned)
 import Ports exposing (CommandRecords, noCmds)
 import Random exposing (Seed)
+import Randomness
 import Tiles exposing (Tiles)
 
 
@@ -67,9 +68,18 @@ refreshSpells state =
 
 
 spellsGen : Int -> Random.Generator SpellBook
-spellsGen _ =
-    --Debug.todo "Generator SpellBook"
-    Random.constant emptySpells
+spellsGen numSpells =
+    let
+        ns =
+            min numSpells 9
+                |> max 1
+
+        -- clamp numSpells within 1 to 9
+    in
+    Random.list ns spellNameGen
+        |> Random.map (List.indexedMap (\a b -> ( a, b )))
+        |> Random.map Dict.fromList
+        |> Random.map SpellBook
 
 
 removeSpellName : State -> SpellPage -> Maybe ( SpellName, State )
@@ -125,6 +135,14 @@ toString name =
             "WOOP"
 
 
+spellNameGen : Random.Generator SpellName
+spellNameGen =
+    Randomness.genFromNonEmpty
+        ( WOOP
+        , []
+        )
+
+
 type alias Spell =
     State -> ( GameModel, CommandRecords )
 
@@ -139,13 +157,28 @@ cast name =
 woop : Spell
 woop state =
     let
-        ( target, seed ) =
-            Debug.todo "target, seed"
-
-        player =
-            Debug.todo "player"
-
-        { tiles, moved } =
-            Tiles.move player target state.tiles
+        ( result, seed ) =
+            Random.step (Tiles.randomPassableTile state.tiles) state.seed
     in
-    ( Running { state | tiles = tiles, player = plainPositioned moved }, noCmds )
+    case result of
+        Ok target ->
+            case Tiles.get state.tiles state.player |> .monster of
+                Nothing ->
+                    ( Error "Could not locate player"
+                    , noCmds
+                    )
+
+                Just player ->
+                    let
+                        { tiles, moved } =
+                            Tiles.move player target state.tiles
+                    in
+                    ( Running { state | tiles = tiles, player = plainPositioned moved }
+                    , noCmds
+                    )
+
+        Err Tiles.NoPassableTile ->
+            ( Tiles.noPassableTileToString Tiles.NoPassableTile
+                |> Error
+            , noCmds
+            )
