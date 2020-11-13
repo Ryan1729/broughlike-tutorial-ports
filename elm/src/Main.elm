@@ -533,12 +533,13 @@ movePlayer dx dy stateIn =
                                             Ok ts ->
                                                 ts
                                 in
-                                ( Running
-                                    { movedState
-                                        | score = incScore movedState.score
-                                        , tiles = tiles
-                                        , seed = seed
-                                    }
+                                ( { movedState
+                                    | score = incScore movedState.score
+                                    , tiles = tiles
+                                    , seed = seed
+                                  }
+                                    |> GameModel.addSpellViaTreasureIfApplicable
+                                    |> Running
                                 , Ports.playSound Treasure
                                     |> Array.repeat 1
                                 )

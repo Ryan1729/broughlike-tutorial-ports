@@ -1,7 +1,7 @@
-module GameModel exposing (GameModel(..), Spell, SpellBook, SpellName(..), SpellPage(..), State, cast, emptySpells, refreshSpells, removeSpellName, spellNameToString, spellNamesWithOneBasedIndex)
+module GameModel exposing (GameModel(..), Spell, SpellBook, SpellName(..), SpellPage(..), State, addSpellViaTreasureIfApplicable, cast, emptySpells, refreshSpells, removeSpellName, spellNameToString, spellNamesWithOneBasedIndex)
 
 import Dict exposing (Dict)
-import Game exposing (LevelNum, Positioned, Score, Shake, plainPositioned)
+import Game exposing (LevelNum, Positioned, Score(..), Shake, plainPositioned)
 import Ports exposing (CommandRecords, noCmds)
 import Random exposing (Seed)
 import Randomness
@@ -67,6 +67,11 @@ spellNamesWithOneBasedIndex book =
             ]
 
 
+maxNumSpells : Int
+maxNumSpells =
+    9
+
+
 getPair key spells =
     ( key, Dict.get key spells )
 
@@ -99,6 +104,58 @@ spellsGen numSpells =
         |> Random.map (List.indexedMap (\a b -> ( a + 1, b )))
         |> Random.map Dict.fromList
         |> Random.map SpellBook
+
+
+addSpellViaTreasureIfApplicable : State -> State
+addSpellViaTreasureIfApplicable state =
+    if
+        (case state.score of
+            Score score ->
+                remainderBy 3 score == 0
+        )
+            && state.numSpells
+            < maxNumSpells
+    then
+        let
+            ( spells, seed ) =
+                addSpell state.spells state.seed
+        in
+        { state
+            | numSpells = state.numSpells + 1
+            , spells = spells
+            , seed = seed
+        }
+
+    else
+        state
+
+
+addSpell : SpellBook -> Seed -> ( SpellBook, Seed )
+addSpell book seedIn =
+    case book of
+        SpellBook spellsIn ->
+            let
+                ( newSpell, seed ) =
+                    Random.step spellNameGen seedIn
+
+                list =
+                    Dict.toList spellsIn
+
+                lastIndex =
+                    List.length list - 1
+
+                maxKey =
+                    List.map (\( i, _ ) -> i) list
+                        |> List.sort
+                        |> List.drop lastIndex
+                        |> List.head
+                        |> Maybe.withDefault 0
+            in
+            if maxKey < maxNumSpells then
+                ( Dict.insert (maxKey + 1) newSpell spellsIn |> SpellBook, seed )
+
+            else
+                ( book, seedIn )
 
 
 removeSpellName : State -> SpellPage -> Maybe ( SpellName, State )
