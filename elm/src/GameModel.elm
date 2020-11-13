@@ -1,4 +1,4 @@
-module GameModel exposing (GameModel(..), Spell, SpellName(..), SpellPage(..), State, cast, emptySpells, refreshSpells, removeSpellName, toString)
+module GameModel exposing (GameModel(..), Spell, SpellBook, SpellName(..), SpellPage(..), State, cast, emptySpells, refreshSpells, removeSpellName, spellNameToString, spellNamesWithOneBasedIndex)
 
 import Dict exposing (Dict)
 import Game exposing (LevelNum, Positioned, Score, Shake, plainPositioned)
@@ -51,6 +51,26 @@ type SpellBook
     = SpellBook (Dict Int SpellName)
 
 
+spellNamesWithOneBasedIndex : SpellBook -> List ( Int, Maybe SpellName )
+spellNamesWithOneBasedIndex book =
+    case book of
+        SpellBook spells ->
+            [ getPair 1 spells
+            , getPair 2 spells
+            , getPair 3 spells
+            , getPair 4 spells
+            , getPair 5 spells
+            , getPair 6 spells
+            , getPair 7 spells
+            , getPair 8 spells
+            , getPair 9 spells
+            ]
+
+
+getPair key spells =
+    ( key, Dict.get key spells )
+
+
 emptySpells =
     SpellBook Dict.empty
 
@@ -70,14 +90,13 @@ refreshSpells state =
 spellsGen : Int -> Random.Generator SpellBook
 spellsGen numSpells =
     let
+        -- clamp numSpells within 1 to 9
         ns =
             min numSpells 9
                 |> max 1
-
-        -- clamp numSpells within 1 to 9
     in
     Random.list ns spellNameGen
-        |> Random.map (List.indexedMap (\a b -> ( a, b )))
+        |> Random.map (List.indexedMap (\a b -> ( a + 1, b )))
         |> Random.map Dict.fromList
         |> Random.map SpellBook
 
@@ -128,8 +147,8 @@ type SpellName
     = WOOP
 
 
-toString : SpellName -> String
-toString name =
+spellNameToString : SpellName -> String
+spellNameToString name =
     case name of
         WOOP ->
             "WOOP"

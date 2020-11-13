@@ -319,6 +319,33 @@ pushText textSpec =
         |> Array.push
 
 
+pushSpellText : State -> CommandRecords -> CommandRecords
+pushSpellText { numSpells, spells } cmds =
+    let
+        step : ( Int, Maybe GameModel.SpellName ) -> CommandRecords -> CommandRecords
+        step ( i, maybeSpellName ) =
+            let
+                spellNameString =
+                    case maybeSpellName of
+                        Just name ->
+                            GameModel.spellNameToString name
+
+                        Nothing ->
+                            ""
+            in
+            pushText
+                { text = String.fromInt i ++ ") " ++ spellNameString
+                , size = 20
+                , centered = False
+                , y = (110 + (i - 1) * 40) |> toFloat |> Y
+                , colour = Aqua
+                }
+    in
+    GameModel.spellNamesWithOneBasedIndex spells
+        |> List.take numSpells
+        |> List.foldl step cmds
+
+
 rightPad : List String -> String
 rightPad =
     List.foldl
@@ -358,6 +385,7 @@ drawState stateIn =
                     , y = Y 70
                     , colour = Violet
                     }
+                |> pushSpellText state
 
         ( newTiles, cmds ) =
             drawMonsters state.shake state.tiles
