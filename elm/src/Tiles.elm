@@ -486,7 +486,7 @@ tryMove shake monster dx dy tiles =
                             newMonster =
                                 { monster | attackedThisTurn = True }
 
-                            ( newTarget, cmd ) =
+                            ( newTarget, cmds ) =
                                 Monster.stun target
                                     |> Monster.hit (HP 1)
 
@@ -507,7 +507,7 @@ tryMove shake monster dx dy tiles =
                                 |> .tiles
                         , moved = newMonster
                         , shake = { shake | amount = 5 }
-                        , cmds = Array.repeat 1 cmd
+                        , cmds = cmds
                         }
 
                     else

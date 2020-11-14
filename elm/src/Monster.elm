@@ -170,7 +170,7 @@ drawHP skake monster hp i commands =
                     |> drawHP skake monster hp (i + 1)
 
 
-hit : HP -> Monster -> ( Monster, Ports.CommandRecord )
+hit : HP -> Monster -> ( Monster, Ports.CommandRecords )
 hit damage target =
     case ( target.hp, damage ) of
         ( HP hp, HP d ) ->
@@ -189,12 +189,14 @@ hit damage target =
                         hitMonster
             in
             ( newMonster
-            , case newMonster.kind of
+            , (case newMonster.kind of
                 Player _ ->
                     Ports.playSound Hit1
 
                 _ ->
                     Ports.playSound Hit2
+              )
+                |> Array.repeat 1
             )
 
 

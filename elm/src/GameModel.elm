@@ -1,7 +1,9 @@
 module GameModel exposing (GameModel(..), Spell, SpellBook, SpellName(..), SpellPage(..), State, addSpellViaTreasureIfApplicable, cast, emptySpells, refreshSpells, removeSpellName, spellNameToString, spellNamesWithOneBasedIndex)
 
+import Array exposing (Array)
 import Dict exposing (Dict)
 import Game exposing (LevelNum, Positioned, Score(..), Shake, plainPositioned)
+import Monster
 import Ports exposing (CommandRecords, noCmds)
 import Random exposing (Seed)
 import Randomness
@@ -202,6 +204,7 @@ removeSpellName state spellPage =
 
 type SpellName
     = WOOP
+    | QUAKE
 
 
 spellNameToString : SpellName -> String
@@ -210,12 +213,15 @@ spellNameToString name =
         WOOP ->
             "WOOP"
 
+        QUAKE ->
+            "QUAKE"
+
 
 spellNameGen : Random.Generator SpellName
 spellNameGen =
     Randomness.genFromNonEmpty
         ( WOOP
-        , []
+        , [ QUAKE ]
         )
 
 
@@ -228,6 +234,15 @@ cast name =
     case name of
         WOOP ->
             woop
+
+        QUAKE ->
+            quake
+
+
+runningWithNoCmds state =
+    ( Running state
+    , noCmds
+    )
 
 
 woop : Spell
@@ -249,12 +264,66 @@ woop state =
                         { tiles, moved } =
                             Tiles.move player target state.tiles
                     in
-                    ( Running { state | tiles = tiles, player = plainPositioned moved }
-                    , noCmds
-                    )
+                    { state | tiles = tiles, player = plainPositioned moved }
+                        |> runningWithNoCmds
 
         Err Tiles.NoPassableTile ->
             ( Tiles.noPassableTileToString Tiles.NoPassableTile
                 |> Error
             , noCmds
             )
+
+
+quake : Spell
+quake state =
+    let
+        folder : Positioned {} -> ( Tiles, Seed, CommandRecords ) -> ( Tiles, Seed, CommandRecords )
+        folder xy ( ts, seedIn, cmds ) =
+            let
+                tile =
+                    Tiles.get ts xy
+            in
+            case tile.monster of
+                Just monsterIn ->
+                    let
+                        ( passableCount, seedOut ) =
+                            Random.step
+                                (Tiles.getAdjacentPassableNeighbors ts tile
+                                    |> Random.map List.length
+                                )
+                                seedIn
+
+                        numWalls =
+                            4 - passableCount
+
+                        ( monster, hitCmds ) =
+                            Monster.hit (numWalls * 2 |> toFloat |> Monster.HP) monsterIn
+                    in
+                    ( Tiles.set
+                        { tile
+                            | monster = Just monster
+                        }
+                        ts
+                    , seedOut
+                    , Array.append cmds hitCmds
+                    )
+
+                Nothing ->
+                    ( ts, seedIn, cmds )
+
+        ( tiles, seed, cmdsOut ) =
+            Tiles.foldXY
+                folder
+                ( state.tiles, state.seed, noCmds )
+
+        shakeIn =
+            state.shake
+    in
+    ( Running
+        { state
+            | tiles = tiles
+            , shake = { shakeIn | amount = 20 }
+            , seed = seed
+        }
+    , cmdsOut
+    )
