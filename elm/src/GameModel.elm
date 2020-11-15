@@ -3,7 +3,7 @@ module GameModel exposing (GameModel(..), Spell, SpellBook, SpellName(..), Spell
 import Array exposing (Array)
 import Dict exposing (Dict)
 import Game exposing (LevelNum, Positioned, Score(..), Shake, plainPositioned)
-import Monster
+import Monster exposing (Monster)
 import Ports exposing (CommandRecords, noCmds)
 import Random exposing (Seed)
 import Randomness
@@ -205,6 +205,7 @@ removeSpellName state spellPage =
 type SpellName
     = WOOP
     | QUAKE
+    | MAELSTROM
 
 
 spellNameToString : SpellName -> String
@@ -216,12 +217,17 @@ spellNameToString name =
         QUAKE ->
             "QUAKE"
 
+        MAELSTROM ->
+            "MAELSTROM"
+
 
 spellNameGen : Random.Generator SpellName
 spellNameGen =
     Randomness.genFromNonEmpty
         ( WOOP
-        , [ QUAKE ]
+        , [ QUAKE
+          , MAELSTROM
+          ]
         )
 
 
@@ -237,6 +243,9 @@ cast name =
 
         QUAKE ->
             quake
+
+        MAELSTROM ->
+            maelstrom
 
 
 runningWithNoCmds state =
@@ -327,3 +336,50 @@ quake state =
         }
     , cmdsOut
     )
+
+
+maelstrom : Spell
+maelstrom state =
+    let
+        folder : Monster -> ( Tiles, Seed ) -> ( Tiles, Seed )
+        folder monster ( ts, seedIn ) =
+            if Monster.isPlayer monster.kind then
+                ( ts, seedIn )
+
+            else
+                let
+                    ( passableTile, seedOut ) =
+                        Random.step
+                            (Tiles.randomPassableTile ts)
+                            seedIn
+
+                    target : Positioned {}
+                    target =
+                        case passableTile of
+                            Ok t ->
+                                plainPositioned t
+
+                            Err _ ->
+                                plainPositioned monster
+                in
+                ( Tiles.move
+                    { monster
+                        | teleportCounter = 2
+                    }
+                    target
+                    ts
+                    |> .tiles
+                , seedOut
+                )
+
+        ( tiles, seed ) =
+            Tiles.foldMonsters
+                folder
+                ( state.tiles, state.seed )
+                state.tiles
+    in
+    { state
+        | tiles = tiles
+        , seed = seed
+    }
+        |> runningWithNoCmds
