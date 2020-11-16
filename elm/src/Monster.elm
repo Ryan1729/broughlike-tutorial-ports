@@ -107,44 +107,42 @@ draw shake monster cmdsIn =
         located =
             getLocated monster
     in
-    if monster.teleportCounter > 0 then
-        ( monster
-        , Array.push
+    ( -- We update the offsets on the copy we don't draw, so that the animation
+      -- occurs over the expected number of frames.
+      { monster
+        | offsetX =
+            case monster.offsetX of
+                X x ->
+                    x
+                        - (signum x
+                            |> (*) (1.0 / 8.0)
+                          )
+                        |> X
+        , offsetY =
+            case monster.offsetY of
+                Y y ->
+                    y
+                        - (signum y
+                            |> (*) (1.0 / 8.0)
+                          )
+                        |> Y
+      }
+    , if monster.teleportCounter > 0 then
+        Array.push
             (SpriteIndex 10
                 |> Ports.drawSprite shake located
             )
             cmdsIn
-        )
 
-    else
-        ( -- We update the offsets on the copy we don't draw, so that the animation
-          -- occurs over the expected number of frames.
-          { monster
-            | offsetX =
-                case monster.offsetX of
-                    X x ->
-                        x
-                            - (signum x
-                                |> (*) (1.0 / 8.0)
-                              )
-                            |> X
-            , offsetY =
-                case monster.offsetY of
-                    Y y ->
-                        y
-                            - (signum y
-                                |> (*) (1.0 / 8.0)
-                              )
-                            |> Y
-          }
-        , let
+      else
+        let
             commands =
                 Array.push (Ports.drawSprite shake located monster.sprite) cmdsIn
-          in
-          case monster.hp of
+        in
+        case monster.hp of
             HP hp ->
                 drawHP shake located hp 0 commands
-        )
+    )
 
 
 drawHP : Shake -> Located a -> Float -> Float -> Array Ports.CommandRecord -> Array Ports.CommandRecord
