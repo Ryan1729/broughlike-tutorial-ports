@@ -59,11 +59,11 @@ numLevels =
 startGame : Seed -> GameModel
 startGame seedIn =
     LevelNum 1
-        |> startLevel (Score 0) seedIn startingHp
+        |> startLevel (Score 0) seedIn startingHp 1
 
 
-startLevel : Score -> Seed -> HP -> LevelNum -> GameModel
-startLevel score seedIn hp levelNum =
+startLevel : Score -> Seed -> HP -> Int -> LevelNum -> GameModel
+startLevel score seedIn hp numSpells levelNum =
     let
         ( levelRes, seed1 ) =
             Random.step (Map.generateLevel levelNum) seedIn
@@ -135,7 +135,7 @@ startLevel score seedIn hp levelNum =
                                     , x = X 0
                                     , y = Y 0
                                     }
-                                , numSpells = 1
+                                , numSpells = numSpells
                                 , spells = GameModel.emptySpells
                                 }
                                     |> GameModel.refreshSpells
@@ -510,7 +510,7 @@ movePlayer dx dy stateIn =
                                                     |> HP
                                 in
                                 ( Game.incLevel movedState.level
-                                    |> startLevel movedState.score movedState.seed hp
+                                    |> startLevel movedState.score movedState.seed hp movedState.numSpells
                                 , Ports.playSound NewLevel
                                     |> Array.repeat 1
                                 )
