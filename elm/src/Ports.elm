@@ -1,4 +1,4 @@
-port module Ports exposing (Colour(..), CommandRecord, CommandRecords, Sound(..), TextSpec, addScore, decodeScoreRows, drawOverlay, drawSprite, drawText, noCmds, perform, playSound, scoreList, setCanvasDimensions)
+port module Ports exposing (Colour(..), CommandRecord, CommandRecords, Sound(..), TextSpec, addScore, decodeScoreRows, drawOverlay, drawSprite, drawText, noCmds, perform, playSound, scoreList, setCanvasDimensions, withNoCmd)
 
 import Array exposing (Array)
 import Game exposing (H(..), Located, Outcome(..), Score(..), ScoreRow, Shake, SpriteIndex(..), W(..), X(..), Y(..))
@@ -17,6 +17,11 @@ type alias CommandRecords =
 noCmds : CommandRecords
 noCmds =
     Array.empty
+
+
+withNoCmd : a -> ( a, CommandRecords )
+withNoCmd a =
+    ( a, noCmds )
 
 
 port platform : Array JE.Value -> Cmd msg

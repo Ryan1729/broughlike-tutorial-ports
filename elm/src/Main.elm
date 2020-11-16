@@ -4,12 +4,12 @@ import Array exposing (Array)
 import Browser
 import Browser.Events
 import Game exposing (DeltaX(..), DeltaY(..), H(..), LevelNum(..), Located, Positioned, Score(..), ScoreRow, Shake, SpriteIndex(..), W(..), X(..), Y(..), levelNumToString, moveX, moveY, screenShake)
-import GameModel exposing (GameModel(..), SpellPage(..), State, cast, removeSpellName)
+import GameModel exposing (GameModel(..), SpellPage(..), State, cast, removeSpellName, startLevel)
 import Html
 import Json.Decode as JD
 import Map
 import Monster exposing (HP(..), Monster)
-import Ports exposing (Colour(..), Sound(..), TextSpec)
+import Ports exposing (Colour(..), Sound(..), TextSpec, withNoCmd)
 import Random exposing (Seed)
 import Tile
 import Tiles exposing (Tiles)
@@ -44,10 +44,6 @@ scoreToString score =
             String.fromInt s
 
 
-initialSpawnRate =
-    15
-
-
 startingHp =
     HP 3
 
@@ -59,120 +55,7 @@ numLevels =
 startGame : Seed -> GameModel
 startGame seedIn =
     LevelNum 1
-        |> startLevel (Score 0) seedIn startingHp 1
-
-
-startLevel : Score -> Seed -> HP -> Int -> LevelNum -> GameModel
-startLevel score seedIn hp numSpells levelNum =
-    let
-        ( levelRes, seed1 ) =
-            Random.step (Map.generateLevel levelNum) seedIn
-
-        stateRes : Result String State
-        stateRes =
-            Result.andThen
-                (\tilesIn ->
-                    let
-                        tileGen =
-                            Tiles.randomPassableTile tilesIn
-
-                        ( startingTilesRes, seed ) =
-                            Random.step
-                                (Random.pair tileGen
-                                    tileGen
-                                    |> Random.pair
-                                        (Random.list 3 tileGen)
-                                    |> Random.map
-                                        (\pair ->
-                                            case pair of
-                                                ( listOfResults, ( Ok t1, Ok t2 ) ) ->
-                                                    case toResultOfList listOfResults of
-                                                        Ok list ->
-                                                            Ok ( t1, t2, list )
-
-                                                        _ ->
-                                                            Err Tiles.NoPassableTile
-
-                                                _ ->
-                                                    Err Tiles.NoPassableTile
-                                        )
-                                )
-                                seed1
-                    in
-                    Result.mapError Tiles.noPassableTileToString startingTilesRes
-                        |> Result.map
-                            (\( playerTile, exitTile, treasureTiles ) ->
-                                let
-                                    player =
-                                        { xPos = playerTile.xPos, yPos = playerTile.yPos }
-
-                                    tiles : Tiles
-                                    tiles =
-                                        Tiles.addMonster tilesIn
-                                            { kind = Monster.Player hp
-                                            , xPos = player.xPos
-                                            , yPos = player.yPos
-                                            }
-                                            |> (\ts ->
-                                                    List.foldl
-                                                        (Tiles.transform (\t -> { t | treasure = True }))
-                                                        ts
-                                                        treasureTiles
-                                               )
-                                            -- We do this instead of just using replace in case
-                                            -- the player tile is the same as the exit tile
-                                            |> Tiles.transform (\t -> { t | kind = Tile.Exit }) exitTile
-                                in
-                                { player = player
-                                , seed = seed
-                                , tiles = tiles
-                                , level = levelNum
-                                , spawnRate = initialSpawnRate
-                                , spawnCounter = initialSpawnRate
-                                , score = score
-                                , shake =
-                                    { amount = 0
-                                    , x = X 0
-                                    , y = Y 0
-                                    }
-                                , numSpells = numSpells
-                                , spells = GameModel.emptySpells
-                                }
-                                    |> GameModel.refreshSpells
-                            )
-                )
-                levelRes
-    in
-    case stateRes of
-        Err e ->
-            Error e
-
-        Ok s ->
-            Running s
-
-
-
--- I think this might reverse the order of the list, but for my current purposes,
--- I don't care whether it does or not.
-
-
-toResultOfList : List (Result e a) -> Result e (List a)
-toResultOfList results =
-    toResultOfListHelper results []
-
-
-toResultOfListHelper results output =
-    case results of
-        [] ->
-            Ok output
-
-        (Ok a) :: rest ->
-            a
-                :: output
-                |> toResultOfListHelper rest
-
-        (Err e) :: _ ->
-            Err e
+        |> startLevel (Score 0) seedIn startingHp Nothing 1
 
 
 draw : Model -> ( Model, CommandRecords )
@@ -510,7 +393,7 @@ movePlayer dx dy stateIn =
                                                     |> HP
                                 in
                                 ( Game.incLevel movedState.level
-                                    |> startLevel movedState.score movedState.seed hp movedState.numSpells
+                                    |> startLevel movedState.score movedState.seed hp Nothing movedState.numSpells
                                 , Ports.playSound NewLevel
                                     |> Array.repeat 1
                                 )
@@ -694,11 +577,6 @@ update msg model =
             ( model
             , Cmd.none
             )
-
-
-withNoCmd : a -> ( a, CommandRecords )
-withNoCmd a =
-    ( a, Array.empty )
 
 
 withCmdsMap : (a -> b) -> ( a, CommandRecords ) -> ( b, CommandRecords )

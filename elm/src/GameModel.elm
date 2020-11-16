@@ -1,13 +1,19 @@
-module GameModel exposing (GameModel(..), Spell, SpellBook, SpellName(..), SpellPage(..), State, addSpellViaTreasureIfApplicable, cast, emptySpells, refreshSpells, removeSpellName, spellNameToString, spellNamesWithOneBasedIndex)
+module GameModel exposing (GameModel(..), Spell, SpellBook, SpellName(..), SpellPage(..), State, addSpellViaTreasureIfApplicable, cast, emptySpells, refreshSpells, removeSpellName, spellNameToString, spellNamesWithOneBasedIndex, startLevel)
 
 import Array exposing (Array)
 import Dict exposing (Dict)
-import Game exposing (LevelNum, Positioned, Score(..), Shake, plainPositioned)
+import Game exposing (LevelNum, Positioned, Score(..), Shake, X(..), Y(..), plainPositioned)
+import Map
 import Monster exposing (Monster)
-import Ports exposing (CommandRecords, noCmds)
+import Ports exposing (CommandRecords, noCmds, withNoCmd)
 import Random exposing (Seed)
 import Randomness
+import Tile exposing (Tile)
 import Tiles exposing (Tiles)
+
+
+initialSpawnRate =
+    15
 
 
 type GameModel
@@ -29,6 +35,126 @@ type alias State =
     , numSpells : Int
     , spells : SpellBook
     }
+
+
+startLevel : Score -> Seed -> Monster.HP -> Maybe SpellBook -> Int -> LevelNum -> GameModel
+startLevel score seedIn hp previousSpells numSpells levelNum =
+    let
+        ( levelRes, seed1 ) =
+            Random.step (Map.generateLevel levelNum) seedIn
+
+        stateRes : Result String State
+        stateRes =
+            Result.andThen
+                (\tilesIn ->
+                    let
+                        tileGen =
+                            Tiles.randomPassableTile tilesIn
+
+                        ( startingTilesRes, seed ) =
+                            Random.step
+                                (Random.pair tileGen
+                                    tileGen
+                                    |> Random.pair
+                                        (Random.list 3 tileGen)
+                                    |> Random.map
+                                        (\pair ->
+                                            case pair of
+                                                ( listOfResults, ( Ok t1, Ok t2 ) ) ->
+                                                    case toResultOfList listOfResults of
+                                                        Ok list ->
+                                                            Ok ( t1, t2, list )
+
+                                                        _ ->
+                                                            Err Tiles.NoPassableTile
+
+                                                _ ->
+                                                    Err Tiles.NoPassableTile
+                                        )
+                                )
+                                seed1
+                    in
+                    Result.mapError Tiles.noPassableTileToString startingTilesRes
+                        |> Result.map
+                            (\( playerTile, exitTile, treasureTiles ) ->
+                                let
+                                    player =
+                                        { xPos = playerTile.xPos, yPos = playerTile.yPos }
+
+                                    tiles : Tiles
+                                    tiles =
+                                        Tiles.addMonster tilesIn
+                                            { kind = Monster.Player hp
+                                            , xPos = player.xPos
+                                            , yPos = player.yPos
+                                            }
+                                            |> (\ts ->
+                                                    List.foldl
+                                                        (Tiles.transform (\t -> { t | treasure = True }))
+                                                        ts
+                                                        treasureTiles
+                                               )
+                                            -- We do this instead of just using replace in case
+                                            -- the player tile is the same as the exit tile
+                                            |> Tiles.transform (\t -> { t | kind = Tile.Exit }) exitTile
+
+                                    state =
+                                        { player = player
+                                        , seed = seed
+                                        , tiles = tiles
+                                        , level = levelNum
+                                        , spawnRate = initialSpawnRate
+                                        , spawnCounter = initialSpawnRate
+                                        , score = score
+                                        , shake =
+                                            { amount = 0
+                                            , x = X 0
+                                            , y = Y 0
+                                            }
+                                        , numSpells = numSpells
+                                        , spells = emptySpells
+                                        }
+                                in
+                                case previousSpells of
+                                    Just spells ->
+                                        { state | spells = spells }
+
+                                    Nothing ->
+                                        refreshSpells state
+                            )
+                )
+                levelRes
+    in
+    case stateRes of
+        Err e ->
+            Error e
+
+        Ok s ->
+            Running s
+
+
+
+-- I think this might reverse the order of the list, but for my current purposes,
+-- I don't care whether it does or not.
+
+
+toResultOfList : List (Result e a) -> Result e (List a)
+toResultOfList results =
+    toResultOfListHelper results []
+
+
+toResultOfListHelper results output =
+    case results of
+        [] ->
+            Ok output
+
+        (Ok a) :: rest ->
+            a
+                :: output
+                |> toResultOfListHelper rest
+
+        (Err e) :: _ ->
+            Err e
 
 
 
@@ -206,6 +332,7 @@ type SpellName
     = WOOP
     | QUAKE
     | MAELSTROM
+    | MULLIGAN
 
 
 spellNameToString : SpellName -> String
@@ -220,6 +347,9 @@ spellNameToString name =
         MAELSTROM ->
             "MAELSTROM"
 
+        MULLIGAN ->
+            "MULLIGAN"
+
 
 spellNameGen : Random.Generator SpellName
 spellNameGen =
@@ -227,6 +357,7 @@ spellNameGen =
         ( WOOP
         , [ QUAKE
           , MAELSTROM
+          , MULLIGAN
           ]
         )
 
@@ -246,6 +377,9 @@ cast name =
 
         MAELSTROM ->
             maelstrom
+
+        MULLIGAN ->
+            mulligan
 
 
 runningWithNoCmds state =
@@ -383,3 +517,9 @@ maelstrom state =
         , seed = seed
     }
         |> runningWithNoCmds
+
+
+mulligan : Spell
+mulligan state =
+    startLevel state.score state.seed (Monster.HP 1) (Just state.spells) state.numSpells state.level
+        |> withNoCmd
