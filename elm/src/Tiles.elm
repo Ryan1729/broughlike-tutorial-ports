@@ -1,4 +1,4 @@
-module Tiles exposing (NoPassableTile(..), Tiles, addMonster, foldMonsters, foldXY, get, getAdjacentNeighbors, getAdjacentPassableNeighbors, getNeighbor, move, noPassableTileToString, possiblyDisconnectedTilesGen, randomPassableTile, replace, set, toArray, transform, tryMove, updateMonster)
+module Tiles exposing (NoPassableTile(..), Tiles, addMonster, foldMonsters, foldXY, get, getAdjacentNeighbors, getAdjacentNeighborsUnshuffled, getAdjacentPassableNeighbors, getNeighbor, move, noPassableTileToString, possiblyDisconnectedTilesGen, randomPassableTile, replace, set, toArray, transform, tryMove, updateMonster)
 
 import Array exposing (Array)
 import Game exposing (DeltaX(..), DeltaY(..), Located, Positioned, Shake, SpriteIndex(..), X(..), XPos(..), Y(..), YPos(..), moveX, moveY)
@@ -209,16 +209,21 @@ possiblyDisconnectedTilesGen =
 
 getAdjacentNeighbors : Tiles -> Positioned a -> Generator (List Tile)
 getAdjacentNeighbors tiles positioned =
+    getAdjacentNeighborsUnshuffled tiles positioned
+        |> shuffle
+
+
+getAdjacentNeighborsUnshuffled : Tiles -> Positioned a -> List Tile
+getAdjacentNeighborsUnshuffled tiles positioned =
     let
         gn =
             getNeighbor tiles positioned
     in
-    shuffle
-        [ gn DX0 DYm1
-        , gn DX0 DY1
-        , gn DXm1 DY0
-        , gn DX1 DY0
-        ]
+    [ gn DX0 DYm1
+    , gn DX0 DY1
+    , gn DXm1 DY0
+    , gn DX1 DY0
+    ]
 
 
 getAdjacentPassableNeighbors : Tiles -> Positioned a -> Generator (List Tile)

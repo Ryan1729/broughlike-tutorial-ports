@@ -252,15 +252,14 @@ drawState stateIn =
             { stateIn | shake = shake, seed = seed }
 
         prev =
-            Tiles.toArray state.tiles
-                |> arrayAndThen (Tile.draw shake)
-                |> pushText
-                    { text = "Level " ++ levelNumToString state.level
-                    , size = 30
-                    , centered = False
-                    , y = Y 40
-                    , colour = Violet
-                    }
+            pushText
+                { text = "Level " ++ levelNumToString state.level
+                , size = 30
+                , centered = False
+                , y = Y 40
+                , colour = Violet
+                }
+                Ports.noCmds
                 |> pushText
                     { text = "Score: " ++ scoreToString state.score
                     , size = 30
@@ -271,24 +270,40 @@ drawState stateIn =
                 |> pushSpellText state
 
         ( newTiles, cmds ) =
-            drawMonsters state.shake state.tiles
+            drawTiles state.shake ( state.tiles, prev )
+                |> drawMonsters state.shake
     in
     ( { state | tiles = newTiles }
-    , Array.append prev cmds
+    , cmds
     )
 
 
-drawMonsters : Shake -> Tiles -> ( Tiles, CommandRecords )
-drawMonsters shake tiles =
+drawTiles : Shake -> ( Tiles, CommandRecords ) -> ( Tiles, CommandRecords )
+drawTiles shake =
+    Tiles.foldXY
+        (\xy ( tiles, oldCmds ) ->
+            let
+                tile =
+                    Tiles.get tiles xy
+
+                ( newTile, newCmds ) =
+                    Tile.draw shake ( tile, oldCmds )
+            in
+            ( Tiles.transform (\_ -> newTile) newTile tiles, newCmds )
+        )
+
+
+drawMonsters : Shake -> ( Tiles, CommandRecords ) -> ( Tiles, CommandRecords )
+drawMonsters shake ( tiles, cmds ) =
     Tiles.foldMonsters
         (\monster ( ts, oldCmds ) ->
             let
                 ( newMonster, newCmds ) =
-                    Monster.draw shake monster oldCmds
+                    Monster.draw shake ( monster, oldCmds )
             in
             ( Tiles.transform (\tile -> { tile | monster = Just newMonster }) newMonster ts, newCmds )
         )
-        ( tiles, Array.empty )
+        ( tiles, cmds )
         tiles
 
 

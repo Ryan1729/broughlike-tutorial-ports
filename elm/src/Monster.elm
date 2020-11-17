@@ -101,8 +101,8 @@ fromSpec monsterSpec =
     }
 
 
-draw : Shake -> Monster -> Array Ports.CommandRecord -> ( Monster, Array Ports.CommandRecord )
-draw shake monster cmdsIn =
+draw : Shake -> ( Monster, Array Ports.CommandRecord ) -> ( Monster, Array Ports.CommandRecord )
+draw shake ( monster, cmdsIn ) =
     let
         located =
             getLocated monster

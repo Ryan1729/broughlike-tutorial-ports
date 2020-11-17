@@ -333,6 +333,7 @@ type SpellName
     | QUAKE
     | MAELSTROM
     | MULLIGAN
+    | AURA
 
 
 spellNameToString : SpellName -> String
@@ -350,6 +351,9 @@ spellNameToString name =
         MULLIGAN ->
             "MULLIGAN"
 
+        AURA ->
+            "AURA"
+
 
 spellNameGen : Random.Generator SpellName
 spellNameGen =
@@ -358,6 +362,7 @@ spellNameGen =
         , [ QUAKE
           , MAELSTROM
           , MULLIGAN
+          , AURA
           ]
         )
 
@@ -380,6 +385,9 @@ cast name =
 
         MULLIGAN ->
             mulligan
+
+        AURA ->
+            aura
 
 
 runningWithNoCmds state =
@@ -523,3 +531,28 @@ mulligan : Spell
 mulligan state =
     startLevel state.score state.seed (Monster.HP 1) (Just state.spells) state.numSpells state.level
         |> withNoCmd
+
+
+aura : Spell
+aura state =
+    let
+        healPositions =
+            Tiles.getAdjacentNeighborsUnshuffled state.tiles state.player
+                |> List.map plainPositioned
+                |> (::) state.player
+    in
+    { state
+        | tiles =
+            List.foldr
+                (Tiles.transform
+                    (\tile ->
+                        { tile
+                            | monster = Maybe.map (Monster.heal (Monster.HP 1)) tile.monster
+                        }
+                            |> Tile.setEffect (Game.SpriteIndex 13)
+                    )
+                )
+                state.tiles
+                healPositions
+    }
+        |> runningWithNoCmds

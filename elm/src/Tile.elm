@@ -17,7 +17,21 @@ type alias Tile =
         { kind : Kind
         , monster : Maybe Monster
         , treasure : Bool
+        , effect : Maybe Effect
         }
+
+
+type alias Effect =
+    { index : SpriteIndex
+    , counter : Int
+    }
+
+
+setEffect : SpriteIndex -> Tile -> Tile
+setEffect index tile =
+    { tile
+        | effect = Effect index 30 |> Just
+    }
 
 
 getLocated : Tile -> Located {}
@@ -27,22 +41,41 @@ getLocated { xPos, yPos } =
             { x = toFloat xP |> X, y = toFloat yP |> Y }
 
 
-draw : Shake -> Tile -> Array Ports.CommandRecord
-draw shake tile =
+draw : Shake -> ( Tile, Ports.CommandRecords ) -> ( Tile, Ports.CommandRecords )
+draw shake ( tile, commandsIn ) =
     let
         located =
             getLocated tile
 
-        commands =
-            sprite tile.kind
-                |> Ports.drawSprite shake located
-                |> Array.repeat 1
-    in
-    if tile.treasure then
-        Array.push (SpriteIndex 12 |> Ports.drawSprite shake located) commands
+        drawTreasure cmds =
+            if tile.treasure then
+                Array.push (SpriteIndex 12 |> Ports.drawSprite shake located) cmds
 
-    else
-        commands
+            else
+                cmds
+
+        commands =
+            Array.push
+                (sprite tile.kind
+                    |> Ports.drawSprite shake located
+                )
+                commandsIn
+                |> drawTreasure
+    in
+    case tile.effect of
+        Just { index, counter } ->
+            if counter <= 0 then
+                ( { tile | effect = Nothing }, commands )
+
+            else
+                ( { tile
+                    | effect = Just (Effect index (counter - 1))
+                  }
+                , Array.push (Ports.drawSprite shake located index) commands
+                )
+
+        Nothing ->
+            ( tile, commands )
 
 
 sprite : Kind -> SpriteIndex
@@ -75,7 +108,7 @@ exit =
 
 withKind : Kind -> (Positioned a -> Tile)
 withKind kind { xPos, yPos } =
-    { kind = kind, xPos = xPos, yPos = yPos, monster = Nothing, treasure = False }
+    { kind = kind, xPos = xPos, yPos = yPos, monster = Nothing, treasure = False, effect = Nothing }
 
 
 isPassable tile =
