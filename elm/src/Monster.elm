@@ -1,7 +1,7 @@
 module Monster exposing (HP(..), Kind(..), Monster, Spec, draw, fromSpec, getLocated, heal, hit, isPlayer, maxHP, stun)
 
 import Array exposing (Array)
-import Game exposing (Located, Positioned, Shake, SpriteIndex(..), X(..), XPos(..), Y(..), YPos(..))
+import Game exposing (DeltaX(..), DeltaY(..), Located, Positioned, Shake, SpriteIndex(..), X(..), XPos(..), Y(..), YPos(..))
 import Ports exposing (Sound(..))
 import Random exposing (Generator, Seed)
 
@@ -44,6 +44,7 @@ type alias Monster =
         , teleportCounter : Int
         , offsetX : X
         , offsetY : Y
+        , lastMove : ( DeltaX, DeltaY )
         }
 
 
@@ -98,6 +99,7 @@ fromSpec monsterSpec =
     , attackedThisTurn = False
     , stunned = False
     , teleportCounter = teleportCounter
+    , lastMove = ( DXm1, DY0 )
     }
 
 

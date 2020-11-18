@@ -469,12 +469,16 @@ tryMove :
     ->
         Maybe
             (WithMoved { tiles : Tiles, shake : Shake, cmds : Array Ports.CommandRecord })
-tryMove shake monster deltas tiles =
+tryMove shake monsterIn deltas tiles =
     let
         newTile =
-            getNeighbor tiles monster deltas
+            getNeighbor tiles monsterIn deltas
     in
     if Tile.isPassable newTile then
+        let
+            monster =
+                { monsterIn | lastMove = deltas }
+        in
         Just
             (case newTile.monster of
                 Nothing ->

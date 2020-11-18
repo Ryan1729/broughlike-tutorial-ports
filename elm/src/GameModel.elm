@@ -2,7 +2,7 @@ module GameModel exposing (GameModel(..), Spell, SpellBook, SpellName(..), Spell
 
 import Array exposing (Array)
 import Dict exposing (Dict)
-import Game exposing (LevelNum, Positioned, Score(..), Shake, X(..), Y(..), plainPositioned)
+import Game exposing (DeltaX, DeltaY, LevelNum, Positioned, Score(..), Shake, X(..), Y(..), plainPositioned)
 import Map
 import Monster exposing (Monster)
 import Ports exposing (CommandRecords, noCmds, withNoCmd)
@@ -334,6 +334,7 @@ type SpellName
     | MAELSTROM
     | MULLIGAN
     | AURA
+    | DASH
 
 
 spellNameToString : SpellName -> String
@@ -354,6 +355,9 @@ spellNameToString name =
         AURA ->
             "AURA"
 
+        DASH ->
+            "DASH"
+
 
 spellNameGen : Random.Generator SpellName
 spellNameGen =
@@ -363,6 +367,7 @@ spellNameGen =
           , MAELSTROM
           , MULLIGAN
           , AURA
+          , DASH
           ]
         )
 
@@ -389,11 +394,50 @@ cast name =
         AURA ->
             aura
 
+        DASH ->
+            dash
+
 
 runningWithNoCmds state =
     ( Running state
     , noCmds
     )
+
+
+
+--
+--  Spell helpers
+--
+
+
+dashPosHelper : Tiles -> ( DeltaX, DeltaY ) -> Positioned {} -> Positioned {}
+dashPosHelper tiles deltas newPos =
+    let
+        testTile =
+            Tiles.getNeighbor tiles newPos deltas
+    in
+    if Tile.isPassable testTile && testTile.monster == Nothing then
+        plainPositioned testTile
+            |> dashPosHelper tiles deltas
+
+    else
+        newPos
+
+
+requirePlayer : (Monster -> Spell) -> Spell
+requirePlayer spellMaker state =
+    case Tiles.get state.tiles state.player |> .monster of
+        Nothing ->
+            ( Error "Could not find player", noCmds )
+
+        Just player ->
+            spellMaker player state
+
+
+
+--
+--  the Spells themselves
+--
 
 
 woop : Spell
@@ -556,3 +600,62 @@ aura state =
                 healPositions
     }
         |> runningWithNoCmds
+
+
+dash : Spell
+dash =
+    requirePlayer
+        (\player state ->
+            let
+                newPos =
+                    dashPosHelper state.tiles player.lastMove state.player
+            in
+            if plainPositioned player /= newPos then
+                let
+                    { tiles, moved } =
+                        Tiles.move player newPos state.tiles
+
+                    ( adjacentNeighbors, seed ) =
+                        Random.step (Tiles.getAdjacentNeighbors tiles newPos) state.seed
+
+                    folder : Tile -> ( Tiles, CommandRecords ) -> ( Tiles, CommandRecords )
+                    folder tile ( tilesIn, commandsIn ) =
+                        case tile.monster of
+                            Just monster ->
+                                let
+                                    ( hitMonster, newCmds ) =
+                                        Monster.hit (Monster.HP 1) monster
+                                in
+                                ( Tiles.transform
+                                    (\t ->
+                                        { t
+                                            | monster = Monster.stun hitMonster |> Just
+                                        }
+                                            |> Tile.setEffect (Game.SpriteIndex 14)
+                                    )
+                                    tile
+                                    tilesIn
+                                , Array.append commandsIn newCmds
+                                )
+
+                            Nothing ->
+                                ( tilesIn, commandsIn )
+
+                    ( tilesOut, commands ) =
+                        List.foldr
+                            folder
+                            ( tiles, noCmds )
+                            adjacentNeighbors
+                in
+                ( Running
+                    { state
+                        | tiles = tilesOut
+                        , player = plainPositioned moved
+                        , seed = seed
+                    }
+                , commands
+                )
+
+            else
+                runningWithNoCmds state
+        )
