@@ -1,4 +1,4 @@
-port module Ports exposing (Colour(..), CommandRecord, CommandRecords, Sound(..), TextSpec, addScore, decodeScoreRows, drawOverlay, drawSprite, drawText, noCmds, perform, playSound, scoreList, setCanvasDimensions, withNoCmd)
+port module Ports exposing (Colour(..), CommandRecord, CommandRecords, Sound(..), TextSpec, addScore, decodeScoreRows, drawOverlay, drawSprite, drawSpriteAlpha, drawText, noCmds, perform, playSound, scoreList, setCanvasDimensions, withNoCmd)
 
 import Array exposing (Array)
 import Game exposing (H(..), Located, Outcome(..), Score(..), ScoreRow, Shake, SpriteIndex(..), W(..), X(..), Y(..))
@@ -70,9 +70,17 @@ perform records =
 
 
 drawSprite : Shake -> Located a -> SpriteIndex -> CommandRecord
-drawSprite shake { x, y } spriteIndex =
+drawSprite =
+    drawSpriteAlpha 1.0
+
+
+drawSpriteAlpha : Float -> Shake -> Located a -> SpriteIndex -> CommandRecord
+drawSpriteAlpha alpha shake { x, y } spriteIndex =
     JE.object
         [ ( "kind", JE.string "drawSprite" )
+        , ( "alpha"
+          , JE.float alpha
+          )
         , ( "sprite"
           , case spriteIndex of
                 SpriteIndex sprite ->

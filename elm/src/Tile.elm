@@ -27,10 +27,14 @@ type alias Effect =
     }
 
 
+maxEffectCount =
+    30
+
+
 setEffect : SpriteIndex -> Tile -> Tile
 setEffect index tile =
     { tile
-        | effect = Effect index 30 |> Just
+        | effect = Effect index maxEffectCount |> Just
     }
 
 
@@ -68,10 +72,14 @@ draw shake ( tile, commandsIn ) =
                 ( { tile | effect = Nothing }, commands )
 
             else
+                let
+                    alpha =
+                        toFloat counter / maxEffectCount
+                in
                 ( { tile
                     | effect = Just (Effect index (counter - 1))
                   }
-                , Array.push (Ports.drawSprite shake located index) commands
+                , Array.push (Ports.drawSpriteAlpha alpha shake located index) commands
                 )
 
         Nothing ->
