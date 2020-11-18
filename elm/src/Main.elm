@@ -353,14 +353,14 @@ init flags =
     )
 
 
-movePlayer : DeltaX -> DeltaY -> State -> ( GameModel, CommandRecords )
-movePlayer dx dy stateIn =
+movePlayer : ( DeltaX, DeltaY ) -> State -> ( GameModel, CommandRecords )
+movePlayer deltas stateIn =
     let
         m =
             getPlayer stateIn
                 |> Maybe.andThen
                     (\p ->
-                        Tiles.tryMove stateIn.shake p dx dy stateIn.tiles
+                        Tiles.tryMove stateIn.shake p deltas stateIn.tiles
                             |> Maybe.map
                                 (\record ->
                                     ( record, p )
@@ -608,16 +608,16 @@ updateGame input model =
         Running state ->
             case input of
                 Up ->
-                    movePlayer DX0 DYm1 state
+                    movePlayer ( DX0, DYm1 ) state
 
                 Down ->
-                    movePlayer DX0 DY1 state
+                    movePlayer ( DX0, DY1 ) state
 
                 Left ->
-                    movePlayer DXm1 DY0 state
+                    movePlayer ( DXm1, DY0 ) state
 
                 Right ->
-                    movePlayer DX1 DY0 state
+                    movePlayer ( DX1, DY0 ) state
 
                 CastSpell spellIndex ->
                     castSpell state spellIndex

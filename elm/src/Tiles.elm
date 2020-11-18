@@ -124,8 +124,8 @@ filterOutNothings =
         Array.empty
 
 
-getNeighbor : Tiles -> Positioned a -> DeltaX -> DeltaY -> Tile
-getNeighbor tiles { xPos, yPos } dx dy =
+getNeighbor : Tiles -> Positioned a -> ( DeltaX, DeltaY ) -> Tile
+getNeighbor tiles { xPos, yPos } ( dx, dy ) =
     get tiles { xPos = moveX dx xPos, yPos = moveY dy yPos }
 
 
@@ -219,10 +219,10 @@ getAdjacentNeighborsUnshuffled tiles positioned =
         gn =
             getNeighbor tiles positioned
     in
-    [ gn DX0 DYm1
-    , gn DX0 DY1
-    , gn DXm1 DY0
-    , gn DX1 DY0
+    [ gn ( DX0, DYm1 )
+    , gn ( DX0, DY1 )
+    , gn ( DXm1, DY0 )
+    , gn ( DX1, DY0 )
     ]
 
 
@@ -385,7 +385,7 @@ updateMonsterInner monsterIn stateIn =
                                         head :: _ ->
                                             case
                                                 Game.deltasFrom { source = monster, target = head }
-                                                    |> Maybe.andThen (\( dx, dy ) -> tryMove stateIn.shake monster dx dy stateIn.tiles)
+                                                    |> Maybe.andThen (\deltas -> tryMove stateIn.shake monster deltas stateIn.tiles)
                                             of
                                                 Nothing ->
                                                     noChange
@@ -425,8 +425,8 @@ doStuff state monster =
                             (\newTile ->
                                 Game.deltasFrom { source = monster, target = newTile }
                                     |> Maybe.andThen
-                                        (\( dx, dy ) ->
-                                            tryMove state.shake monster dx dy state.tiles
+                                        (\deltas ->
+                                            tryMove state.shake monster deltas state.tiles
                                         )
                             )
                 of
@@ -464,16 +464,15 @@ isNothing maybe =
 tryMove :
     Shake
     -> Monster
-    -> DeltaX
-    -> DeltaY
+    -> ( DeltaX, DeltaY )
     -> Tiles
     ->
         Maybe
             (WithMoved { tiles : Tiles, shake : Shake, cmds : Array Ports.CommandRecord })
-tryMove shake monster dx dy tiles =
+tryMove shake monster deltas tiles =
     let
         newTile =
-            getNeighbor tiles monster dx dy
+            getNeighbor tiles monster deltas
     in
     if Tile.isPassable newTile then
         Just
