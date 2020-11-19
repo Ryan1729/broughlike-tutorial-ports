@@ -335,6 +335,7 @@ type SpellName
     | MULLIGAN
     | AURA
     | DASH
+    | DIG
 
 
 spellNameToString : SpellName -> String
@@ -358,6 +359,9 @@ spellNameToString name =
         DASH ->
             "DASH"
 
+        DIG ->
+            "DIG"
+
 
 spellNameGen : Random.Generator SpellName
 spellNameGen =
@@ -368,6 +372,7 @@ spellNameGen =
           , MULLIGAN
           , AURA
           , DASH
+          , DIG
           ]
         )
 
@@ -396,6 +401,9 @@ cast name =
 
         DASH ->
             dash
+
+        DIG ->
+            dig
 
 
 runningWithNoCmds state =
@@ -659,3 +667,52 @@ dash =
             else
                 runningWithNoCmds state
         )
+
+
+dig : Spell
+dig state =
+    let
+        replaceWallWithFloor : Tile -> Tile
+        replaceWallWithFloor tile =
+            if Tile.isPassable tile then
+                tile
+
+            else
+                Tile.floor tile
+
+        folder : Positioned {} -> Tiles -> Tiles
+        folder xy =
+            Tiles.transform
+                (\tile ->
+                    case
+                        tile.monster
+                            |> Maybe.andThen
+                                (\m ->
+                                    if Monster.isPlayer m.kind then
+                                        Just m
+
+                                    else
+                                        Nothing
+                                )
+                    of
+                        Just monsterIn ->
+                            { tile
+                                | monster = Monster.heal (Monster.HP 2) monsterIn |> Just
+                            }
+                                |> Tile.setEffect (Game.SpriteIndex 13)
+                                |> replaceWallWithFloor
+
+                        Nothing ->
+                            replaceWallWithFloor tile
+                )
+                xy
+
+        tiles =
+            Tiles.foldXY
+                folder
+                state.tiles
+    in
+    { state
+        | tiles = tiles
+    }
+        |> runningWithNoCmds
