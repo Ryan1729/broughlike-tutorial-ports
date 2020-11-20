@@ -336,6 +336,7 @@ type SpellName
     | AURA
     | DASH
     | DIG
+    | KINGMAKER
 
 
 spellNameToString : SpellName -> String
@@ -362,6 +363,9 @@ spellNameToString name =
         DIG ->
             "DIG"
 
+        KINGMAKER ->
+            "KINGMAKER"
+
 
 spellNameGen : Random.Generator SpellName
 spellNameGen =
@@ -373,6 +377,7 @@ spellNameGen =
           , AURA
           , DASH
           , DIG
+          , KINGMAKER
           ]
         )
 
@@ -404,6 +409,9 @@ cast name =
 
         DIG ->
             dig
+
+        KINGMAKER ->
+            kingmaker
 
 
 runningWithNoCmds state =
@@ -704,6 +712,46 @@ dig state =
 
                         Nothing ->
                             replaceWallWithFloor tile
+                )
+                xy
+
+        tiles =
+            Tiles.foldXY
+                folder
+                state.tiles
+    in
+    { state
+        | tiles = tiles
+    }
+        |> runningWithNoCmds
+
+
+kingmaker : Spell
+kingmaker state =
+    let
+        folder : Positioned {} -> Tiles -> Tiles
+        folder xy =
+            Tiles.transform
+                (\tile ->
+                    case
+                        tile.monster
+                            |> Maybe.andThen
+                                (\m ->
+                                    if Monster.isPlayer m.kind then
+                                        Nothing
+
+                                    else
+                                        Just m
+                                )
+                    of
+                        Just monsterIn ->
+                            { tile
+                                | monster = Monster.heal (Monster.HP 1) monsterIn |> Just
+                                , treasure = True
+                            }
+
+                        Nothing ->
+                            tile
                 )
                 xy
 
