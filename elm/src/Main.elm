@@ -458,8 +458,22 @@ movePlayer deltas stateIn =
                         Dead s ->
                             tick s
 
-                        Title (Just s) _ ->
-                            tick s
+                        Title (Just s) seed ->
+                            -- We want to do one last tick then show the title screen
+                            case tick s of
+                                ( gm, cmds ) ->
+                                    case gm of
+                                        Running st ->
+                                            ( Title (Just st) seed, cmds )
+
+                                        Dead st ->
+                                            ( Title (Just st) seed, cmds )
+
+                                        Title (Just st) seed2 ->
+                                            ( Title (Just st) seed2, cmds )
+
+                                        _ ->
+                                            withNoCmd preTickModel
 
                         _ ->
                             withNoCmd preTickModel
