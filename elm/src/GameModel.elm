@@ -90,7 +90,7 @@ startLevel score seedIn hp previousSpells numSpells levelNum =
                                             }
                                             |> (\ts ->
                                                     List.foldl
-                                                        (Tiles.transform (\t -> { t | treasure = True }))
+                                                        (Tiles.transform Tile.addTreasure)
                                                         ts
                                                         treasureTiles
                                                )
@@ -337,6 +337,7 @@ type SpellName
     | DASH
     | DIG
     | KINGMAKER
+    | ALCHEMY
 
 
 spellNameToString : SpellName -> String
@@ -366,6 +367,9 @@ spellNameToString name =
         KINGMAKER ->
             "KINGMAKER"
 
+        ALCHEMY ->
+            "ALCHEMY"
+
 
 spellNameGen : Random.Generator SpellName
 spellNameGen =
@@ -378,6 +382,7 @@ spellNameGen =
           , DASH
           , DIG
           , KINGMAKER
+          , ALCHEMY
           ]
         )
 
@@ -412,6 +417,9 @@ cast name =
 
         KINGMAKER ->
             kingmaker
+
+        ALCHEMY ->
+            alchemy
 
 
 runningWithNoCmds state =
@@ -448,6 +456,15 @@ requirePlayer spellMaker state =
 
         Just player ->
             spellMaker player state
+
+
+replaceWallWithFloor : Tile -> Tile
+replaceWallWithFloor tile =
+    if Tile.isPassable tile then
+        tile
+
+    else
+        Tile.floor tile
 
 
 
@@ -680,14 +697,6 @@ dash =
 dig : Spell
 dig state =
     let
-        replaceWallWithFloor : Tile -> Tile
-        replaceWallWithFloor tile =
-            if Tile.isPassable tile then
-                tile
-
-            else
-                Tile.floor tile
-
         folder : Positioned {} -> Tiles -> Tiles
         folder xy =
             Tiles.transform
@@ -747,8 +756,8 @@ kingmaker state =
                         Just monsterIn ->
                             { tile
                                 | monster = Monster.heal (Monster.HP 1) monsterIn |> Just
-                                , treasure = True
                             }
+                                |> Tile.addTreasure
 
                         Nothing ->
                             tile
@@ -759,6 +768,30 @@ kingmaker state =
             Tiles.foldXY
                 folder
                 state.tiles
+    in
+    { state
+        | tiles = tiles
+    }
+        |> runningWithNoCmds
+
+
+alchemy : Spell
+alchemy state =
+    let
+        tiles =
+            Tiles.getAdjacentNeighborsUnshuffled state.tiles state.player
+                |> List.foldr
+                    (Tiles.transform
+                        (\tile ->
+                            if not (Tile.isPassable tile) && Tiles.inBounds tile then
+                                replaceWallWithFloor tile
+                                    |> Tile.addTreasure
+
+                            else
+                                tile
+                        )
+                    )
+                    state.tiles
     in
     { state
         | tiles = tiles

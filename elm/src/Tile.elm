@@ -38,6 +38,11 @@ setEffect index tile =
     }
 
 
+addTreasure : Tile -> Tile
+addTreasure tile =
+    { tile | treasure = True }
+
+
 getLocated : Tile -> Located {}
 getLocated { xPos, yPos } =
     case ( xPos, yPos ) of
