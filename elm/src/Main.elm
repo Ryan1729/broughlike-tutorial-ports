@@ -55,7 +55,11 @@ numLevels =
 startGame : Seed -> GameModel
 startGame seedIn =
     LevelNum 1
-        |> startLevel (Score 0) seedIn startingHp Nothing 1
+        |> startLevel (Score 0) seedIn startingHp Nothing 9
+
+
+
+--1
 
 
 draw : Model -> ( Model, CommandRecords )

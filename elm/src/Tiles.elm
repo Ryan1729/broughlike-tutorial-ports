@@ -491,12 +491,12 @@ tryMove shake monsterIn deltas tiles =
                 Just target ->
                     if Monster.isPlayer monster.kind /= Monster.isPlayer target.kind then
                         let
-                            newMonster =
-                                { monster | attackedThisTurn = True }
-
                             ( newTarget, cmds ) =
                                 Monster.stun target
-                                    |> Monster.hit (HP 1)
+                                    |> Monster.hit (1 + monster.bonusAttack |> HP)
+
+                            newMonster =
+                                { monster | attackedThisTurn = True, bonusAttack = 0 }
 
                             bumpMovement =
                                 Bump

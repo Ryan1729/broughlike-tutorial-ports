@@ -338,6 +338,7 @@ type SpellName
     | DIG
     | KINGMAKER
     | ALCHEMY
+    | POWER
 
 
 spellNameToString : SpellName -> String
@@ -370,6 +371,9 @@ spellNameToString name =
         ALCHEMY ->
             "ALCHEMY"
 
+        POWER ->
+            "POWER"
+
 
 spellNameGen : Random.Generator SpellName
 spellNameGen =
@@ -383,6 +387,7 @@ spellNameGen =
           , DIG
           , KINGMAKER
           , ALCHEMY
+          , POWER
           ]
         )
 
@@ -420,6 +425,9 @@ cast name =
 
         ALCHEMY ->
             alchemy
+
+        POWER ->
+            power
 
 
 runningWithNoCmds state =
@@ -465,6 +473,12 @@ replaceWallWithFloor tile =
 
     else
         Tile.floor tile
+
+
+changeTiles : Tiles -> Spell
+changeTiles tiles state =
+    { state | tiles = tiles }
+        |> runningWithNoCmds
 
 
 
@@ -729,10 +743,7 @@ dig state =
                 folder
                 state.tiles
     in
-    { state
-        | tiles = tiles
-    }
-        |> runningWithNoCmds
+    changeTiles tiles state
 
 
 kingmaker : Spell
@@ -769,10 +780,7 @@ kingmaker state =
                 folder
                 state.tiles
     in
-    { state
-        | tiles = tiles
-    }
-        |> runningWithNoCmds
+    changeTiles tiles state
 
 
 alchemy : Spell
@@ -793,7 +801,19 @@ alchemy state =
                     )
                     state.tiles
     in
-    { state
-        | tiles = tiles
-    }
-        |> runningWithNoCmds
+    changeTiles tiles state
+
+
+power : Spell
+power =
+    requirePlayer
+        (\player state ->
+            let
+                newPlayer =
+                    { player | bonusAttack = 5 }
+
+                tiles =
+                    Tiles.move newPlayer newPlayer state.tiles |> .tiles
+            in
+            changeTiles tiles state
+        )

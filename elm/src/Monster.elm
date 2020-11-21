@@ -45,6 +45,7 @@ type alias Monster =
         , offsetX : X
         , offsetY : Y
         , lastMove : ( DeltaX, DeltaY )
+        , bonusAttack : Float
         }
 
 
@@ -100,6 +101,7 @@ fromSpec monsterSpec =
     , stunned = False
     , teleportCounter = teleportCounter
     , lastMove = ( DXm1, DY0 )
+    , bonusAttack = 0
     }
 
 
