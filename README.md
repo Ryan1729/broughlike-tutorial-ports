@@ -20,6 +20,14 @@ A version of the code for the [DragonRuby game engine](https://dragonruby.itch.i
 
 [Web Version](https://ryan1729.github.io/broughlike-tutorial-ports/dragonruby/index.html)
 
+## go
 
+A version of the code for the [go programming language](https://golang.org/).
 
+(Desktop Binary only)
 
+## elm
+
+A version of the code for the [elm programming language](https://elm-lang.org/).
+
+[Web Version](https://ryan1729.github.io/broughlike-tutorial-ports/elm/index.html)
