@@ -46,6 +46,7 @@ type alias Monster =
         , offsetY : Y
         , lastMove : ( DeltaX, DeltaY )
         , bonusAttack : Float
+        , shield : Int
         }
 
 
@@ -102,6 +103,7 @@ fromSpec monsterSpec =
     , teleportCounter = teleportCounter
     , lastMove = ( DXm1, DY0 )
     , bonusAttack = 0
+    , shield = 0
     }
 
 
@@ -174,32 +176,36 @@ drawHP skake monster hp i commands =
 
 hit : HP -> Monster -> ( Monster, Ports.CommandRecords )
 hit damage target =
-    case ( target.hp, damage ) of
-        ( HP hp, HP d ) ->
-            let
-                newHP =
-                    hp - d
+    if target.shield > 0 then
+        ( target, Ports.noCmds )
 
-                hitMonster =
-                    { target | hp = HP newHP }
+    else
+        case ( target.hp, damage ) of
+            ( HP hp, HP d ) ->
+                let
+                    newHP =
+                        hp - d
 
-                newMonster =
-                    if newHP <= 0 then
-                        die hitMonster
+                    hitMonster =
+                        { target | hp = HP newHP }
 
-                    else
-                        hitMonster
-            in
-            ( newMonster
-            , (case newMonster.kind of
-                Player _ ->
-                    Ports.playSound Hit1
+                    newMonster =
+                        if newHP <= 0 then
+                            die hitMonster
 
-                _ ->
-                    Ports.playSound Hit2
-              )
-                |> Array.repeat 1
-            )
+                        else
+                            hitMonster
+                in
+                ( newMonster
+                , (case newMonster.kind of
+                    Player _ ->
+                        Ports.playSound Hit1
+
+                    _ ->
+                        Ports.playSound Hit2
+                  )
+                    |> Array.repeat 1
+                )
 
 
 heal : HP -> Monster -> Monster

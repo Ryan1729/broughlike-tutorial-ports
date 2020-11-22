@@ -353,6 +353,7 @@ type SpellName
     | ALCHEMY
     | POWER
     | BUBBLE
+    | BRAVERY
 
 
 spellNameToString : SpellName -> String
@@ -391,6 +392,9 @@ spellNameToString name =
         BUBBLE ->
             "BUBBLE"
 
+        BRAVERY ->
+            "BRAVERY"
+
 
 spellNameGen : Random.Generator SpellName
 spellNameGen =
@@ -406,6 +410,7 @@ spellNameGen =
           , ALCHEMY
           , POWER
           , BUBBLE
+          , BRAVERY
           ]
         )
 
@@ -449,6 +454,9 @@ cast name =
 
         BUBBLE ->
             bubble
+
+        BRAVERY ->
+            bravery
 
 
 runningWithNoCmds state =
@@ -864,3 +872,30 @@ bubble state =
                         |> SpellBook
     }
         |> runningWithNoCmds
+
+
+bravery : Spell
+bravery state =
+    changeTiles
+        (Tiles.foldMonsters
+            (\monster ts ->
+                Tiles.transform
+                    (\tile ->
+                        { tile
+                            | monster =
+                                Just
+                                    (if Monster.isPlayer monster.kind then
+                                        { monster | shield = 2 }
+
+                                     else
+                                        Monster.stun monster
+                                    )
+                        }
+                    )
+                    monster
+                    ts
+            )
+            state.tiles
+            state.tiles
+        )
+        state

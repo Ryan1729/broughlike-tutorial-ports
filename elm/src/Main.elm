@@ -507,12 +507,15 @@ tick stateIn =
         )
         []
         -- We collect the tile, monster pairs into a list so that we don't hit
-        -- the same monster twice in the iteration
+        -- the same monster twice in the iteration, in case it moves
         |> List.foldr
             (\( tile, m ) ( state, cmds ) ->
                 if Monster.isPlayer m.kind then
-                    -- The player updating is handled before we call `tick`
-                    ( state, cmds )
+                    ( { state
+                        | tiles = Tiles.set { tile | monster = Just { m | shield = m.shield - 1 } } state.tiles
+                      }
+                    , cmds
+                    )
 
                 else if m.dead then
                     ( { state
