@@ -200,6 +200,19 @@ maxNumSpells =
     9
 
 
+foldSpellKeysr : (Int -> a -> a) -> a -> a
+foldSpellKeysr folder acc =
+    folder 9 acc
+        |> folder 8
+        |> folder 7
+        |> folder 6
+        |> folder 5
+        |> folder 4
+        |> folder 3
+        |> folder 2
+        |> folder 1
+
+
 getPair key spells =
     ( key, Dict.get key spells )
 
@@ -339,6 +352,7 @@ type SpellName
     | KINGMAKER
     | ALCHEMY
     | POWER
+    | BUBBLE
 
 
 spellNameToString : SpellName -> String
@@ -374,6 +388,9 @@ spellNameToString name =
         POWER ->
             "POWER"
 
+        BUBBLE ->
+            "BUBBLE"
+
 
 spellNameGen : Random.Generator SpellName
 spellNameGen =
@@ -388,6 +405,7 @@ spellNameGen =
           , KINGMAKER
           , ALCHEMY
           , POWER
+          , BUBBLE
           ]
         )
 
@@ -428,6 +446,9 @@ cast name =
 
         POWER ->
             power
+
+        BUBBLE ->
+            bubble
 
 
 runningWithNoCmds state =
@@ -817,3 +838,29 @@ power =
             in
             changeTiles tiles state
         )
+
+
+bubble : Spell
+bubble state =
+    { state
+        | spells =
+            case state.spells of
+                SpellBook spellbook ->
+                    foldSpellKeysr
+                        (\key spellsIn ->
+                            case Dict.get key spellsIn of
+                                Just _ ->
+                                    spellsIn
+
+                                Nothing ->
+                                    case Dict.get (key - 1) spellsIn of
+                                        Nothing ->
+                                            spellsIn
+
+                                        Just name ->
+                                            Dict.insert key name spellsIn
+                        )
+                        spellbook
+                        |> SpellBook
+    }
+        |> runningWithNoCmds
