@@ -257,7 +257,7 @@ drawState stateIn =
 
         prev =
             pushText
-                { text = "Level " ++ levelNumToString state.level
+                { text = "Level: " ++ levelNumToString state.level
                 , size = 30
                 , centered = False
                 , y = Y 40
