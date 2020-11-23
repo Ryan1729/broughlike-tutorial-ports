@@ -356,6 +356,7 @@ type SpellName
     | BRAVERY
     | BOLT
     | CROSS
+    | EX
 
 
 spellNameToString : SpellName -> String
@@ -403,6 +404,9 @@ spellNameToString name =
         CROSS ->
             "CROSS"
 
+        EX ->
+            "EX"
+
 
 spellNameGen : Random.Generator SpellName
 spellNameGen =
@@ -421,6 +425,7 @@ spellNameGen =
           , BRAVERY
           , BOLT
           , CROSS
+          , EX
           ]
         )
 
@@ -473,6 +478,9 @@ cast name =
 
         CROSS ->
             cross
+
+        EX ->
+            ex
 
 
 runningWithNoCmds state =
@@ -1010,5 +1018,31 @@ cross stateIn =
         , ( DX0, DY1 )
         , ( DXm1, DY0 )
         , ( DX1, DY0 )
+        ]
+        |> runningWithCmds
+
+
+ex : Spell
+ex stateIn =
+    let
+        damage =
+            Monster.HP 3
+
+        effect =
+            SpriteIndex 14
+    in
+    List.foldr
+        (\deltas ( state, cmds ) ->
+            let
+                ( s, newCmds ) =
+                    boltTravel deltas effect damage state
+            in
+            ( s, Array.append cmds newCmds )
+        )
+        ( stateIn, Ports.noCmds )
+        [ ( DXm1, DYm1 )
+        , ( DXm1, DY1 )
+        , ( DX1, DYm1 )
+        , ( DX1, DY1 )
         ]
         |> runningWithCmds
