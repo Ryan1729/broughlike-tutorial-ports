@@ -355,6 +355,7 @@ type SpellName
     | BUBBLE
     | BRAVERY
     | BOLT
+    | CROSS
 
 
 spellNameToString : SpellName -> String
@@ -399,6 +400,9 @@ spellNameToString name =
         BOLT ->
             "BOLT"
 
+        CROSS ->
+            "CROSS"
+
 
 spellNameGen : Random.Generator SpellName
 spellNameGen =
@@ -416,6 +420,7 @@ spellNameGen =
           , BUBBLE
           , BRAVERY
           , BOLT
+          , CROSS
           ]
         )
 
@@ -465,6 +470,9 @@ cast name =
 
         BOLT ->
             bolt
+
+        CROSS ->
+            cross
 
 
 runningWithNoCmds state =
@@ -981,3 +989,26 @@ bolt =
             boltTravel player.lastMove (boltEffect player.lastMove) (Monster.HP 4)
                 >> runningWithCmds
         )
+
+
+cross : Spell
+cross stateIn =
+    let
+        damage =
+            Monster.HP 2
+    in
+    List.foldr
+        (\deltas ( state, cmds ) ->
+            let
+                ( s, newCmds ) =
+                    boltTravel deltas (boltEffect deltas) damage state
+            in
+            ( s, Array.append cmds newCmds )
+        )
+        ( stateIn, Ports.noCmds )
+        [ ( DX0, DYm1 )
+        , ( DX0, DY1 )
+        , ( DXm1, DY0 )
+        , ( DX1, DY0 )
+        ]
+        |> runningWithCmds
