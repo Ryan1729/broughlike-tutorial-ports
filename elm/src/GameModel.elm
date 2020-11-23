@@ -2,7 +2,7 @@ module GameModel exposing (GameModel(..), Spell, SpellBook, SpellName(..), Spell
 
 import Array exposing (Array)
 import Dict exposing (Dict)
-import Game exposing (DeltaX, DeltaY, LevelNum, Positioned, Score(..), Shake, X(..), Y(..), plainPositioned)
+import Game exposing (DeltaX(..), DeltaY(..), LevelNum, Positioned, Score(..), Shake, SpriteIndex(..), X(..), Y(..), plainPositioned)
 import Map
 import Monster exposing (Monster)
 import Ports exposing (CommandRecords, noCmds, withNoCmd)
@@ -354,6 +354,7 @@ type SpellName
     | POWER
     | BUBBLE
     | BRAVERY
+    | BOLT
 
 
 spellNameToString : SpellName -> String
@@ -395,6 +396,9 @@ spellNameToString name =
         BRAVERY ->
             "BRAVERY"
 
+        BOLT ->
+            "BOLT"
+
 
 spellNameGen : Random.Generator SpellName
 spellNameGen =
@@ -411,6 +415,7 @@ spellNameGen =
           , POWER
           , BUBBLE
           , BRAVERY
+          , BOLT
           ]
         )
 
@@ -458,10 +463,19 @@ cast name =
         BRAVERY ->
             bravery
 
+        BOLT ->
+            bolt
+
 
 runningWithNoCmds state =
     ( Running state
     , noCmds
+    )
+
+
+runningWithCmds ( state, cmds ) =
+    ( Running state
+    , cmds
     )
 
 
@@ -508,6 +522,65 @@ changeTiles : Tiles -> Spell
 changeTiles tiles state =
     { state | tiles = tiles }
         |> runningWithNoCmds
+
+
+boltEffect : ( a, DeltaY ) -> Game.SpriteIndex
+boltEffect ( _, dy ) =
+    (15
+        + (case dy of
+            DY1 ->
+                1
+
+            DYm1 ->
+                1
+
+            DY0 ->
+                0
+          )
+    )
+        |> SpriteIndex
+
+
+boltTravel : ( DeltaX, DeltaY ) -> Game.SpriteIndex -> Monster.HP -> State -> ( State, CommandRecords )
+boltTravel deltas effect damage stateIn =
+    let
+        newTile =
+            Tiles.get stateIn.tiles stateIn.player
+
+        hit =
+            Monster.hit damage
+
+        loop : Tile -> ( State, CommandRecords ) -> ( State, CommandRecords )
+        loop prevTile ( state, cmdsIn ) =
+            let
+                testTile =
+                    Tiles.getNeighbor state.tiles prevTile deltas
+
+                ( hitMonster, hitCmds ) =
+                    case testTile.monster of
+                        Just m ->
+                            case hit m of
+                                ( a, b ) ->
+                                    ( Just a, b )
+
+                        Nothing ->
+                            ( Nothing, Ports.noCmds )
+
+                tiles =
+                    Tiles.set
+                        ({ testTile | monster = hitMonster }
+                            |> Tile.setEffect effect
+                        )
+                        state.tiles
+            in
+            if Tile.isPassable testTile then
+                ( { state | tiles = tiles }, Array.append cmdsIn hitCmds )
+                    |> loop testTile
+
+            else
+                ( state, cmdsIn )
+    in
+    loop newTile ( stateIn, Ports.noCmds )
 
 
 
@@ -899,3 +972,12 @@ bravery state =
             state.tiles
         )
         state
+
+
+bolt : Spell
+bolt =
+    requirePlayer
+        (\player ->
+            boltTravel player.lastMove (boltEffect player.lastMove) (Monster.HP 4)
+                >> runningWithCmds
+        )
