@@ -8081,12 +8081,7 @@ var $author$project$GameModel$ex = function (stateIn) {
 				function (deltas, _v0) {
 					var state = _v0.a;
 					var cmds = _v0.b;
-					var _v1 = A4(
-						$author$project$GameModel$boltTravel,
-						deltas,
-						$author$project$GameModel$boltEffect(deltas),
-						damage,
-						state);
+					var _v1 = A4($author$project$GameModel$boltTravel, deltas, effect, damage, state);
 					var s = _v1.a;
 					var newCmds = _v1.b;
 					return _Utils_Tuple2(
@@ -10303,7 +10298,7 @@ var $author$project$Main$movePlayer = F2(
 	});
 var $author$project$Main$startingHp = 3;
 var $author$project$Main$startGame = function (seedIn) {
-	return A6($author$project$GameModel$startLevel, 0, seedIn, $author$project$Main$startingHp, $elm$core$Maybe$Nothing, 9, 1);
+	return A6($author$project$GameModel$startLevel, 0, seedIn, $author$project$Main$startingHp, $elm$core$Maybe$Nothing, 1, 1);
 };
 var $author$project$Main$updateGame = F2(
 	function (input, model) {
