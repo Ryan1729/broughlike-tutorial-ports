@@ -1,15 +1,22 @@
 import raylib
 
-const screenWidth = 1024
-const screenHeight = 768
+InitWindow 0, 0, "AWESOME BROUGHLIKE"
 
-InitWindow screenWidth, screenHeight, "AWESOME BROUGHLIKE"
+var screenWidth = GetScreenWidth()
+var screenHeight = GetScreenHeight()
 
 while not WindowShouldClose():
+    if IsKeyPressed(KEY_F11):
+        ToggleFullscreen()
+        screenWidth = GetScreenWidth()
+        screenHeight = GetScreenHeight()
+    
     BeginDrawing()
 
     ClearBackground DARKGRAY
 
-    DrawText "Hello World!", 0, 0, 42, RAYWHITE
+    const fontSize = 42
+    const text = "Hello World!"
+    DrawText text, (screenWidth - MeasureText(text, fontSize)) div 2, (screenHeight - fontSize) div 2, fontSize, RAYWHITE
 
     EndDrawing()
