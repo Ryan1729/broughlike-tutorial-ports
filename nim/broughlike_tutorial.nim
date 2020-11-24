@@ -10,13 +10,17 @@ while not WindowShouldClose():
         ToggleFullscreen()
         screenWidth = GetScreenWidth()
         screenHeight = GetScreenHeight()
-    
+
     BeginDrawing()
 
     ClearBackground DARKGRAY
 
     const fontSize = 42
     const text = "Hello World!"
-    DrawText text, (screenWidth - MeasureText(text, fontSize)) div 2, (screenHeight - fontSize) div 2, fontSize, RAYWHITE
+    DrawText text,
+        (screenWidth - MeasureText(text, fontSize)) div 2,
+        (screenHeight - fontSize) div 2,
+        fontSize,
+        RAYWHITE
 
     EndDrawing()
