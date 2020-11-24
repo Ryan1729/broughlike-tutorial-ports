@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<title>AWESOME BROUGHLIKE</title>
+<meta charset="UTF-8">
+<style>
+    canvas{
+        outline: 1px solid white;
+    }
+
+    body{
+        background-color: indigo;
+        text-align: center;
+        margin-top: 50px;
+    }
+</style>
+<canvas></canvas>
+<div id="error-div" />
+<script>
+    spritesheet = new Image();
+    spritesheet.src = 'spritesheet.png';
+
+    canvas = document.querySelector("canvas");
+    ctx = canvas.getContext("2d");
+</script>
+<script type="text/javascript" src="elm.js"></script>
+<script type="text/javascript">
+const seed = new Date().getTime();
+console.log(seed)
+
+const scoresKey = "scores";
+
+const getScores = () => localStorage[scoresKey] ? JSON.parse(localStorage[scoresKey]) : [];
+
+var app = Elm.Main.init({
+    node: document.getElementById("error-div"),
+    flags: {
+        seed,
+        scores: getScores()
+    }
+});
+
+let uiWidth = canvas.width / 2;
+
+const sendScores = () => {
+    app.ports.scores.send(getScores());
+};
+
+sounds = {
+    hit1: new Audio('sounds/hit1.wav'),
+    hit2: new Audio('sounds/hit2.wav'),
+    treasure: new Audio('sounds/treasure.wav'),
+    newLevel: new Audio('sounds/newLevel.wav'),
+    spell: new Audio('sounds/spell.wav'),
+};
+
+const actions = {
+    "drawSprite": ({alpha, sprite, x, y, tileSize}) => {
+        ctx.globalAlpha = alpha;
+        ctx.drawImage(
+            spritesheet,
+            sprite*16,
+            0,
+            16,
+            16,
+            x,
+            y,
+            tileSize,
+            tileSize
+        );
+        ctx.globalAlpha = 1;
+    },
+    "drawOverlay": () => {
+        ctx.fillStyle = 'rgba(0,0,0,.75)';
+        ctx.fillRect(0,0,canvas.width, canvas.height);
+    },
+    "setCanvasDimensions": ({w, h, uiW}) => {
+        uiWidth = uiW
+        canvas.width = w;
+        canvas.height = h;
+        canvas.style.width = canvas.width + 'px';
+        canvas.style.height = canvas.height + 'px';
+        ctx.imageSmoothingEnabled = false;
+    },
+    "drawText": ({text, size, centered, textY, colour}) => {
+        ctx.fillStyle = colour;
+        ctx.font = size + "px monospace";
+        let textX;
+        if(centered){
+            textX = (canvas.width-ctx.measureText(text).width)/2;
+        }else{
+            textX = canvas.width-uiWidth+25;
+        }
+
+        ctx.fillText(text, textX, textY);
+    },
+    "getScores": sendScores,
+    "addScore": ({scoreObject}) => {
+        let scores = getScores();
+        // TODO: Is there a reasonable way to move this logic into elm?
+        let lastScore = scores.pop();
+        
+        if(lastScore){
+            if(lastScore.active){
+                scoreObject.run = lastScore.run+1;
+                scoreObject.totalScore += lastScore.totalScore;
+            }else{
+                scores.push(lastScore);
+            }
+        }
+        scores.push(scoreObject);
+
+        localStorage[scoresKey] = JSON.stringify(scores);
+        sendScores()
+    },
+    "playSound": ({soundName}) => {
+        sounds[soundName].currentTime = 0;
+        sounds[soundName].play();
+    }
+}
+
+app.ports.platform.subscribe((commands) => {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    for (var i = 0; i < commands.length; i += 1) {
+        const command = commands[i];
+        const action = actions[command.kind];
+        if (action) {
+            action(command)
+        } else {
+            console.error(`Unknown command kind: "${command.kind}"`)
+        }
+    }
+});
+</script>
