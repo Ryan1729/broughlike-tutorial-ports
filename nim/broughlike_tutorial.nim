@@ -15,12 +15,6 @@ while not WindowShouldClose():
 
     ClearBackground DARKGRAY
 
-    const fontSize = 42
-    const text = "Hello World!"
-    DrawText text,
-        (screenWidth - MeasureText(text, fontSize)) div 2,
-        (screenHeight - fontSize) div 2,
-        fontSize,
-        RAYWHITE
+    DrawRectangle(0, 0, 20, 20, BLACK)
 
     EndDrawing()
