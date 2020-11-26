@@ -1,1 +1,1 @@
-nimpretty "$(./files_to_format)" && LD_LIBRARY_PATH="." nim c -r -d:release --passL:-s ./broughlike_tutorial.nim
+./build && LD_LIBRARY_PATH="." ./broughlike_tutorial

@@ -1,1 +1,1 @@
-nimpretty "$(./files_to_format)" && nim c -d:release --passL:-s ./broughlike_tutorial.nim
+nimpretty broughlike_tutorial.nim game.nim && nim c -d:release --passL:-s ./broughlike_tutorial.nim

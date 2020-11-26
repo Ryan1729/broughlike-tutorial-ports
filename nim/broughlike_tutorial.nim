@@ -1,5 +1,7 @@
 import macros, raylib
 
+from game import nil
+
 # no_ex: allow no exceptions
 macro no_ex(x: untyped): untyped =
     #echo "x = ", tree_repr(x)
@@ -14,24 +16,72 @@ macro no_ex(x: untyped): untyped =
 
     result = x
 
+const INDIGO = Color(a: 0xffu8, r: 0x4bu8, g: 0, b: 0x82u8)
 
-InitWindow 0, 0, "AWESOME BROUGHLIKE"
+type sizest = object
+    playAreaX: int32
+    playAreaY: int32
+    playAreaW: int32
+    playAreaH: int32
+    tile: int32
 
-var screenWidth = GetScreenWidth()
-var screenHeight = GetScreenHeight()
+var sizes: sizest
 
 var x, y = 0
 
 no_ex:
     proc draw() =
-        ClearBackground DARKGRAY
-        DrawRectangle(x*20, y*20, 20, 20, BLACK)
+        ClearBackground INDIGO
+
+        # the -1 and +2 business makes the border lie just outside the actual
+        # play area
+        DrawRectangleLines(
+            sizes.playAreaX - 1,
+            sizes.playAreaY - 1,
+            sizes.playAreaW + 2,
+            sizes.playAreaH + 2,
+            WHITE
+        )
+
+        DrawRectangle(
+            sizes.playAreaX + x*sizes.tile,
+            sizes.playAreaY + y*sizes.tile,
+            sizes.tile,
+            sizes.tile,
+            BLACK
+        )
+
+    proc freshSizes(): sizest =
+        let w = GetScreenWidth()
+        let h = GetScreenHeight()
+        let tile = min(
+            w div (game.NumTiles+game.UIWidth),
+            h div game.NumTiles,
+        )
+        let
+            playAreaW = tile*(game.NumTiles+game.UIWidth)
+            playAreaH = tile*game.NumTiles
+            playAreaX = (w-playAreaW) div 2
+            playAreaY = (h-playAreaH) div 2
+
+        return sizest(
+            playAreaX: playAreaX,
+            playAreaY: playAreaY,
+            playAreaW: playAreaW,
+            playAreaH: playAreaH,
+            tile: tile,
+        )
+
+
+InitWindow 0, 0, "AWESOME BROUGHLIKE"
+
+
+sizes = freshSizes()
 
 while not WindowShouldClose():
     if IsKeyPressed(KEY_F11):
         ToggleFullscreen()
-        screenWidth = GetScreenWidth()
-        screenHeight = GetScreenHeight()
+        sizes = freshSizes()
 
     if IsKeyPressed(KEY_W) or IsKeyPressed(KEY_UP):
         y -= 1
