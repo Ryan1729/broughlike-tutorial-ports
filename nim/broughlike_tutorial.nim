@@ -1,5 +1,12 @@
-import macros, raylib
 
+import raylib
+# Put this above everything but the raylib import, since it seems like we get
+# SIGSEGV errors if we call (some?) raylib stuff before calling this.
+InitWindow 0, 0, "AWESOME BROUGHLIKE"
+
+import macros
+
+from assets import nil
 from game import nil
 
 # no_ex: allow no exceptions
@@ -27,9 +34,22 @@ type sizest = object
 
 var sizes: sizest
 
-var x, y = 0
+type SpriteIndex = uint8
+type ScreenPos = uint8
+
+var x, y: ScreenPos = 0
+
+var spritesheet: Texture2D = LoadTextureFromImage(assets.spritesheetImage)
 
 no_ex:
+    proc drawSprite(sprite: SpriteIndex, x, y: ScreenPos) =
+        DrawTextureRec(
+            spritesheet,
+            Rectangle(x: float(sprite) * 16, y: 0, width: 16, height: 16),
+            Vector2(x: float(x), y: float(y)),
+            WHITE
+        )
+
     proc draw() =
         ClearBackground INDIGO
 
@@ -43,13 +63,7 @@ no_ex:
             WHITE
         )
 
-        DrawRectangle(
-            sizes.playAreaX + x*sizes.tile,
-            sizes.playAreaY + y*sizes.tile,
-            sizes.tile,
-            sizes.tile,
-            BLACK
-        )
+        drawSprite(SpriteIndex(0), x, y)
 
     proc freshSizes(): sizest =
         let w = GetScreenWidth()
@@ -71,10 +85,6 @@ no_ex:
             playAreaH: playAreaH,
             tile: tile,
         )
-
-
-InitWindow 0, 0, "AWESOME BROUGHLIKE"
-
 
 sizes = freshSizes()
 
