@@ -918,7 +918,7 @@ proc CheckCollisionPointTriangle*(point: Vector2; p1: Vector2; p2: Vector2; p3: 
 proc LoadImage*(fileName: cstring): Image {.RLAPI, importc: "LoadImage".} # Load image from file into CPU memory (RAM)
 proc LoadImageRaw*(fileName: cstring; width: int32; height: int32; format: int32; headerSize: int32): Image {.RLAPI, importc: "LoadImageRaw".} # Load image from RAW file data
 proc LoadImageAnim*(fileName: cstring; frames: pointer): Image {.RLAPI, importc: "LoadImageAnim".} # Load image sequence from file (frames appended to image.data)
-proc LoadImageFromMemory*(fileType: cstring; fileData: ptr ptr #[unsigned]# char; dataSize: int32): Image {.RLAPI, importc: "LoadImageFromMemory".} # Load image from memory buffer, fileType refers to extension: i.e. "png"
+proc LoadImageFromMemory*(fileType: cstring; fileData: ptr #[ptr unsigned]# char; dataSize: int32): Image {.RLAPI, importc: "LoadImageFromMemory".} # Load image from memory buffer, fileType refers to extension: i.e. "png"
 proc UnloadImage*(image: Image) {.RLAPI, importc: "UnloadImage".} # Unload image from CPU memory (RAM)
 proc ExportImage*(image: Image; fileName: cstring) {.RLAPI, importc: "ExportImage".} # Export image data to file
 proc ExportImageAsCode*(image: Image; fileName: cstring) {.RLAPI, importc: "ExportImageAsCode".} # Export image as code file defining an array of bytes
@@ -1024,7 +1024,7 @@ proc GetFontDefault*(): Font {.RLAPI, importc: "GetFontDefault".} # Get the defa
 proc LoadFont*(fileName: cstring): Font {.RLAPI, importc: "LoadFont".} # Load font from file into GPU memory (VRAM)
 proc LoadFontEx*(fileName: cstring; fontSize: int32; fontChars: pointer; charsCount: int32): Font {.RLAPI, importc: "LoadFontEx".} # Load font from file with extended parameters
 proc LoadFontFromImage*(image: Image; key: Color; firstChar: int32): Font {.RLAPI, importc: "LoadFontFromImage".} # Load font from Image (XNA style)
-proc LoadFontFromMemory*(fileType: cstring; fileData: ptr ptr #[unsigned]# char; dataSize: int32; fontSize: int32; fontChars: pointer; charsCount: int32): Font {.RLAPI, importc: "LoadFontFromMemory".} # Load font from memory buffer, fileType refers to extension: i.e. "ttf"
+proc LoadFontFromMemory*(fileType: cstring; fileData: ptr #[ptr unsigned]# char; dataSize: int32; fontSize: int32; fontChars: pointer; charsCount: int32): Font {.RLAPI, importc: "LoadFontFromMemory".} # Load font from memory buffer, fileType refers to extension: i.e. "ttf"
 proc LoadFontData*(fileData: ptr ptr #[unsigned]# char; dataSize: int32; fontSize: int32; fontChars: pointer; charsCount: int32; typex: int32): ptr CharInfo {.RLAPI, importc: "LoadFontData".} # Load font data for further use
 proc GenImageFontAtlas*(chars: ptr ptr CharInfo; recs: ptr Rectangle; charsCount: int32; fontSize: int32; padding: int32; packMethod: int32): Image {.RLAPI, importc: "GenImageFontAtlas".} # Generate image font atlas using chars info
 proc UnloadFont*(font: Font) {.RLAPI, importc: "UnloadFont".} # Unload Font from GPU memory (VRAM)
