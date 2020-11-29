@@ -25,28 +25,38 @@ macro no_ex(x: untyped): untyped =
 
 const INDIGO = Color(a: 0xffu8, r: 0x4bu8, g: 0, b: 0x82u8)
 
-type sizest = object
-    playAreaX: int32
-    playAreaY: int32
-    playAreaW: int32
-    playAreaH: int32
-    tile: int32
+type Size = int32
 
-var sizes: sizest
+type sizesObj = object
+    playAreaX: Size
+    playAreaY: Size
+    playAreaW: Size
+    playAreaH: Size
+    tile: Size
+
+var sizes: sizesObj
 
 type SpriteIndex = uint8
 type ScreenPos = uint8
+type TilePos = uint8
 
-var x, y: ScreenPos = 0
+var x, y: TilePos = 0
 
 var spritesheet: Texture2D = LoadTextureFromImage(assets.spritesheetImage)
 
 no_ex:
-    proc drawSprite(sprite: SpriteIndex, x, y: ScreenPos) =
-        DrawTextureRec(
+    proc drawSprite(sprite: SpriteIndex, x, y: TilePos) =
+        DrawTexturePro(
             spritesheet,
             Rectangle(x: float(sprite) * 16, y: 0, width: 16, height: 16),
-            Vector2(x: float(x), y: float(y)),
+            Rectangle(
+                x: float(sizes.playAreaX + (Size(x) * sizes.tile)),
+                y: float(sizes.playAreaY + (Size(y) * sizes.tile)),
+                width: float(sizes.tile),
+                height: float(sizes.tile)
+            ),
+            Vector2(x: 0, y: 0),
+            0.0,
             WHITE
         )
 
@@ -65,7 +75,7 @@ no_ex:
 
         drawSprite(SpriteIndex(0), x, y)
 
-    proc freshSizes(): sizest =
+    proc freshSizes(): sizesObj =
         let w = GetScreenWidth()
         let h = GetScreenHeight()
         let tile = min(
@@ -78,7 +88,7 @@ no_ex:
             playAreaX = (w-playAreaW) div 2
             playAreaY = (h-playAreaH) div 2
 
-        return sizest(
+        return sizesObj(
             playAreaX: playAreaX,
             playAreaY: playAreaY,
             playAreaW: playAreaW,
