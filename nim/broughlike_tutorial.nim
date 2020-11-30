@@ -7,7 +7,7 @@ InitWindow 0, 0, "AWESOME BROUGHLIKE"
 import macros
 
 from assets import nil
-from game import nil
+from game import `-=`, `+=`
 
 # no_ex: allow no exceptions
 macro no_ex(x: untyped): untyped =
@@ -36,16 +36,12 @@ type sizesObj = object
 
 var sizes: sizesObj
 
-type SpriteIndex = uint8
-type ScreenPos = uint8
-type TilePos = uint8
-
-var x, y: TilePos = 0
+var x, y: game.TilePos = game.TilePos(0)
 
 var spritesheet: Texture2D = LoadTextureFromImage(assets.spritesheetImage)
 
 no_ex:
-    proc drawSprite(sprite: SpriteIndex, x, y: TilePos) =
+    proc drawSprite(sprite: game.SpriteIndex, x, y: game.TilePos) =
         DrawTexturePro(
             spritesheet,
             Rectangle(x: float(sprite) * 16, y: 0, width: 16, height: 16),
@@ -73,7 +69,7 @@ no_ex:
             WHITE
         )
 
-        drawSprite(SpriteIndex(0), x, y)
+        drawSprite(game.SpriteIndex(0), x, y)
 
     proc freshSizes(): sizesObj =
         let w = GetScreenWidth()
