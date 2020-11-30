@@ -4,24 +4,8 @@ import raylib
 # SIGSEGV errors if we call (some?) raylib stuff before calling this.
 InitWindow 0, 0, "AWESOME BROUGHLIKE"
 
-import macros
-
 from assets import nil
-from game import `-=`, `+=`
-
-# no_ex: allow no exceptions
-macro no_ex(x: untyped): untyped =
-    #echo "x = ", tree_repr(x)
-
-    for child in x:
-        let raisesPragma: NimNode = nnkExprColonExpr.newTree(
-            newIdentNode("raises"),
-            nnkBracket.newTree()
-        )
-
-        addPragma(child, raisesPragma)
-
-    result = x
+from game import `-=`, `+=`, no_ex
 
 const INDIGO = Color(a: 0xffu8, r: 0x4bu8, g: 0, b: 0x82u8)
 
