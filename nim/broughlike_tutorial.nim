@@ -6,6 +6,7 @@ InitWindow 0, 0, "AWESOME BROUGHLIKE"
 
 from assets import nil
 from game import `-=`, `+=`, no_ex
+from tile import nil
 
 const INDIGO = Color(a: 0xffu8, r: 0x4bu8, g: 0, b: 0x82u8)
 
@@ -23,6 +24,11 @@ var sizes: sizesObj
 var
     x = game.TileX(0)
     y = game.TileY(0)
+    exampleTile = tile.Tile(
+        kind: tile.Kind.Floor,
+        x: game.TileX(1),
+        y: game.TileY(1)
+    )
 
 var spritesheet: Texture2D = LoadTextureFromImage(assets.spritesheetImage)
 
@@ -42,21 +48,27 @@ no_ex:
             WHITE
         )
 
-    proc draw() =
-        ClearBackground INDIGO
+var platform = game.Platform(sprite: drawSprite)
 
-        # the -1 and +2 business makes the border lie just outside the actual
-        # play area
-        DrawRectangleLines(
-            sizes.playAreaX - 1,
-            sizes.playAreaY - 1,
-            sizes.playAreaW + 2,
-            sizes.playAreaH + 2,
-            WHITE
-        )
 
-        drawSprite(game.SpriteIndex(0), x, y)
+proc draw() =
+    ClearBackground INDIGO
 
+    # the -1 and +2 business makes the border lie just outside the actual
+    # play area
+    DrawRectangleLines(
+        sizes.playAreaX - 1,
+        sizes.playAreaY - 1,
+        sizes.playAreaW + 2,
+        sizes.playAreaH + 2,
+        WHITE
+    )
+
+    drawSprite(game.SpriteIndex(0), x, y)
+
+    tile.draw(exampleTile, platform)
+
+no_ex:
     proc freshSizes(): sizesObj =
         let w = GetScreenWidth()
         let h = GetScreenHeight()
