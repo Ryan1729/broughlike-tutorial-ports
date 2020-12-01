@@ -20,12 +20,14 @@ type sizesObj = object
 
 var sizes: sizesObj
 
-var x, y: game.TilePos = game.TilePos(0)
+var
+    x = game.TileX(0)
+    y = game.TileY(0)
 
 var spritesheet: Texture2D = LoadTextureFromImage(assets.spritesheetImage)
 
 no_ex:
-    proc drawSprite(sprite: game.SpriteIndex, x, y: game.TilePos) =
+    proc drawSprite(sprite: game.SpriteIndex, x: game.TileX, y: game.TileY) =
         DrawTexturePro(
             spritesheet,
             Rectangle(x: float(sprite) * 16, y: 0, width: 16, height: 16),

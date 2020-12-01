@@ -60,5 +60,7 @@ template definePos(typ, base: untyped) =
     comparable(typ, base)
 
 
-definePos(ScreenPos, uint16)
-definePos(TilePos, uint8)
+definePos(ScreenX, uint16)
+definePos(ScreenY, uint16)
+definePos(TileX, uint8)
+definePos(TileY, uint8)
