@@ -4,7 +4,7 @@ from macros import newTree
 
 # no_ex: allow no exceptions
 macro no_ex*(x: untyped): untyped =
-    echo "x = ", macros.tree_repr(x)
+    #echo "x = ", macros.tree_repr(x)
 
     for child in macros.items(x):
         let raisesPragma: system.NimNode = macros.nnkExprColonExpr.newTree(
