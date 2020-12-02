@@ -6,6 +6,7 @@ InitWindow 0, 0, "AWESOME BROUGHLIKE"
 
 from assets import nil
 from game import `-=`, `+=`, no_ex
+from map import nil
 from tile import nil
 from world import nil
 
@@ -23,7 +24,10 @@ type sizesObj = object
 var sizes: sizesObj
 
 var
-    state = world.State(xy: game.TileXY(x: game.TileX(0), y: game.TileY(0)))
+    state = world.State(
+        xy: game.TileXY(x: game.TileX(0), y: game.TileY(0)),
+        tiles: map.generateTiles()
+    )
     exampleTile = tile.Tile(
         kind: tile.Kind.Floor,
         xy: game.TileXY(x: game.TileX(1), y: game.TileY(1))
@@ -63,9 +67,9 @@ no_ex:
             WHITE
         )
 
-        drawSprite(game.SpriteIndex(0), state.xy)
+        map.draw(state.tiles, platform)
 
-        tile.draw(exampleTile, platform)
+        drawSprite(game.SpriteIndex(0), state.xy)
 
     proc freshSizes(): sizesObj =
         let w = GetScreenWidth()

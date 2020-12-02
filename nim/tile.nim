@@ -10,6 +10,12 @@ type
     xy*: game.TileXY
 
 no_ex:
+    func newWall*(xy: game.TileXY): Tile =
+        result = Tile(kind: Kind.Wall, xy: xy)
+
+    func newFloor*(xy: game.TileXY): Tile =
+        result = Tile(kind: Kind.Floor, xy: xy)
+    
     proc draw*(tile: Tile, platform: game.Platform) =
         let sprite = case tile.kind
         of Wall:
