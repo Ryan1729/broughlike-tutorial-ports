@@ -65,5 +65,9 @@ definePos(ScreenY, uint16)
 definePos(TileX, uint8)
 definePos(TileY, uint8)
 
+type TileXY* = object
+    x*: TileX
+    y*: TileY
+
 type Platform* = object
-    sprite*: proc(sprite: SpriteIndex, x: TileX, y: TileY) {.raises: [].}
+    sprite*: proc(sprite: SpriteIndex, xy: TileXY) {.raises: [].}

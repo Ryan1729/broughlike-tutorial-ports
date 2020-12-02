@@ -7,6 +7,7 @@ InitWindow 0, 0, "AWESOME BROUGHLIKE"
 from assets import nil
 from game import `-=`, `+=`, no_ex
 from tile import nil
+from world import nil
 
 const INDIGO = Color(a: 0xffu8, r: 0x4bu8, g: 0, b: 0x82u8)
 
@@ -22,24 +23,22 @@ type sizesObj = object
 var sizes: sizesObj
 
 var
-    x = game.TileX(0)
-    y = game.TileY(0)
+    state = world.State(xy: game.TileXY(x: game.TileX(0), y: game.TileY(0)))
     exampleTile = tile.Tile(
         kind: tile.Kind.Floor,
-        x: game.TileX(1),
-        y: game.TileY(1)
+        xy: game.TileXY(x: game.TileX(1), y: game.TileY(1))
     )
 
 var spritesheet: Texture2D = LoadTextureFromImage(assets.spritesheetImage)
 
 no_ex:
-    proc drawSprite(sprite: game.SpriteIndex, x: game.TileX, y: game.TileY) =
+    proc drawSprite(sprite: game.SpriteIndex, xy: game.TileXY) =
         DrawTexturePro(
             spritesheet,
             Rectangle(x: float(sprite) * 16, y: 0, width: 16, height: 16),
             Rectangle(
-                x: float(sizes.playAreaX + (Size(x) * sizes.tile)),
-                y: float(sizes.playAreaY + (Size(y) * sizes.tile)),
+                x: float(sizes.playAreaX + (Size(xy.x) * sizes.tile)),
+                y: float(sizes.playAreaY + (Size(xy.y) * sizes.tile)),
                 width: float(sizes.tile),
                 height: float(sizes.tile)
             ),
@@ -64,7 +63,7 @@ no_ex:
             WHITE
         )
 
-        drawSprite(game.SpriteIndex(0), x, y)
+        drawSprite(game.SpriteIndex(0), state.xy)
 
         tile.draw(exampleTile, platform)
 
@@ -97,13 +96,13 @@ while not WindowShouldClose():
         sizes = freshSizes()
 
     if IsKeyPressed(KEY_W) or IsKeyPressed(KEY_UP):
-        y -= 1
+        state.xy.y -= 1
     if IsKeyPressed(KEY_S) or IsKeyPressed(KEY_DOWN):
-        y += 1
+        state.xy.y += 1
     if IsKeyPressed(KEY_A) or IsKeyPressed(KEY_LEFT):
-        x -= 1
+        state.xy.x -= 1
     if IsKeyPressed(KEY_D) or IsKeyPressed(KEY_RIGHT):
-        x += 1
+        state.xy.x += 1
 
     BeginDrawing()
 

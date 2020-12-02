@@ -7,8 +7,7 @@ type
 
   Tile* = object
     kind*: Kind
-    x*: game.TileX
-    y*: game.TileY
+    xy*: game.TileXY
 
 no_ex:
     proc draw*(tile: Tile, platform: game.Platform) =
@@ -20,6 +19,5 @@ no_ex:
 
         (platform.sprite)(
             sprite,
-            tile.x,
-            tile.y
+            tile.xy
         )
