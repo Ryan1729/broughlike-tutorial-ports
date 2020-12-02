@@ -66,4 +66,4 @@ definePos(TileX, uint8)
 definePos(TileY, uint8)
 
 type Platform* = object
-    sprite*: proc(sprite: SpriteIndex, x: TileX, y: TileY)
+    sprite*: proc(sprite: SpriteIndex, x: TileX, y: TileY) {.raises: [].}

@@ -48,27 +48,26 @@ no_ex:
             WHITE
         )
 
-var platform = game.Platform(sprite: drawSprite)
-
-
-proc draw() =
-    ClearBackground INDIGO
-
-    # the -1 and +2 business makes the border lie just outside the actual
-    # play area
-    DrawRectangleLines(
-        sizes.playAreaX - 1,
-        sizes.playAreaY - 1,
-        sizes.playAreaW + 2,
-        sizes.playAreaH + 2,
-        WHITE
-    )
-
-    drawSprite(game.SpriteIndex(0), x, y)
-
-    tile.draw(exampleTile, platform)
+const platform = game.Platform(sprite: drawSprite)
 
 no_ex:
+    proc draw() =
+        ClearBackground INDIGO
+
+        # the -1 and +2 business makes the border lie just outside the actual
+        # play area
+        DrawRectangleLines(
+            sizes.playAreaX - 1,
+            sizes.playAreaY - 1,
+            sizes.playAreaW + 2,
+            sizes.playAreaH + 2,
+            WHITE
+        )
+
+        drawSprite(game.SpriteIndex(0), x, y)
+
+        tile.draw(exampleTile, platform)
+
     proc freshSizes(): sizesObj =
         let w = GetScreenWidth()
         let h = GetScreenHeight()
