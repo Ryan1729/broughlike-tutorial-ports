@@ -20,7 +20,7 @@ const tileSize*: int = 64
 const NumTiles*: int = 9
 const UIWidth*: int = 4
 
-type SpriteIndex* = distinct uint8
+type SpriteIndex* = distinct range[0..16]
 
 template unsignedAdditive(typ, base: typedesc) =
     no_ex:
