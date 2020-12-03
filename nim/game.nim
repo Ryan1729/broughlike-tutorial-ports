@@ -1,7 +1,6 @@
 import system
 from macros import newTree
 
-
 # no_ex: allow no exceptions
 macro no_ex*(x: untyped): untyped =
     #echo "x = ", macros.tree_repr(x)

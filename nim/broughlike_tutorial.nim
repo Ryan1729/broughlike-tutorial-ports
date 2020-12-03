@@ -4,30 +4,44 @@ import raylib
 # SIGSEGV errors if we call (some?) raylib stuff before calling this.
 InitWindow 0, 0, "AWESOME BROUGHLIKE"
 
+from random import nil
+from times import nil
+
 from assets import nil
 from game import `-=`, `+=`, no_ex
 from map import nil
 from tile import nil
 from world import nil
 
+
 const INDIGO = Color(a: 0xffu8, r: 0x4bu8, g: 0, b: 0x82u8)
 
-type Size = int32
+type
+    Size = int32
 
-type sizesObj = object
-    playAreaX: Size
-    playAreaY: Size
-    playAreaW: Size
-    playAreaH: Size
-    tile: Size
+    sizesObj = object
+        playAreaX: Size
+        playAreaY: Size
+        playAreaW: Size
+        playAreaH: Size
+        tile: Size
 
-var sizes: sizesObj
+let
+    now = times.getTime()
+    seed = times.toUnix(now) * 1_000_000_000 + times.nanosecond(now)
+
+no_ex:
+    proc stateFromSeed(seed: auto): world.State =
+        var rng = random.initRand(seed)
+        world.State(
+            xy: game.TileXY(x: game.TileX(0), y: game.TileY(0)),
+            tiles: map.generateTiles(rng),
+            rng: rng
+        )
 
 var
-    state = world.State(
-        xy: game.TileXY(x: game.TileX(0), y: game.TileY(0)),
-        tiles: map.generateTiles()
-    )
+    state = stateFromSeed(seed)
+    sizes: sizesObj
     exampleTile = tile.Tile(
         kind: tile.Kind.Floor,
         xy: game.TileXY(x: game.TileX(1), y: game.TileY(1))
