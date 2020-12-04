@@ -4,13 +4,12 @@ import raylib
 # SIGSEGV errors if we call (some?) raylib stuff before calling this.
 InitWindow 0, 0, "AWESOME BROUGHLIKE"
 
-from random import nil
+from randomness import nil
 from times import nil
 
 from assets import nil
 from game import `-=`, `+=`, no_ex
 from map import nil
-from tile import nil
 from world import nil
 
 
@@ -26,13 +25,17 @@ type
         playAreaH: Size
         tile: Size
 
-let
-    now = times.getTime()
-    seed = times.toUnix(now) * 1_000_000_000 + times.nanosecond(now)
-
 no_ex:
-    proc stateFromSeed(seed: auto): world.State =
-        var rng = random.initRand(seed)
+    proc seedState(): world.State =
+        let
+            now = times.getTime()
+            seed = times.toUnix(now) * 1_000_000_000 + times.nanosecond(now)
+
+        # So we can reproduce weird situtations
+        echo seed
+
+        var rng = randomness.initRand(seed)
+
         world.State(
             xy: game.TileXY(x: game.TileX(0), y: game.TileY(0)),
             tiles: map.generateTiles(rng),
@@ -40,12 +43,8 @@ no_ex:
         )
 
 var
-    state = stateFromSeed(seed)
+    state = seedState()
     sizes: sizesObj
-    exampleTile = tile.Tile(
-        kind: tile.Kind.Floor,
-        xy: game.TileXY(x: game.TileX(1), y: game.TileY(1))
-    )
 
 var spritesheet: Texture2D = LoadTextureFromImage(assets.spritesheetImage)
 

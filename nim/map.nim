@@ -1,4 +1,4 @@
-from random import rand
+from randomness import rand01
 
 from game import no_ex, `<`, `<=`
 from tile import nil
@@ -24,7 +24,7 @@ no_ex:
             y = xy.y
         x > 0 and y > 0 and x < game.NumTiles - 1 and y < game.NumTiles - 1
 
-    proc generateTiles*(rng: var random.Rand): Tiles =
+    proc generateTiles*(rng: var randomness.Rand): Tiles =
         var tiles: TilesArray
         for y in 0..<game.NumTiles:
             for x in 0..<game.NumTiles:
@@ -34,7 +34,7 @@ no_ex:
 
                 tiles[i] = tile.newFloor(xy)
                 
-                if (not inBounds(xy)) or rand(rng, 1.0) < 0.3:
+                if (not inBounds(xy)) or rand01(rng) < 0.3:
                     tiles[i] = tile.newWall(xy)
                 else:
                     tiles[i] = tile.newFloor(xy)
