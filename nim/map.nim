@@ -1,7 +1,9 @@
-from randomness import rand01
+from randomness import rand01, tryTo, randomTileXY
+
+from res import ok, err
 
 from game import no_ex, `<`, `<=`
-from tile import nil
+from tile import isPassable, hasMonster
 
 const tileLen: int = game.NumTiles * game.NumTiles
 
@@ -47,3 +49,20 @@ no_ex:
         else:
             tile.newWall(xy)
 
+type TileResult = res.ult[tile.Tile, string]
+
+no_ex:
+    func randomPassableTile*(rng: var randomness.Rand, tiles: Tiles): TileResult =
+        var t = err(TileResult, "t was never written to")
+
+        let r = tryTo("get random passable tile", proc(): bool =
+            let tile = tiles.getTile(rng.randomTileXY)
+            t = ok(TileResult, tile)
+            return tile.isPassable and not tile.hasMonster
+        )
+
+        case r.isOk
+        of true:
+            t
+        of false:
+            err(r.error)

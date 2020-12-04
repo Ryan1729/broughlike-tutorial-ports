@@ -11,10 +11,10 @@ type
 
 no_ex:
     func newWall*(xy: game.TileXY): Tile =
-        result = Tile(kind: Kind.Wall, xy: xy)
+        Tile(kind: Kind.Wall, xy: xy)
 
     func newFloor*(xy: game.TileXY): Tile =
-        result = Tile(kind: Kind.Floor, xy: xy)
+        Tile(kind: Kind.Floor, xy: xy)
     
     proc draw*(tile: Tile, platform: game.Platform) =
         let sprite = case tile.kind
@@ -27,3 +27,20 @@ no_ex:
             sprite,
             tile.xy
         )
+
+    func isPassable*(kind: Kind): bool =
+        case kind
+        of Wall:
+            false
+        else:
+            true
+        
+    func isPassable*(t: Tile): bool =
+        t.kind.isPassable
+
+
+
+    func hasMonster*(t: Tile): bool =
+        # TODO once we store monsters
+        false
+        

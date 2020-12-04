@@ -8,8 +8,9 @@ from randomness import nil
 from times import nil
 
 from assets import nil
+from res import ok, err
 from game import `-=`, `+=`, no_ex
-from map import nil
+from map import generateTiles, randomPassableTile
 from world import nil
 
 
@@ -26,7 +27,7 @@ type
         tile: Size
 
 no_ex:
-    proc seedState(): world.State =
+    proc seedState(): res.ult[world.State, string] =
         let
             now = times.getTime()
             seed = times.toUnix(now) * 1_000_000_000 + times.nanosecond(now)
@@ -35,12 +36,18 @@ no_ex:
         echo seed
 
         var rng = randomness.initRand(seed)
+        let tiles = rng.generateTiles
+        let startingTile = rng.randomPassableTile(tiles)
 
-        world.State(
-            xy: game.TileXY(x: game.TileX(0), y: game.TileY(0)),
-            tiles: map.generateTiles(rng),
-            rng: rng
-        )
+        case startingTile.isOk:
+        of true:
+            world.State(
+                xy: startingTile.value.xy,
+                tiles: tiles,
+                rng: rng
+            ).ok
+        of false:
+            startingTile.error.err
 
 var
     state = seedState()
@@ -80,9 +87,28 @@ no_ex:
             WHITE
         )
 
-        map.draw(state.tiles, platform)
+        case state.isOk
+        of true:
+            map.draw(state.value.tiles, platform)
 
-        drawSprite(game.SpriteIndex(0), state.xy)
+            drawSprite(game.SpriteIndex(0), state.value.xy)
+        of false:
+            DrawTextRec(
+                GetFontDefault(),
+                state.error,
+                Rectangle(
+                    x: float(sizes.playAreaX),
+                    y: float(sizes.playAreaY),
+                    width: float(sizes.playAreaW),
+                    height: float(sizes.playAreaH)
+                ),
+                20.0,
+                4.0,
+                true,
+                RED
+            )
+
+
 
     proc freshSizes(): sizesObj =
         let w = GetScreenWidth()
@@ -112,14 +138,18 @@ while not WindowShouldClose():
         ToggleFullscreen()
         sizes = freshSizes()
 
-    if IsKeyPressed(KEY_W) or IsKeyPressed(KEY_UP):
-        state.xy.y -= 1
-    if IsKeyPressed(KEY_S) or IsKeyPressed(KEY_DOWN):
-        state.xy.y += 1
-    if IsKeyPressed(KEY_A) or IsKeyPressed(KEY_LEFT):
-        state.xy.x -= 1
-    if IsKeyPressed(KEY_D) or IsKeyPressed(KEY_RIGHT):
-        state.xy.x += 1
+    case state.isOk:
+    of true:
+        if IsKeyPressed(KEY_W) or IsKeyPressed(KEY_UP):
+            state.value.xy.y -= 1
+        if IsKeyPressed(KEY_S) or IsKeyPressed(KEY_DOWN):
+            state.value.xy.y += 1
+        if IsKeyPressed(KEY_A) or IsKeyPressed(KEY_LEFT):
+            state.value.xy.x -= 1
+        if IsKeyPressed(KEY_D) or IsKeyPressed(KEY_RIGHT):
+            state.value.xy.x += 1
+    of false:
+        discard
 
     BeginDrawing()
 
