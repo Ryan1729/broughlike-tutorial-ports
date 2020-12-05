@@ -55,11 +55,10 @@ no_ex:
     func randomPassableTile*(rng: var randomness.Rand, tiles: Tiles): TileResult =
         var t = err(TileResult, "t was never written to")
 
-        let r = tryTo("get random passable tile", proc(): bool =
+        let r = tryTo("get random passable tile"):
             let tile = tiles.getTile(rng.randomTileXY)
             t = ok(TileResult, tile)
-            return tile.isPassable and not tile.hasMonster
-        )
+            tile.isPassable and not tile.hasMonster
 
         case r.isOk
         of true:

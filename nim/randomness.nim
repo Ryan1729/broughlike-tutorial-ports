@@ -30,12 +30,16 @@ no_ex:
             y: TileY(randomRange(rng, 0, game.NumTiles - 1)),
         )
 
-    func tryTo*(description: string, callback: proc(): bool): TryToResult =
-        for _ in 0..1000 :
-            if callback():
-                return res.ok(TryToResult)
 
-        res.err(TryToResult, "Timeout while trying to " & description)
+template tryTo*(description: string, callback: untyped): TryToResult =
+    var output = res.err(TryToResult, "Timeout while trying to " & description)
+
+    for _ in 0..1000 :
+        if callback:
+            output = res.ok(TryToResult)
+            break
+
+    output
 
 
 
