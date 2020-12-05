@@ -30,6 +30,9 @@ no_ex:
             y: TileY(randomRange(rng, 0, game.NumTiles - 1)),
         )
 
+    proc shuffle* [T](rng: var r.Rand, arr: var openArray[T]) =
+        r.shuffle(rng, arr)
+
 
 template tryTo*(description: string, callback: untyped): TryToResult =
     var output = res.err(TryToResult, "Timeout while trying to " & description)

@@ -10,7 +10,7 @@ from times import nil
 from assets import nil
 from res import ok, err
 from game import `-=`, `+=`, no_ex
-from map import generateTiles, randomPassableTile
+from map import generateLevel, randomPassableTile
 from world import nil
 
 
@@ -36,18 +36,22 @@ no_ex:
         echo seed
 
         var rng = randomness.initRand(seed)
-        let tiles = rng.generateTiles
-        let startingTile = rng.randomPassableTile(tiles)
-
-        case startingTile.isOk:
+        let tiles = rng.generateLevel
+        case tiles.isOk:
         of true:
-            world.State(
-                xy: startingTile.value.xy,
-                tiles: tiles,
-                rng: rng
-            ).ok
+            let startingTile = rng.randomPassableTile(tiles.value)
+
+            case startingTile.isOk:
+            of true:
+                world.State(
+                    xy: startingTile.value.xy,
+                    tiles: tiles.value,
+                    rng: rng
+                ).ok
+            of false:
+                startingTile.error.err
         of false:
-            startingTile.error.err
+            tiles.error.err
 
 var
     state = seedState()

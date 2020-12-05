@@ -70,3 +70,32 @@ type TileXY* = object
 
 type Platform* = object
     sprite*: proc(sprite: SpriteIndex, xy: TileXY) {.raises: [].}
+
+type DeltaX* = enum DX0, DX1, DXm1
+type DeltaY* = enum DY0, DY1, DYm1
+
+proc `+` *(x: TileX, dx: DeltaX): TileX =
+    case dx:
+    of DX0:
+        x
+    of DX1:
+        x + 1
+    of DXm1:
+        x - 1
+
+proc `+` *(y: TileY, dy: DeltaY): TileY =
+    case dy:
+    of DY0:
+        y
+    of DY1:
+        y + 1
+    of DYm1:
+        y - 1
+
+type DeltaXY* = object
+    x*: DeltaX
+    y*: DeltaY
+
+
+proc `+` *(txy: TileXY, dxy: DeltaXY): TileXY =
+    TileXY(x: txy.x + dxy.x, y: txy.y + dxy.y)
