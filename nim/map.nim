@@ -61,22 +61,25 @@ no_ex:
 
         connectedTiles
 
-    proc generateTiles(rng: var Rand): Tiles =
+    proc generateTiles(rng: var Rand): tuple[tiles: Tiles, passableCount: int] =
         var tiles: TilesArray
+        var passableCount = 0
         for y in 0..<game.NumTiles:
             for x in 0..<game.NumTiles:
                 let
                     xy = game.TileXY(x: game.TileX(x), y: game.TileY(y))
                     i = xyToI(xy)
-
-                tiles[i] = tile.newFloor(xy)
                 
                 if (not inBounds(xy)) or rand01(rng) < 0.3:
                     tiles[i] = tile.newWall(xy)
                 else:
+                    passableCount += 1
                     tiles[i] = tile.newFloor(xy)
                 
-        Tiles(tiles: tiles)
+        (
+            Tiles(tiles: tiles),
+            passableCount
+        )
 
 type TileResult = res.ult[tile.Tile, string]
 
@@ -101,14 +104,14 @@ no_ex:
     proc generateLevel*(rng: var randomness.Rand): TilesResult =
         var tilesRes = err(TilesResult, "tiles was never written to")
         let r = tryTo("generate map"):
-            let tiles = generateTiles(rng)
+            let (tiles, passableCount) = generateTiles(rng)
 
             tilesRes = tiles.ok
 
             let tileRes = randomPassableTile(rng, tiles)
             case tileRes.isOk
             of true:
-                tiles.tiles.len == tileRes.value.getConnectedTiles(tiles, rng).len
+                passableCount == tileRes.value.getConnectedTiles(tiles, rng).len
             of false:
                 false
             
