@@ -38,9 +38,7 @@ template tryTo*(description: string, callback: untyped): TryToResult =
     var output = res.err(TryToResult, "Timeout while trying to " & description)
 
     for i in 0..1000 :
-        let good = callback
-        debugEcho "good ", good
-        if good:
+        if callback:
             output = res.ok(TryToResult)
             break
 
