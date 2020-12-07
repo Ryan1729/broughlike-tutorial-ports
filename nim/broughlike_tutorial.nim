@@ -4,13 +4,16 @@ import raylib
 # SIGSEGV errors if we call (some?) raylib stuff before calling this.
 InitWindow 0, 0, "AWESOME BROUGHLIKE"
 
-from randomness import nil
+
 from times import nil
+from options import isSome, get
 
 from assets import nil
+from randomness import nil
+from monster import draw
 from res import ok, err
-from game import `-=`, `+=`, no_ex
-from map import generateLevel, randomPassableTile
+from game import `-=`, `+=`, no_ex, DeltaX, DeltaY
+from map import generateLevel, randomPassableTile, move, tryMove, getTile
 from world import nil
 
 
@@ -26,6 +29,8 @@ type
         playAreaH: Size
         tile: Size
 
+    State = res.ult[world.State, string]
+
 no_ex:
     proc seedState(): res.ult[world.State, string] =
         let
@@ -36,15 +41,21 @@ no_ex:
         echo seed
 
         var rng = randomness.initRand(seed)
-        let tiles = rng.generateLevel
+        var tiles = rng.generateLevel
         case tiles.isOk:
         of true:
             let startingTile = rng.randomPassableTile(tiles.value)
 
             case startingTile.isOk:
             of true:
-                world.State(
-                    xy: startingTile.value.xy,
+                let xy = startingTile.value.xy
+                tiles.value.move(
+                    monster.newPlayer(xy),
+                    xy
+                )
+
+                (
+                    xy: xy,
                     tiles: tiles.value,
                     rng: rng
                 ).ok
@@ -52,6 +63,22 @@ no_ex:
                 startingTile.error.err
         of false:
             tiles.error.err
+
+{.push warning[ProveField]: off.}
+proc movePlayer(state: var State, dxy: game.DeltaXY) =
+
+    if state.isOk:
+        var s = state.value
+        let monster = s.tiles.getTile(s.xy).monster
+        if monster.isSome:
+            let moved = s.tiles.tryMove(
+                monster.get,
+                dxy
+            )
+            echo "moved ", moved
+        else:
+            state = State.err("Could not find player!")
+{.pop.}
 
 var
     state = seedState()
@@ -95,7 +122,8 @@ no_ex:
         of true:
             map.draw(state.value.tiles, platform)
 
-            drawSprite(game.SpriteIndex(0), state.value.xy)
+            for t in state.value.tiles:
+                t.monster.draw(platform)
         of false:
             DrawTextRec(
                 GetFontDefault(),
@@ -145,13 +173,13 @@ while not WindowShouldClose():
     case state.isOk:
     of true:
         if IsKeyPressed(KEY_W) or IsKeyPressed(KEY_UP):
-            state.value.xy.y -= 1
+            state.movePlayer((x: DX0, y: DYm1))
         if IsKeyPressed(KEY_S) or IsKeyPressed(KEY_DOWN):
-            state.value.xy.y += 1
+            state.movePlayer((x: DX0, y: DY1))
         if IsKeyPressed(KEY_A) or IsKeyPressed(KEY_LEFT):
-            state.value.xy.x -= 1
+            state.movePlayer((x: DXm1, y: DY0))
         if IsKeyPressed(KEY_D) or IsKeyPressed(KEY_RIGHT):
-            state.value.xy.x += 1
+            state.movePlayer((x: DX1, y: DY0))
     of false:
         discard
 

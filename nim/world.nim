@@ -5,7 +5,7 @@ from map import nil
 
 
 type
-  State* = object
-    xy*: game.TileXY
-    tiles*: map.Tiles
-    rng*: randomness.Rand
+  State* = tuple
+    xy: game.TileXY
+    tiles: map.Tiles
+    rng: randomness.Rand

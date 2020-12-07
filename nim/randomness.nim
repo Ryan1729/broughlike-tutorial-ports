@@ -25,7 +25,7 @@ no_ex:
         r.rand(rng, max) + min
 
     proc randomTileXY*(rng: var r.Rand): TileXY =
-        TileXY(
+        (
             x: TileX(randomRange(rng, 0, game.NumTiles - 1)),
             y: TileY(randomRange(rng, 0, game.NumTiles - 1)),
         )

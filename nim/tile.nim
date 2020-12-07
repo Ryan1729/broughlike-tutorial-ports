@@ -1,20 +1,24 @@
+from options import Option, none, isSome
+
 from game import no_ex
+from monster import Monster
 
 type
   Kind* = enum
     Wall,
     Floor
 
-  Tile* = object
-    kind*: Kind
-    xy*: game.TileXY
+  Tile* = tuple
+    kind: Kind
+    xy: game.TileXY
+    monster: Option[Monster]
 
 no_ex:
     func newWall*(xy: game.TileXY): Tile =
-        Tile(kind: Kind.Wall, xy: xy)
+        (kind: Kind.Wall, xy: xy, monster: none(Monster))
 
     func newFloor*(xy: game.TileXY): Tile =
-        Tile(kind: Kind.Floor, xy: xy)
+        (kind: Kind.Floor, xy: xy, monster: none(Monster))
     
     proc draw*(tile: Tile, platform: game.Platform) =
         let sprite = case tile.kind
@@ -38,9 +42,6 @@ no_ex:
     func isPassable*(t: Tile): bool =
         t.kind.isPassable
 
-
-
-    func hasMonster*(t: Tile): bool =
-        # TODO once we store monsters
-        false
         
+    func hasMonster*(t: Tile): bool =
+            t.monster.isSome

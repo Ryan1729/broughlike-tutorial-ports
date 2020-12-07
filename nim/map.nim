@@ -1,20 +1,20 @@
+from options import some, none
 from sequtils import filter, toSeq, any, concat
 
 from randomness import rand01, tryTo, randomTileXY, shuffle, Rand
 from res import ok, err
-from game import no_ex, `<`, `<=`, DeltaX, DeltaY, DeltaXY, `+`, `==`
+from game import no_ex, `<`, `<=`, TileXY, DeltaX, DeltaY, DeltaXY, `+`, `==`
 from tile import Tile, isPassable, hasMonster
+from monster import Monster
 
 const tileLen: int = game.NumTiles * game.NumTiles
 
 type
-    TilesArray = array[tileLen, tile.Tile]
-    Tiles* = object
-        tiles: TilesArray
+    Tiles* = array[tileLen, tile.Tile]
 
 no_ex:
     proc draw*(tiles: Tiles, platform: game.Platform) =
-        for t in tiles.tiles:
+        for t in tiles:
             tile.draw(t, platform)
 
     func xyToI(xy: game.TileXY): int =
@@ -28,31 +28,32 @@ no_ex:
 
     func getTile*(tiles: Tiles, xy: game.TileXY): Tile =
         if inBounds xy:
-            tiles.tiles[xyToI(xy)]
+            tiles[xyToI(xy)]
         else:
             tile.newWall(xy)
 
-    func getNeighbor(tiles: Tiles, t: Tile, dxy: DeltaXY): Tile =
-        getTile(tiles, t.xy + dxy)
+    func getNeighbor(tiles: Tiles, txy: TileXY, dxy: DeltaXY): Tile =
+        getTile(tiles, txy + dxy)
     
 
-    func getAdjacentNeighbors(t: Tile, tiles: Tiles, rng: var Rand): array[4, Tile] =
+    func getAdjacentNeighbors(txy: TileXY, tiles: Tiles, rng: var Rand): array[4, Tile] =
         result = [
-            tiles.getNeighbor(t, DeltaXY(x: DX0, y: DYm1)),
-            tiles.getNeighbor(t, DeltaXY(x: DX0, y: DY1)),
-            tiles.getNeighbor(t, DeltaXY(x: DXm1, y: DY0)),
-            tiles.getNeighbor(t, DeltaXY(x: DX1, y: DY0))
+            tiles.getNeighbor(txy, (x: DX0, y: DYm1)),
+            tiles.getNeighbor(txy, (x: DX0, y: DY1)),
+            tiles.getNeighbor(txy, (x: DXm1, y: DY0)),
+            tiles.getNeighbor(txy, (x: DX1, y: DY0))
         ]
         shuffle(rng, result)
 
-    func getAdjacentPassableNeighbors(t: Tile, tiles: Tiles, rng: var Rand): seq[Tile] = 
-        getAdjacentNeighbors(t, tiles, rng).toSeq.filter(isPassable)
+    func getAdjacentPassableNeighbors(txy: TileXY, tiles: Tiles, rng: var Rand): seq[Tile] = 
+        getAdjacentNeighbors(txy, tiles, rng).toSeq.filter(isPassable)
 
     func getConnectedTiles(til: Tile, tiles: Tiles, rng: var Rand): seq[Tile] =
         var connectedTiles = @[til]
         var frontier = @[til]
         while frontier.len > 0:
             let neighbors = frontier.pop
+                                .xy
                                 .getAdjacentPassableNeighbors(tiles, rng)
                                 .filter(proc(t: Tile): bool =
                                     not connectedTiles.any(proc(ct: Tile): bool = ct == t))
@@ -61,13 +62,26 @@ no_ex:
 
         connectedTiles
 
+    proc move*(tiles: var Tiles, monster: Monster, xy: TileXy) =
+        tiles[xyToI(monster.xy)].monster = none(Monster)
+        tiles[xyToI(xy)].monster = some(monster)
+
+    proc tryMove*(tiles: var Tiles, monster: Monster, dxy: DeltaXY): bool =
+        let newTile = tiles.getNeighbor(monster.xy, dxy)
+        if newTile.isPassable:
+            if not newTile.hasMonster:
+                tiles.move(monster, newTile.xy)
+            
+            result = true
+
+
     proc generateTiles(rng: var Rand): tuple[tiles: Tiles, passableCount: int] =
-        var tiles: TilesArray
+        var tiles: Tiles
         var passableCount = 0
         for y in 0..<game.NumTiles:
             for x in 0..<game.NumTiles:
                 let
-                    xy = game.TileXY(x: game.TileX(x), y: game.TileY(y))
+                    xy = (x: game.TileX(x), y: game.TileY(y))
                     i = xyToI(xy)
                 
                 if (not inBounds(xy)) or rand01(rng) < 0.3:
@@ -77,7 +91,7 @@ no_ex:
                     tiles[i] = tile.newFloor(xy)
                 
         (
-            Tiles(tiles: tiles),
+            tiles,
             passableCount
         )
 
@@ -120,5 +134,5 @@ no_ex:
         of true:
             tilesRes
         of false:
-            err(r.error)     
+            err(r.error)
         

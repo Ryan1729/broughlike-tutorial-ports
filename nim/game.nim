@@ -64,9 +64,9 @@ definePos(ScreenY, uint16)
 definePos(TileX, uint8)
 definePos(TileY, uint8)
 
-type TileXY* = object
-    x*: TileX
-    y*: TileY
+type TileXY* = tuple
+    x: TileX
+    y: TileY
 
 type Platform* = object
     sprite*: proc(sprite: SpriteIndex, xy: TileXY) {.raises: [].}
@@ -92,10 +92,10 @@ proc `+` *(y: TileY, dy: DeltaY): TileY =
     of DYm1:
         y - 1
 
-type DeltaXY* = object
-    x*: DeltaX
-    y*: DeltaY
+type DeltaXY* = tuple
+    x: DeltaX
+    y: DeltaY
 
 
 proc `+` *(txy: TileXY, dxy: DeltaXY): TileXY =
-    TileXY(x: txy.x + dxy.x, y: txy.y + dxy.y)
+    (x: txy.x + dxy.x, y: txy.y + dxy.y)
