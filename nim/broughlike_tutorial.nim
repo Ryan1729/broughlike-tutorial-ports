@@ -65,11 +65,11 @@ no_ex:
             tiles.error.err
 
 # TODO see if we can remove this pragma once we get movePlayer working
-# (is case of more "provable" than if?)
-{.push warning[ProveField]: off.}
+# (apparently not!)
+#{.push warning[ProveField]: off.}
 proc movePlayer(state: var State, dxy: game.DeltaXY) =
-
-    if state.isOk:
+    case state.isOk:
+    of true:
         let monster = state.value.tiles.getTile(state.value.xy).monster
         if monster.isSome:
             let moved = state.value.tiles.tryMove(
@@ -82,7 +82,8 @@ proc movePlayer(state: var State, dxy: game.DeltaXY) =
 
         else:
             state = State.err("Could not find player!")
-
+    of false:
+        discard
 {.pop.}
 
 var
