@@ -12,7 +12,7 @@ from assets import nil
 from randomness import nil
 from monster import draw
 from res import ok, err
-from game import `-=`, `+=`, no_ex, DeltaX, DeltaY
+from game import `-=`, `+=`, no_ex, DeltaX, DeltaY, `$`
 from map import generateLevel, randomPassableTile, move, tryMove, getTile
 from world import nil
 
@@ -49,7 +49,7 @@ no_ex:
             case startingTile.isOk:
             of true:
                 let xy = startingTile.value.xy
-                tiles.value.move(
+                discard tiles.value.move(
                     monster.newPlayer(xy),
                     xy
                 )
@@ -64,20 +64,25 @@ no_ex:
         of false:
             tiles.error.err
 
+# TODO see if we can remove this pragma once we get movePlayer working
+# (is case of more "provable" than if?)
 {.push warning[ProveField]: off.}
 proc movePlayer(state: var State, dxy: game.DeltaXY) =
 
     if state.isOk:
-        var s = state.value
-        let monster = s.tiles.getTile(s.xy).monster
+        let monster = state.value.tiles.getTile(state.value.xy).monster
         if monster.isSome:
-            let moved = s.tiles.tryMove(
+            let moved = state.value.tiles.tryMove(
                 monster.get,
                 dxy
             )
-            echo "moved ", moved
+
+            if moved.isSome:
+                state.value.xy = moved.get.xy
+
         else:
             state = State.err("Could not find player!")
+
 {.pop.}
 
 var

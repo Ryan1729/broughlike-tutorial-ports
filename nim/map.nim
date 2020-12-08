@@ -1,4 +1,4 @@
-from options import some, none
+from options import Option, some, none
 from sequtils import filter, toSeq, any, concat
 
 from randomness import rand01, tryTo, randomTileXY, shuffle, Rand
@@ -62,18 +62,25 @@ no_ex:
 
         connectedTiles
 
-    proc move*(tiles: var Tiles, monster: Monster, xy: TileXy) =
+    proc move*(tiles: var Tiles, monster: Monster, xy: TileXy): Monster =
         tiles[xyToI(monster.xy)].monster = none(Monster)
-        tiles[xyToI(xy)].monster = some(monster)
 
-    proc tryMove*(tiles: var Tiles, monster: Monster, dxy: DeltaXY): bool =
+        var moved = monster
+        moved.xy = xy
+        tiles[xyToI(xy)].monster = some(moved)
+        
+        moved
+
+    proc tryMove*(tiles: var Tiles, monster: Monster, dxy: DeltaXY): Option[Monster] =
         let newTile = tiles.getNeighbor(monster.xy, dxy)
         if newTile.isPassable:
             if not newTile.hasMonster:
-                tiles.move(monster, newTile.xy)
-            
-            result = true
+                let moved = tiles.move(monster, newTile.xy)
+                return some(moved)
+            else:
+                return some(monster)
 
+        none(Monster)
 
     proc generateTiles(rng: var Rand): tuple[tiles: Tiles, passableCount: int] =
         var tiles: Tiles

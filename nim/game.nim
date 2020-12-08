@@ -57,6 +57,9 @@ template definePos(typ, base: untyped) =
         typ* = distinct base
     unsignedAdditive(typ, base)
     comparable(typ, base)
+    proc `$`*(x: typ): string =
+        $base(x)
+
 
 
 definePos(ScreenX, uint16)
