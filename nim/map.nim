@@ -126,8 +126,7 @@ no_ex:
             err(r.error)
 
     proc generateMonsters(rng: var randomness.Rand, tiles: var Tiles, level: LevelNum) =
-        let numMonsters = int(level) + 1
-        for _ in 0..<numMonsters:
+        for _ in 0..int(level):
             var monsterMakers = monster.NonPlayerMakers
             rng.shuffle(monsterMakers)
 
