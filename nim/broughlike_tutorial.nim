@@ -13,7 +13,7 @@ from randomness import nil
 from monster import draw
 from res import ok, err
 from game import `-=`, `+=`, no_ex, DeltaX, DeltaY, `$`
-from map import generateLevel, randomPassableTile, move, tryMove, getTile
+from map import generateLevel, randomPassableTile, addMonster, tryMove, getTile
 from world import nil
 
 
@@ -36,12 +36,13 @@ no_ex:
         let
             now = times.getTime()
             seed = times.toUnix(now) * 1_000_000_000 + times.nanosecond(now)
+            level = game.LevelNum(1)
 
         # So we can reproduce weird situtations
         echo seed
 
         var rng = randomness.initRand(seed)
-        var tiles = rng.generateLevel
+        var tiles = rng.generateLevel(level)
         case tiles.isOk:
         of true:
             let startingTile = rng.randomPassableTile(tiles.value)
@@ -49,15 +50,13 @@ no_ex:
             case startingTile.isOk:
             of true:
                 let xy = startingTile.value.xy
-                discard tiles.value.move(
-                    monster.newPlayer(xy),
-                    xy
-                )
+                tiles.value.addMonster(monster.newPlayer(xy))
 
                 (
                     xy: xy,
                     tiles: tiles.value,
-                    rng: rng
+                    rng: rng,
+                    level: level
                 ).ok
             of false:
                 startingTile.error.err

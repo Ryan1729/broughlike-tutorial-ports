@@ -1,6 +1,12 @@
 from options import Option, isNone, get
 
-from game import no_ex
+from game import no_ex, TileXY
+
+type
+  HP* = distinct range[0..6]
+
+proc `==`*(x, y: HP): bool =
+  int(x) == int(y)
 
 type
   Kind* = enum
@@ -14,10 +20,26 @@ type
   Monster* = tuple
     kind: Kind
     xy: game.TileXY
+    hp: HP
 
 no_ex:
     func newPlayer*(xy: game.TileXY): Monster =
-        (kind: Kind.Player, xy: xy)
+        (kind: Kind.Player, xy: xy, hp: HP(3))
+
+    func newBird*(xy: game.TileXY): Monster =
+        (kind: Kind.Bird, xy: xy, hp: HP(3))
+
+    func newSnake*(xy: game.TileXY): Monster =
+        (kind: Kind.Snake, xy: xy, hp: HP(1))
+
+    func newTank*(xy: game.TileXY): Monster =
+        (kind: Kind.Tank, xy: xy, hp: HP(2))
+
+    func newEater*(xy: game.TileXY): Monster =
+        (kind: Kind.Eater, xy: xy, hp: HP(1))
+
+    func newJester*(xy: game.TileXY): Monster =
+        (kind: Kind.Jester, xy: xy, hp: HP(2))
         
     proc draw*(option: Option[Monster], platform: game.Platform) =
         if option.isNone:
@@ -41,3 +63,11 @@ no_ex:
             sprite,
             monster.xy
         )
+
+const NonPlayerMakers*: array[5, auto] = [
+  newBird,
+  newSnake,
+  newTank,
+  newEater,
+  newJester
+]

@@ -18,8 +18,12 @@ macro no_ex*(x: untyped): untyped =
 const tileSize*: int = 64
 const NumTiles*: int = 9
 const UIWidth*: int = 4
+const numLevels: int = 6
 
-type SpriteIndex* = distinct range[0..16]
+type
+    SpriteIndex* = distinct range[0..16]
+
+    LevelNum* = distinct range[1..numLevels]
 
 template unsignedAdditive(typ, base: typedesc) =
     no_ex:

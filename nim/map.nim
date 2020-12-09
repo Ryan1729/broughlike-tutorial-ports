@@ -3,9 +3,9 @@ from sequtils import filter, toSeq, any, concat
 
 from randomness import rand01, tryTo, randomTileXY, shuffle, Rand
 from res import ok, err
-from game import no_ex, `<`, `<=`, TileXY, DeltaX, DeltaY, DeltaXY, `+`, `==`
+from game import no_ex, `<`, `<=`, TileXY, DeltaX, DeltaY, DeltaXY, `+`, `==`, LevelNum
 from tile import Tile, isPassable, hasMonster
-from monster import Monster
+from monster import Monster, `==`
 
 const tileLen: int = game.NumTiles * game.NumTiles
 
@@ -62,7 +62,7 @@ no_ex:
 
         connectedTiles
 
-    proc move*(tiles: var Tiles, monster: Monster, xy: TileXy): Monster =
+    proc move(tiles: var Tiles, monster: Monster, xy: TileXy): Monster =
         tiles[xyToI(monster.xy)].monster = none(Monster)
 
         var moved = monster
@@ -70,6 +70,12 @@ no_ex:
         tiles[xyToI(xy)].monster = some(moved)
         
         moved
+
+    proc addMonster*(tiles: var Tiles, monster: Monster) =
+        discard tiles.move(
+            monster,
+            monster.xy
+        )
 
     proc tryMove*(tiles: var Tiles, monster: Monster, dxy: DeltaXY): Option[Monster] =
         let newTile = tiles.getNeighbor(monster.xy, dxy)
@@ -119,10 +125,36 @@ no_ex:
         of false:
             err(r.error)
 
+    proc generateMonsters(rng: var randomness.Rand, tiles: var Tiles, level: LevelNum) =
+        let numMonsters = int(level) + 1
+        for _ in 0..<numMonsters:
+            var monsterMakers = monster.NonPlayerMakers
+            rng.shuffle(monsterMakers)
+
+            let tilesRes = rng.randomPassableTile(tiles)
+            case tilesRes.isOk:
+            of true:
+                let monster = monsterMakers[0](tilesRes.value.xy)
+                tiles.addMonster(monster)
+            of false:
+                # The player won't mind if a monter doesn't spwan because it
+                # doesn't fit.
+                continue
+
 type TilesResult = res.ult[Tiles, string]
 
+{.push warning[ProveField]: off.}
 no_ex:
-    proc generateLevel*(rng: var randomness.Rand): TilesResult =
+    proc generateMonstersTilesResult(rng: var randomness.Rand, tilesRes: var TilesResult, level: LevelNum) =
+        case tilesRes.isOk
+        of true:
+            rng.generateMonsters(tilesRes.value, level)
+        of false:
+            discard
+{.pop.}
+
+no_ex:    
+    proc generateLevel*(rng: var randomness.Rand, level: LevelNum): TilesResult =
         var tilesRes = err(TilesResult, "tiles was never written to")
         let r = tryTo("generate map"):
             let (tiles, passableCount) = generateTiles(rng)
@@ -139,6 +171,7 @@ no_ex:
 
         case r.isOk
         of true:
+            rng.generateMonstersTilesResult(tilesRes, level)
             tilesRes
         of false:
             err(r.error)
