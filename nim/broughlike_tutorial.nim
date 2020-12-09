@@ -64,24 +64,25 @@ no_ex:
         of false:
             tiles.error.err
 
-# TODO see if we can remove this pragma once we get movePlayer working
-# (is case of more "provable" than if?)
+# It seems like it should be provable that `state.value` is accessible
+# inside an `if` that checks `state.isOk`, but it doesn't work currently.
+# See https://github.com/nim-lang/Nim/issues/7882
 {.push warning[ProveField]: off.}
-proc movePlayer(state: var State, dxy: game.DeltaXY) =
+no_ex:
+    proc movePlayer(state: var State, dxy: game.DeltaXY) =
+        if state.isOk:
+            let monster = state.value.tiles.getTile(state.value.xy).monster
+            if monster.isSome:
+                let moved = state.value.tiles.tryMove(
+                    monster.get,
+                    dxy
+                )
 
-    if state.isOk:
-        let monster = state.value.tiles.getTile(state.value.xy).monster
-        if monster.isSome:
-            let moved = state.value.tiles.tryMove(
-                monster.get,
-                dxy
-            )
+                if moved.isSome:
+                    state.value.xy = moved.get.xy
 
-            if moved.isSome:
-                state.value.xy = moved.get.xy
-
-        else:
-            state = State.err("Could not find player!")
+            else:
+                state = State.err("Could not find player!")
 
 {.pop.}
 
