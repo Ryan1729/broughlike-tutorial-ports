@@ -1,4 +1,4 @@
-echo newSeqOfCap[tuple[a: var int]](1)
+echo newSeqOfCap[tuple[a: ref int]](1)
 
 
 
