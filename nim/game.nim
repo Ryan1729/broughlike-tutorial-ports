@@ -1,5 +1,6 @@
 import system
 from macros import newTree
+from options import some, none, Option, isSome, get
 
 # no_ex: allow no exceptions
 macro no_ex*(x: untyped): untyped =
@@ -75,6 +76,11 @@ type TileXY* = tuple
     x: TileX
     y: TileY
 
+
+func dist*(source: TileXY, target: TileXY): int =
+    abs(int(source.x)-int(target.x)) + abs(int(source.y)-int(target.y))
+
+
 type Platform* = object
     sprite*: proc(sprite: SpriteIndex, xy: TileXY) {.raises: [].}
 
@@ -106,3 +112,49 @@ type DeltaXY* = tuple
 
 proc `+` *(txy: TileXY, dxy: DeltaXY): TileXY =
     (x: txy.x + dxy.x, y: txy.y + dxy.y)
+
+
+proc deltaXFrom(sourceX: TileX, targetX: TileX): Option[DeltaX] =
+    let delta = int(targetX) - int(sourceX)
+    if delta == -1:
+        some(DXm1)
+
+    elif delta == 0:
+        some(DX0)
+
+    elif delta == 1:
+        some(DX1)
+
+    else:
+        none(DeltaX)
+
+proc deltaYFrom(sourceY: TileY, targetY: TileY): Option[DeltaY] =
+    let delta = int(targetY) - int(sourceY)
+    if delta == -1:
+        some(DYm1)
+
+    elif delta == 0:
+        some(DY0)
+
+    elif delta == 1:
+        some(DY1)
+
+    else:
+        none(DeltaY)
+
+type ST = tuple[source: TileXY, target: TileXY]
+
+# This returns the deltas from the `source` to the `target`, if both deltas exist.
+# That is, if `source` is at 2, 1 and `target` is at 1, 2 then `Just (DXm1, DY1)` will be returned.
+# As another example, if `source` is at 1, 2 and `target` is at 1, 1 then `Just (DX0, DYm1)` will be returned.
+
+proc deltasFrom*(st: ST): Option[DeltaXY] =
+    let deltaX = deltaXFrom(st.source.x, st.target.x)
+    let deltaY = deltaYFrom(st.source.y, st.target.y)
+
+    if deltaX.isSome and deltaY.isSome:
+        some((x: deltaX.get, y: deltaY.get))
+    else:
+        none(DeltaXY)
+
+

@@ -1,13 +1,14 @@
-from options import Option, some, none
+from algorithm import sort
+from options import Option, some, none, isNone, get
 from sequtils import filter, toSeq, any, concat
 
 from randomness import rand01, tryTo, randomTileXY, shuffle, Rand
 from res import ok, err
-from game import no_ex, `<`, `<=`, TileXY, DeltaX, DeltaY, DeltaXY, `+`, `==`, LevelNum
+from game import no_ex, `<`, `<=`, TileXY, DeltaX, DeltaY, DeltaXY, `+`, `==`, LevelNum, dist
 from tile import Tile, isPassable, hasMonster
-from monster import Monster, `==`
+from monster import Monster, `==`, Kind
 
-const tileLen: int = game.NumTiles * game.NumTiles
+const tileLen*: int = game.NumTiles * game.NumTiles
 
 type
     Tiles* = array[tileLen, tile.Tile]
@@ -56,7 +57,8 @@ no_ex:
                                 .xy
                                 .getAdjacentPassableNeighbors(tiles, rng)
                                 .filter(proc(t: Tile): bool =
-                                    not connectedTiles.any(proc(ct: Tile): bool = ct == t))
+                                    not connectedTiles.any(proc(ct: Tile): bool = ct == t)
+                                )
             connectedTiles = connectedTiles.concat(neighbors)
             frontier = frontier.concat(neighbors)
 
@@ -87,6 +89,50 @@ no_ex:
                 return some(monster)
 
         none(Monster)
+
+    proc doStuff(
+        tiles: var Tiles,
+        monster: Monster,
+        playerXY: TileXY,
+        rng: var Rand
+    ) =
+        var neighbors: seq[Tile] = getAdjacentPassableNeighbors(
+            monster.xy,
+            tiles,
+            rng
+        )
+
+        neighbors = neighbors.filter(
+            proc (t: Tile): bool =
+                t.monster.isNone or t.monster.get.kind == Kind.Player
+        )
+        if neighbors.len > 0:
+            let distCmp = proc (a, b: Tile): int =
+              a.xy.dist(playerXY) - b.xy.dist(playerXY)
+
+            sort(neighbors, distCmp)
+
+            let deltas = game.deltasFrom(
+                (source: monster.xy, target: neighbors[0].xy)
+            )
+
+            if deltas.isNone:
+                # The player genrally won't mind if a monster doesn't move.
+                return
+
+            discard tiles.tryMove(
+                monster,
+                deltas.get
+            )
+        
+
+    proc updateMonster(
+        tiles: var Tiles,
+        monster: Monster,
+        playerXY: TileXY,
+        rng: var Rand
+    ) =
+        doStuff(tiles, monster, playerXY, rng)
 
     proc generateTiles(rng: var Rand): tuple[tiles: Tiles, passableCount: int] =
         var tiles: Tiles

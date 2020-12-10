@@ -14,7 +14,7 @@ from monster import draw
 from res import ok, err
 from game import `-=`, `+=`, no_ex, DeltaX, DeltaY, `$`
 from map import generateLevel, randomPassableTile, addMonster, tryMove, getTile
-from world import nil
+from world import tick
 
 
 const INDIGO = Color(a: 0xffu8, r: 0x4bu8, g: 0, b: 0x82u8)
@@ -79,6 +79,7 @@ no_ex:
 
                 if moved.isSome:
                     state.value.xy = moved.get.xy
+                    state.value.tick
 
             else:
                 state = State.err("Could not find player!")

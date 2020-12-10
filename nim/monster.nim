@@ -40,7 +40,7 @@ no_ex:
 
     func newJester*(xy: game.TileXY): Monster =
         (kind: Kind.Jester, xy: xy, hp: HP(2))
-        
+
     proc draw*(option: Option[Monster], platform: game.Platform) =
         if option.isNone:
             return
@@ -71,3 +71,6 @@ const NonPlayerMakers*: array[5, auto] = [
   newEater,
   newJester
 ]
+
+
+
