@@ -1,7 +1,8 @@
+from options import Option, isSome, get
 
 from game import no_ex
 from randomness import nil
-from map import nil
+from map import getTile
 from monster import Monster
 from tile import Tile
 
@@ -30,10 +31,15 @@ no_ex:
             for x in 0..<game.NumTiles:
                 let xy = (x: game.TileX(x), y: game.TileY(y))
 
-                let t = tiles.getTile(xy)
+                # will getTileRef work with the return a fresh wall thing?
+                var t: ref Tile = state.tiles.getTileRef(xy)
 
                 if t.monster.isSome:
-                    pairs.add((tile: t, monster: t.monster.get))
+                    var pair: TileAndMonster = (tile: t, monster: t.monster.get)
+                    add[TileAndMonster](
+                        pairs,
+                        pair
+                    )
 
 
         var k = pairs.len - 1
