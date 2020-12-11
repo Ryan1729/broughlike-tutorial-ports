@@ -12,14 +12,12 @@ type
     rng: randomness.Rand
     level: game.LevelNum
     
-  TileAndMonster = tuple[tile: var Tile, monster: Monster]
+  TileAndMonster = tuple[tile: ref Tile, monster: Monster]
 
-{.push warning[ProveInit]: off .}
 no_ex:
     proc getPairsSeq(): seq[TileAndMonster] =
         newSeqOfCap[TileAndMonster](map.tileLen)
 
-{.pop.}
 
 no_ex:
     proc tick*(state: var State) =
