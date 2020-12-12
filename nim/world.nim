@@ -12,20 +12,13 @@ type
     tiles: map.Tiles
     rng: randomness.Rand
     level: game.LevelNum
-    
-  TileAndMonster = tuple[tile: Tile, monster: Monster]
-
-no_ex:
-    proc getPairsSeq(): seq[TileAndMonster] =
-        newSeqOfCap[TileAndMonster](map.tileLen)
-
 
 no_ex:
     proc tick*(state: var State) =
-        # We collect the tile, monster pairs into a list so that we don't hit
+        # We collect the monsters into a list so that we don't hit
         # the same monster twice in the iteration, in case it moves
         
-        var pairs: seq[TileAndMonster] = getPairsSeq()
+        var monsters: seq[Monster] = newSeqOfCap[Monster](map.tileLen)
         
         for y in 0..<game.NumTiles:
             for x in 0..<game.NumTiles:
@@ -34,17 +27,14 @@ no_ex:
                 var t: Tile = state.tiles.getTile(xy)
 
                 if t.monster.isSome:
-                    var pair: TileAndMonster = (tile: t, monster: t.monster.get)
-                    add[TileAndMonster](
-                        pairs,
-                        pair
+                    monsters.add(
+                        t.monster.get
                     )
 
 
-        var k = pairs.len - 1
+        var k = monsters.len - 1
         while k >= 0:
-            var tile = pairs[k].tile
-            let m = pairs[k].monster
+            let m = monsters[k]
 
             if m.kind == Kind.Player:
                 discard
