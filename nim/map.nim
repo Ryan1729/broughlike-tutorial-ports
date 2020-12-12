@@ -64,8 +64,11 @@ no_ex:
 
         connectedTiles
 
+    proc removeMonster*(tiles: var Tiles, xy: TileXY) =
+        tiles[xyToI(xy)].monster = none(Monster)
+
     proc move(tiles: var Tiles, monster: Monster, xy: TileXy): Monster =
-        tiles[xyToI(monster.xy)].monster = none(Monster)
+        tiles.removeMonster(monster.xy)
 
         var moved = monster
         moved.xy = xy
@@ -126,7 +129,7 @@ no_ex:
             )
         
 
-    proc updateMonster(
+    proc updateMonster*(
         tiles: var Tiles,
         monster: Monster,
         playerXY: TileXY,

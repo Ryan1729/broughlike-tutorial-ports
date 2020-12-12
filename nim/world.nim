@@ -2,8 +2,8 @@ from options import Option, isSome, get
 
 from game import no_ex
 from randomness import nil
-from map import getTile
-from monster import Monster
+from map import getTile, removeMonster, updateMonster
+from monster import Monster, Kind, dead
 from tile import Tile
 
 type
@@ -13,7 +13,7 @@ type
     rng: randomness.Rand
     level: game.LevelNum
     
-  TileAndMonster = tuple[tile: ref Tile, monster: Monster]
+  TileAndMonster = tuple[tile: Tile, monster: Monster]
 
 no_ex:
     proc getPairsSeq(): seq[TileAndMonster] =
@@ -31,8 +31,7 @@ no_ex:
             for x in 0..<game.NumTiles:
                 let xy = (x: game.TileX(x), y: game.TileY(y))
 
-                # will getTileRef work with the return a fresh wall thing?
-                var t: ref Tile = state.tiles.getTileRef(xy)
+                var t: Tile = state.tiles.getTile(xy)
 
                 if t.monster.isSome:
                     var pair: TileAndMonster = (tile: t, monster: t.monster.get)
@@ -45,18 +44,17 @@ no_ex:
         var k = pairs.len - 1
         while k >= 0:
             var tile = pairs[k].tile
-            let monster = pairs[k].monster
+            let m = pairs[k].monster
 
-            if monster.kind == Kind.Player:
+            if m.kind == Kind.Player:
                 continue
 
             elif m.dead:
-                tile.monster = none(Monster)
-                
+                state.tiles.removeMonster(m.xy)
             else:
                 state.tiles.updateMonster(
-                    monster: Monster,
-                    state.player,
+                    m,
+                    state.xy,
                     state.rng
                 )
             

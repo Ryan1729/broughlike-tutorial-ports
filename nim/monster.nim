@@ -41,6 +41,9 @@ no_ex:
     func newJester*(xy: game.TileXY): Monster =
         (kind: Kind.Jester, xy: xy, hp: HP(2))
 
+    func dead*(m: Monster): bool =
+        int(m.hp) <= 0
+
     proc draw*(option: Option[Monster], platform: game.Platform) =
         if option.isNone:
             return
