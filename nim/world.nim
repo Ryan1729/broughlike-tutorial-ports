@@ -47,7 +47,7 @@ no_ex:
             let m = pairs[k].monster
 
             if m.kind == Kind.Player:
-                continue
+                discard
 
             elif m.dead:
                 state.tiles.removeMonster(m.xy)
@@ -57,7 +57,5 @@ no_ex:
                     state.xy,
                     state.rng
                 )
-            
+
             k -= 1
-
-
