@@ -65,10 +65,6 @@ template definePos(typ, base: untyped) =
     proc `$`*(x: typ): string =
         $base(x)
 
-
-
-definePos(ScreenX, uint16)
-definePos(ScreenY, uint16)
 definePos(TileX, uint8)
 definePos(TileY, uint8)
 
@@ -80,9 +76,15 @@ type TileXY* = tuple
 func dist*(source: TileXY, target: TileXY): int =
     abs(int(source.x)-int(target.x)) + abs(int(source.y)-int(target.y))
 
+type
+    HP* = distinct range[0..6]
+
+proc `==`*(x, y: HP): bool =
+    int(x) == int(y)
 
 type Platform* = object
     sprite*: proc(sprite: SpriteIndex, xy: TileXY) {.raises: [].}
+    hp*: proc(hp: HP, xy: TileXY) {.raises: [].}
 
 type DeltaX* = enum DX0, DX1, DXm1
 type DeltaY* = enum DY0, DY1, DYm1

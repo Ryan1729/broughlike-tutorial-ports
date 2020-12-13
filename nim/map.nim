@@ -6,7 +6,7 @@ from randomness import rand01, tryTo, randomTileXY, shuffle, Rand
 from res import ok, err
 from game import no_ex, `<`, `<=`, TileXY, DeltaX, DeltaY, DeltaXY, `+`, `==`, LevelNum, dist
 from tile import Tile, isPassable, hasMonster
-from monster import Monster, `==`, Kind
+from monster import Monster, Kind
 
 const tileLen*: int = game.NumTiles * game.NumTiles
 

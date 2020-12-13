@@ -1,12 +1,6 @@
 from options import Option, isNone, get
 
-from game import no_ex, TileXY
-
-type
-  HP* = distinct range[0..6]
-
-proc `==`*(x, y: HP): bool =
-  int(x) == int(y)
+from game import no_ex, TileXY, HP
 
 type
   Kind* = enum
@@ -66,6 +60,8 @@ no_ex:
             sprite,
             monster.xy
         )
+
+        (platform.hp)(monster.hp, monster.xy)
 
 const NonPlayerMakers*: array[5, auto] = [
   newBird,

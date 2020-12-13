@@ -4,7 +4,7 @@ import raylib
 # SIGSEGV errors if we call (some?) raylib stuff before calling this.
 InitWindow 0, 0, "AWESOME BROUGHLIKE"
 
-
+from math import nil
 from times import nil
 from options import isSome, get
 
@@ -20,6 +20,10 @@ from world import tick
 const INDIGO = Color(a: 0xffu8, r: 0x4bu8, g: 0, b: 0x82u8)
 
 type
+    floatXY = tuple
+        x: float
+        y: float
+
     Size = int32
 
     sizesObj = object
@@ -93,13 +97,13 @@ var
 var spritesheet: Texture2D = LoadTextureFromImage(assets.spritesheetImage)
 
 no_ex:
-    proc drawSprite(sprite: game.SpriteIndex, xy: game.TileXY) =
+    proc drawSpriteFloat(sprite: game.SpriteIndex, xy: floatXY) =
         DrawTexturePro(
             spritesheet,
             Rectangle(x: float(sprite) * 16, y: 0, width: 16, height: 16),
             Rectangle(
-                x: float(sizes.playAreaX + (Size(xy.x) * sizes.tile)),
-                y: float(sizes.playAreaY + (Size(xy.y) * sizes.tile)),
+                x: float(sizes.playAreaX) + (xy.x * float(sizes.tile)),
+                y: float(sizes.playAreaY) + (xy.y * float(sizes.tile)),
                 width: float(sizes.tile),
                 height: float(sizes.tile)
             ),
@@ -108,7 +112,29 @@ no_ex:
             WHITE
         )
 
-const platform = game.Platform(sprite: drawSprite)
+    proc drawSprite(sprite: game.SpriteIndex, xy: game.TileXY) =
+        drawSpriteFloat(
+            sprite,
+            (
+                x: float(xy.x),
+                y: float(xy.y)
+            )
+        )
+
+    proc drawHp(hp: game.HP, xy: game.TileXY) =
+        for i in 0..<int(hp):
+            drawSpriteFloat(
+                game.SpriteIndex(9),
+                (
+                    x: float(xy.x) + float((i mod 3))*(5.0/16.0),
+                    y: float(xy.y) - math.floor(float(i div 3))*(5.0/16.0)
+                )
+            )
+
+const platform = game.Platform(
+    sprite: drawSprite,
+    hp: drawHp
+)
 
 no_ex:
     proc draw() =
