@@ -16,7 +16,11 @@ type
     xy: game.TileXY
     hp: HP
 
+  Damage* = distinct range[1 .. int(high(HP))]
+
 no_ex:
+    func `-=`(hp: var HP, damage: Damage) {.borrow.}
+    
     func newPlayer*(xy: game.TileXY): Monster =
         (kind: Kind.Player, xy: xy, hp: HP(3))
 
@@ -35,6 +39,11 @@ no_ex:
     func newJester*(xy: game.TileXY): Monster =
         (kind: Kind.Jester, xy: xy, hp: HP(2))
 
+    func hit*(monster: Monster, damage: Damage): Monster =
+        var m = monster
+        m.hp -= damage
+        m
+
     func dead*(m: Monster): bool =
         int(m.hp) <= 0
 
@@ -44,7 +53,10 @@ no_ex:
         let monster = option.get
         let sprite = case monster.kind
         of Player:
-            game.SpriteIndex(0)
+            if monster.dead:
+                game.SpriteIndex(1)
+            else:
+                game.SpriteIndex(0)
         of Bird:
             game.SpriteIndex(4)
         of Snake:

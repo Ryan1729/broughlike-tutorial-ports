@@ -6,7 +6,7 @@ from randomness import rand01, tryTo, randomTileXY, shuffle, Rand
 from res import ok, err
 from game import no_ex, `<`, `<=`, TileXY, DeltaX, DeltaY, DeltaXY, `+`, `==`, LevelNum, dist
 from tile import Tile, isPassable, hasMonster
-from monster import Monster, Kind
+from monster import Monster, Kind, hit, Damage
 
 const tileLen*: int = game.NumTiles * game.NumTiles
 
@@ -89,6 +89,11 @@ no_ex:
                 let moved = tiles.move(monster, newTile.xy)
                 return some(moved)
             else:
+                if (monster.kind == Kind.Player) != (newTile.monster.get.kind == Kind.Player):
+                    tiles.addMonster(
+                        newTile.monster.get.hit(Damage(1))
+                    )
+
                 return some(monster)
 
         none(Monster)
