@@ -1,5 +1,5 @@
 from algorithm import sort
-from options import Option, some, none, isNone, get
+from options import Option, some, isSome, none, isNone, get
 from sequtils import filter, toSeq, any, concat
 
 from randomness import rand01, tryTo, randomTileXY, shuffle, Rand
@@ -98,12 +98,12 @@ no_ex:
 
         none(Monster)
 
-    proc doStuff(
+    proc plainDoStuff(
         tiles: var Tiles,
         monster: Monster,
         playerXY: TileXY,
         rng: var Rand
-    ) =
+    ): Monster =
         var neighbors: seq[Tile] = getAdjacentPassableNeighbors(
             monster.xy,
             tiles,
@@ -126,11 +126,63 @@ no_ex:
 
             if deltas.isNone:
                 # The player genrally won't mind if a monster doesn't move.
-                return
+                return monster
 
-            discard tiles.tryMove(
+            let option = tiles.tryMove(
                 monster,
                 deltas.get
+            )
+
+            if option.isSome:
+                return option.get
+        
+        monster
+
+    proc doStuff(
+        tiles: var Tiles,
+        monster: Monster,
+        playerXY: TileXY,
+        rng: var Rand
+    ) =
+        var m = monster
+        discard monster
+
+        case m.kind
+        of Kind.Bird:
+            discard plainDoStuff(
+                tiles,
+                monster,
+                playerXY,
+                rng
+            )
+        of Kind.Snake:
+            m.attackedThisTurn = false
+            m = tiles.move(
+                m,
+                m.xy
+            )
+
+            m = plainDoStuff(
+                tiles,
+                m,
+                playerXY,
+                rng
+            )
+
+            if not m.attackedThisTurn:
+                discard plainDoStuff(
+                    tiles,
+                    m,
+                    playerXY,
+                    rng
+                )
+
+        else:
+            discard plainDoStuff(
+                tiles,
+                monster,
+                playerXY,
+                rng
             )
         
 
