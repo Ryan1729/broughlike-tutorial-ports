@@ -49,13 +49,23 @@ no_ex:
         m.hp -= damage
         m
 
+    func dead*(m: Monster): bool =
+        int(m.hp) <= 0
+
     func markAttacked*(monster: Monster): Monster =
         var m = monster
         m.attackedThisTurn = true
         m
 
-    func dead*(m: Monster): bool =
-        int(m.hp) <= 0
+    func markStunned*(monster: Monster): Monster =
+        var m = monster
+        m.stunned = true
+        m    
+
+    func markUnstunned*(monster: Monster): Monster =
+        var m = monster
+        m.stunned = false
+        m    
 
     proc draw*(option: Option[Monster], platform: game.Platform) =
         if option.isNone:

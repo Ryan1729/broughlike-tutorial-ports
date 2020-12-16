@@ -6,7 +6,7 @@ from randomness import rand01, tryTo, randomTileXY, shuffle, Rand
 from res import ok, err
 from game import no_ex, `<`, `<=`, TileXY, DeltaX, DeltaY, DeltaXY, `+`, `==`, LevelNum, dist
 from tile import Tile, isPassable, hasMonster
-from monster import Monster, Kind, hit, Damage, markAttacked
+from monster import Monster, Kind, hit, Damage, markAttacked, markStunned, markUnstunned
 
 const tileLen*: int = game.NumTiles * game.NumTiles
 
@@ -93,7 +93,7 @@ no_ex:
                     let moved = tiles.move(m, m.xy)
 
                     tiles.addMonster(
-                        newTile.monster.get.hit(Damage(1))
+                        newTile.monster.get.markStunned.hit(Damage(1))
                     )
 
                     return some(moved)
@@ -180,7 +180,6 @@ no_ex:
                     playerXY,
                     rng
                 )
-
         else:
             discard plainDoStuff(
                 tiles,
@@ -196,6 +195,13 @@ no_ex:
         playerXY: TileXY,
         rng: var Rand
     ) =
+        if monster.stunned:
+            tiles.addMonster(
+                monster.markUnstunned
+            )
+            return
+        
+        
         doStuff(tiles, monster, playerXY, rng)
 
     proc generateTiles(rng: var Rand): tuple[tiles: Tiles, passableCount: int] =
