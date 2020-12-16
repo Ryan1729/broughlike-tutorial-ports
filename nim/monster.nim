@@ -16,29 +16,33 @@ type
     xy: game.TileXY
     hp: HP
     attackedThisTurn: bool
+    stunned: bool
 
   Damage* = distinct range[1 .. int(high(HP))]
 
 no_ex:
     func `-=`(hp: var HP, damage: Damage) {.borrow.}
+
+    func newMonster*(kind: Kind, xy: game.TileXY, hp: HP): Monster =
+        (kind: kind, xy: xy, hp: hp, attackedThisTurn: false, stunned: false)
     
     func newPlayer*(xy: game.TileXY): Monster =
-        (kind: Kind.Player, xy: xy, hp: HP(3), attackedThisTurn: false)
+        newMonster(Kind.Player, xy, HP(3))
 
     func newBird*(xy: game.TileXY): Monster =
-        (kind: Kind.Bird, xy: xy, hp: HP(3), attackedThisTurn: false)
+        newMonster(Kind.Bird, xy, HP(3))
 
     func newSnake*(xy: game.TileXY): Monster =
-        (kind: Kind.Snake, xy: xy, hp: HP(1), attackedThisTurn: false)
+        newMonster(Kind.Snake, xy, HP(1))
 
     func newTank*(xy: game.TileXY): Monster =
-        (kind: Kind.Tank, xy: xy, hp: HP(2), attackedThisTurn: false)
+        newMonster(Kind.Tank, xy, HP(2))
 
     func newEater*(xy: game.TileXY): Monster =
-        (kind: Kind.Eater, xy: xy, hp: HP(1), attackedThisTurn: false)
+        newMonster(Kind.Eater, xy, HP(1))
 
     func newJester*(xy: game.TileXY): Monster =
-        (kind: Kind.Jester, xy: xy, hp: HP(2), attackedThisTurn: false)
+        newMonster(Kind.Jester, xy, HP(2))
 
     func hit*(monster: Monster, damage: Damage): Monster =
         var m = monster
