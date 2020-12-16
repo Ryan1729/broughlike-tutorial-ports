@@ -147,13 +147,13 @@ no_ex:
         monster: Monster,
         playerXY: TileXY,
         rng: var Rand
-    ) =
+    ): Monster =
         var m = monster
         discard monster
 
         case m.kind
-        of Kind.Bird:
-            discard plainDoStuff(
+        of Kind.Bird, Kind.Tank:
+            plainDoStuff(
                 tiles,
                 monster,
                 playerXY,
@@ -174,19 +174,36 @@ no_ex:
             )
 
             if not m.attackedThisTurn:
-                discard plainDoStuff(
+                plainDoStuff(
                     tiles,
                     m,
                     playerXY,
                     rng
                 )
+            else:
+                m
         else:
-            discard plainDoStuff(
+            plainDoStuff(
                 tiles,
                 monster,
                 playerXY,
                 rng
             )
+
+    proc plainUpdateMonster(
+        tiles: var Tiles,
+        monster: Monster,
+        playerXY: TileXY,
+        rng: var Rand
+    ): Monster =
+        if monster.stunned:
+            return tiles.move(
+                monster.markUnstunned,
+                monster.xy
+            )
+        
+        
+        doStuff(tiles, monster, playerXY, rng)
 
 
     proc updateMonster*(
@@ -195,14 +212,18 @@ no_ex:
         playerXY: TileXY,
         rng: var Rand
     ) =
-        if monster.stunned:
-            tiles.addMonster(
-                monster.markUnstunned
-            )
-            return
-        
-        
-        doStuff(tiles, monster, playerXY, rng)
+        case monster.kind
+        of Kind.Tank:        
+            let startedStunned = monster.stunned
+            let moved = plainUpdateMonster(tiles, monster, playerXY, rng)
+
+            if not startedStunned:
+                tiles.addMonster(
+                    moved.markStunned
+                )
+
+        else:
+            discard plainUpdateMonster(tiles, monster, playerXY, rng)
 
     proc generateTiles(rng: var Rand): tuple[tiles: Tiles, passableCount: int] =
         var tiles: Tiles

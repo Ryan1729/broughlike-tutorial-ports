@@ -65,7 +65,7 @@ no_ex:
     func markUnstunned*(monster: Monster): Monster =
         var m = monster
         m.stunned = false
-        m    
+        m
 
     proc draw*(option: Option[Monster], platform: game.Platform) =
         if option.isNone:
