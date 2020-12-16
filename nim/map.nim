@@ -6,7 +6,7 @@ from randomness import rand01, tryTo, randomTileXY, shuffle, Rand
 from res import ok, err
 from game import no_ex, `<`, `<=`, TileXY, DeltaX, DeltaY, DeltaXY, `+`, `==`, LevelNum, dist
 from tile import Tile, isPassable, hasMonster
-from monster import Monster, Kind, hit, Damage
+from monster import Monster, Kind, hit, Damage, markAttacked
 
 const tileLen*: int = game.NumTiles * game.NumTiles
 
@@ -35,7 +35,6 @@ no_ex:
 
     func getNeighbor(tiles: Tiles, txy: TileXY, dxy: DeltaXY): Tile =
         getTile(tiles, txy + dxy)
-    
 
     func getAdjacentNeighbors(txy: TileXY, tiles: Tiles, rng: var Rand): array[4, Tile] =
         result = [
@@ -46,7 +45,7 @@ no_ex:
         ]
         shuffle(rng, result)
 
-    func getAdjacentPassableNeighbors(txy: TileXY, tiles: Tiles, rng: var Rand): seq[Tile] = 
+    func getAdjacentPassableNeighbors(txy: TileXY, tiles: Tiles, rng: var Rand): seq[Tile] =
         getAdjacentNeighbors(txy, tiles, rng).toSeq.filter(isPassable)
 
     func getConnectedTiles(til: Tile, tiles: Tiles, rng: var Rand): seq[Tile] =
@@ -73,7 +72,7 @@ no_ex:
         var moved = monster
         moved.xy = xy
         tiles[xyToI(xy)].monster = some(moved)
-        
+
         moved
 
     proc addMonster*(tiles: var Tiles, monster: Monster) =
@@ -90,9 +89,14 @@ no_ex:
                 return some(moved)
             else:
                 if (monster.kind == Kind.Player) != (newTile.monster.get.kind == Kind.Player):
+                    let m = monster.markAttacked()
+                    let moved = tiles.move(m, m.xy)
+
                     tiles.addMonster(
                         newTile.monster.get.hit(Damage(1))
                     )
+
+                    return some(moved)
 
                 return some(monster)
 
@@ -135,7 +139,7 @@ no_ex:
 
             if option.isSome:
                 return option.get
-        
+
         monster
 
     proc doStuff(
@@ -184,7 +188,7 @@ no_ex:
                 playerXY,
                 rng
             )
-        
+
 
     proc updateMonster*(
         tiles: var Tiles,
@@ -202,13 +206,13 @@ no_ex:
                 let
                     xy = (x: game.TileX(x), y: game.TileY(y))
                     i = xyToI(xy)
-                
+
                 if (not inBounds(xy)) or rand01(rng) < 0.3:
                     tiles[i] = tile.newWall(xy)
                 else:
                     passableCount += 1
                     tiles[i] = tile.newFloor(xy)
-                
+
         (
             tiles,
             passableCount
@@ -258,7 +262,7 @@ no_ex:
             discard
 {.pop.}
 
-no_ex:    
+no_ex:
     proc generateLevel*(rng: var randomness.Rand, level: LevelNum): TilesResult =
         var tilesRes = err(TilesResult, "tiles was never written to")
         let r = tryTo("generate map"):
@@ -272,7 +276,7 @@ no_ex:
                 passableCount == tileRes.value.getConnectedTiles(tiles, rng).len
             of false:
                 false
-            
+
 
         case r.isOk
         of true:
@@ -280,4 +284,4 @@ no_ex:
             tilesRes
         of false:
             err(r.error)
-        
+

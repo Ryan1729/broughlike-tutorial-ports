@@ -49,6 +49,11 @@ no_ex:
         m.hp -= damage
         m
 
+    func markAttacked*(monster: Monster): Monster =
+        var m = monster
+        m.attackedThisTurn = true
+        m
+
     func dead*(m: Monster): bool =
         int(m.hp) <= 0
 
