@@ -6,7 +6,7 @@ from randomness import rand01, tryTo, randomTileXY, shuffle, Rand
 from res import ok, err
 from game import no_ex, `<`, `<=`, TileXY, DeltaX, DeltaY, DeltaXY, `+`, `==`, LevelNum, dist
 from tile import Tile, isPassable, hasMonster
-from monster import Monster, Kind, hit, Damage, markAttacked, markStunned, markUnstunned
+from monster import Monster, Kind, hit, Damage, markAttacked, markStunned, markUnstunned, heal
 
 const tileLen*: int = game.NumTiles * game.NumTiles
 
@@ -62,6 +62,13 @@ no_ex:
             frontier = frontier.concat(neighbors)
 
         connectedTiles
+
+    proc replace(
+        tiles: var Tiles,
+        xy: TileXY,
+        maker: proc (xy: game.TileXY): Tile
+    ) =
+        tiles[xyToI(xy)] = maker(xy)
 
     proc removeMonster*(tiles: var Tiles, xy: TileXY) =
         tiles[xyToI(xy)].monster = none(Monster)
@@ -182,6 +189,26 @@ no_ex:
                 )
             else:
                 m
+        of Kind.Eater:
+            let neighbors = monster.xy.getAdjacentNeighbors(tiles, rng)
+                .filter(
+                    proc (t: Tile): bool =
+                        (not t.isPassable) and t.xy.inBounds
+                )
+            if neighbors.len > 0:
+                tiles.replace(neighbors[0].xy, tile.newFloor)
+                tiles.move(
+                    m.heal(Damage(1)),
+                    #m.heal(Damage(0.5)),
+                    m.xy
+                )
+            else:
+                plainDoStuff(
+                    tiles,
+                    m,
+                    playerXY,
+                    rng
+                )
         else:
             plainDoStuff(
                 tiles,

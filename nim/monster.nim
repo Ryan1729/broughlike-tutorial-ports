@@ -22,6 +22,12 @@ type
 
 no_ex:
     func `-=`(hp: var HP, damage: Damage) {.borrow.}
+    func `+=`(hp: var HP, damage: Damage) =
+        let newHp = int(hp) + int(damage)
+        if newHp > int(high(HP)):
+            hp = high(HP)
+        else:
+            hp = HP(newHp)
 
     func newMonster*(kind: Kind, xy: game.TileXY, hp: HP): Monster =
         (kind: kind, xy: xy, hp: hp, attackedThisTurn: false, stunned: false)
@@ -47,6 +53,11 @@ no_ex:
     func hit*(monster: Monster, damage: Damage): Monster =
         var m = monster
         m.hp -= damage
+        m
+
+    func heal*(monster: Monster, damage: Damage): Monster =
+        var m = monster
+        m.hp += damage
         m
 
     func dead*(m: Monster): bool =
