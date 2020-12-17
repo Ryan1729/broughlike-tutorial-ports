@@ -122,7 +122,7 @@ no_ex:
         )
 
     proc drawHp(hp: game.HP, xy: game.TileXY) =
-        for i in 0..<int(hp):
+        for i in 0..<(int(hp) div 2):
             drawSpriteFloat(
                 game.SpriteIndex(9),
                 (

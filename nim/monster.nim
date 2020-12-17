@@ -33,22 +33,22 @@ no_ex:
         (kind: kind, xy: xy, hp: hp, attackedThisTurn: false, stunned: false)
     
     func newPlayer*(xy: game.TileXY): Monster =
-        newMonster(Kind.Player, xy, HP(3))
+        newMonster(Kind.Player, xy, HP(6))
 
     func newBird*(xy: game.TileXY): Monster =
-        newMonster(Kind.Bird, xy, HP(3))
+        newMonster(Kind.Bird, xy, HP(6))
 
     func newSnake*(xy: game.TileXY): Monster =
-        newMonster(Kind.Snake, xy, HP(1))
+        newMonster(Kind.Snake, xy, HP(2))
 
     func newTank*(xy: game.TileXY): Monster =
-        newMonster(Kind.Tank, xy, HP(2))
+        newMonster(Kind.Tank, xy, HP(4))
 
     func newEater*(xy: game.TileXY): Monster =
-        newMonster(Kind.Eater, xy, HP(1))
+        newMonster(Kind.Eater, xy, HP(2))
 
     func newJester*(xy: game.TileXY): Monster =
-        newMonster(Kind.Jester, xy, HP(2))
+        newMonster(Kind.Jester, xy, HP(4))
 
     func hit*(monster: Monster, damage: Damage): Monster =
         var m = monster

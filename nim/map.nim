@@ -100,7 +100,7 @@ no_ex:
                     let moved = tiles.move(m, m.xy)
 
                     tiles.addMonster(
-                        newTile.monster.get.markStunned.hit(Damage(1))
+                        newTile.monster.get.markStunned.hit(Damage(2))
                     )
 
                     return some(moved)
@@ -199,7 +199,6 @@ no_ex:
                 tiles.replace(neighbors[0].xy, tile.newFloor)
                 tiles.move(
                     m.heal(Damage(1)),
-                    #m.heal(Damage(0.5)),
                     m.xy
                 )
             else:

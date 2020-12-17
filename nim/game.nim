@@ -77,7 +77,7 @@ func dist*(source: TileXY, target: TileXY): int =
     abs(int(source.x)-int(target.x)) + abs(int(source.y)-int(target.y))
 
 type
-    HP* = distinct range[0..6]
+    HP* = distinct range[0..12]
 
 proc `==`*(x, y: HP): bool =
     int(x) == int(y)
