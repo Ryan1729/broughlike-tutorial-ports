@@ -208,13 +208,31 @@ no_ex:
                     playerXY,
                     rng
                 )
-        else:
-            plainDoStuff(
-                tiles,
-                monster,
-                playerXY,
-                rng
-            )
+        of Kind.Jester:
+            let neighbors = monster.xy.getAdjacentPassableNeighbors(tiles, rng)
+            if neighbors.len > 0:
+                let deltas = game.deltasFrom(
+                    (source: monster.xy, target: neighbors[0].xy)
+                )
+
+                if deltas.isNone:
+                    # The player genrally won't mind if a monster doesn't move.
+                    return monster
+
+                let option = tiles.tryMove(
+                    monster,
+                    deltas.get
+                )
+
+                if option.isSome:
+                    return option.get
+        
+            monster
+
+        of Kind.Player:
+            # This should not happen
+            monster
+            
 
     proc plainUpdateMonster(
         tiles: var Tiles,
