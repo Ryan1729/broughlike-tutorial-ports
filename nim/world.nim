@@ -13,8 +13,11 @@ type
     rng: randomness.Rand
     level: game.LevelNum
 
+  AfterTick* = enum
+    NoChange
+    PlayerDied
 no_ex:
-    proc tick*(state: var State) =
+    proc tick*(state: var State): AfterTick =
         # We collect the monsters into a list so that we don't hit
         # the same monster twice in the iteration, in case it moves
         
@@ -37,6 +40,8 @@ no_ex:
             let m = monsters[k]
 
             if m.kind == Kind.Player:
+                # We don't check if the player is dead here because the
+                # player may only be killed after it is checked here.
                 discard
 
             elif m.dead:
@@ -49,3 +54,11 @@ no_ex:
                 )
 
             k -= 1
+
+        var t: Tile = state.tiles.getTile(state.xy)
+
+        if t.monster.isSome:
+            if t.monster.get.dead:
+                return AfterTick.PlayerDied
+
+        AfterTick.NoChange
