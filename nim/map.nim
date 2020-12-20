@@ -306,20 +306,23 @@ no_ex:
         of false:
             err(r.error)
 
+    proc spawnMonster*(rng: var randomness.Rand, tiles: var Tiles) =
+        var monsterMakers = monster.NonPlayerMakers
+        rng.shuffle(monsterMakers)
+
+        let tilesRes = rng.randomPassableTile(tiles)
+        case tilesRes.isOk:
+        of true:
+            let monster = monsterMakers[0](tilesRes.value.xy)
+            tiles.addMonster(monster)
+        of false:
+            # The player won't mind if a monter doesn't spawn because it
+            # doesn't fit.
+            discard
+
     proc generateMonsters(rng: var randomness.Rand, tiles: var Tiles, level: LevelNum) =
         for _ in 0..int(level):
-            var monsterMakers = monster.NonPlayerMakers
-            rng.shuffle(monsterMakers)
-
-            let tilesRes = rng.randomPassableTile(tiles)
-            case tilesRes.isOk:
-            of true:
-                let monster = monsterMakers[0](tilesRes.value.xy)
-                tiles.addMonster(monster)
-            of false:
-                # The player won't mind if a monter doesn't spwan because it
-                # doesn't fit.
-                continue
+            rng.spawnMonster(tiles)
 
 type TilesResult = res.ult[Tiles, string]
 

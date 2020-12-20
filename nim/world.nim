@@ -1,8 +1,8 @@
 from options import Option, isSome, get
 
-from game import no_ex
+from game import no_ex, Counter, dec, `<=`
 from randomness import nil
-from map import getTile, removeMonster, updateMonster
+from map import getTile, removeMonster, updateMonster, spawnMonster
 from monster import Monster, Kind, dead
 from tile import Tile
 
@@ -12,6 +12,8 @@ type
     tiles: map.Tiles
     rng: randomness.Rand
     level: game.LevelNum
+    spawnCounter: Counter
+    spawnRate: Counter
 
   AfterTick* = enum
     NoChange
@@ -54,6 +56,13 @@ no_ex:
                 )
 
             k -= 1
+
+        state.spawnCounter.dec
+        if state.spawnCounter <= 0u64:
+            state.rng.spawnMonster(state.tiles)
+            state.spawnCounter = state.spawnRate
+            state.spawnRate.dec
+        
 
         var t: Tile = state.tiles.getTile(state.xy)
 

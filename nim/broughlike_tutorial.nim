@@ -72,13 +72,17 @@ no_ex:
                 let xy = startingTile.value.xy
                 tiles.value.addMonster(monster.newPlayer(xy))
 
+                let spawnRate = game.Counter(15)
+
                 State(
                     screen: Screen.Running,
                     state: (
                         xy: xy,
                         tiles: tiles.value,
                         rng: rng,
-                        level: level
+                        level: level,
+                        spawnCounter: spawnRate,
+                        spawnRate: spawnRate
                     ),
                 )
             of false:
@@ -106,7 +110,6 @@ no_ex:
                     of AfterTick.NoChange:
                         discard
                     of AfterTick.PlayerDied:
-                        echo "AfterTick.PlayerDied"
                         state = State(
                             screen: Screen.Dead,
                             state: state.state,
