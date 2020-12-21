@@ -1,6 +1,6 @@
 from options import Option, isNone, get
 
-from game import no_ex, TileXY, HP
+from game import no_ex, TileXY, HP, Counter, `<`
 
 type
   Kind* = enum
@@ -17,6 +17,7 @@ type
     hp: HP
     attackedThisTurn: bool
     stunned: bool
+    teleportCounter: Counter
 
   Damage* = distinct range[1 .. int(high(HP))]
 
@@ -30,10 +31,19 @@ no_ex:
             hp = HP(newHp)
 
     func newMonster*(kind: Kind, xy: game.TileXY, hp: HP): Monster =
-        (kind: kind, xy: xy, hp: hp, attackedThisTurn: false, stunned: false)
+        (
+            kind: kind,
+            xy: xy,
+            hp: hp,
+            attackedThisTurn: false,
+            stunned: false,
+            teleportCounter: Counter(2)
+        )
     
     func newPlayer*(xy: game.TileXY): Monster =
-        newMonster(Kind.Player, xy, HP(6))
+        result = newMonster(Kind.Player, xy, HP(6))
+        result.teleportCounter = Counter(0)
+        
 
     func newBird*(xy: game.TileXY): Monster =
         newMonster(Kind.Bird, xy, HP(6))
@@ -78,10 +88,23 @@ no_ex:
         m.stunned = false
         m
 
+    func withTeleportCounter*(monster: Monster, teleportCounter: Counter): Monster =
+        var m = monster
+        m.teleportCounter = teleportCounter
+        m
+    
+
     proc draw*(option: Option[Monster], platform: game.Platform) =
         if option.isNone:
             return
         let monster = option.get
+        if monster.teleportCounter > 0:
+            (platform.sprite)(
+                game.SpriteIndex(10),
+                monster.xy
+            )
+            return
+        
         let sprite = case monster.kind
         of Player:
             if monster.dead:

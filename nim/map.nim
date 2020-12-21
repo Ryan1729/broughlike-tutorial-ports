@@ -4,9 +4,9 @@ from sequtils import filter, toSeq, any, concat
 
 from randomness import rand01, tryTo, randomTileXY, shuffle, Rand
 from res import ok, err
-from game import no_ex, `<`, `<=`, TileXY, DeltaX, DeltaY, DeltaXY, `+`, `==`, LevelNum, dist
+from game import no_ex, `<`, `<=`, TileXY, DeltaX, DeltaY, DeltaXY, `+`, `==`, LevelNum, dist, dec
 from tile import Tile, isPassable, hasMonster
-from monster import Monster, Kind, hit, Damage, markAttacked, markStunned, markUnstunned, heal
+from monster import Monster, Kind, hit, Damage, markAttacked, markStunned, markUnstunned, heal, withTeleportCounter
 
 const tileLen*: int = game.NumTiles * game.NumTiles
 
@@ -236,18 +236,25 @@ no_ex:
 
     proc plainUpdateMonster(
         tiles: var Tiles,
-        monster: Monster,
+        monsterIn: Monster,
         playerXY: TileXY,
         rng: var Rand
     ): Monster =
-        if monster.stunned:
+        var m = monsterIn
+        m.teleportCounter.dec
+        discard tiles.move(
+            m,
+            m.xy
+        )
+        
+        if m.stunned or m.teleportCounter > 0:
             return tiles.move(
-                monster.markUnstunned,
-                monster.xy
+                m.markUnstunned,
+                m.xy
             )
         
         
-        doStuff(tiles, monster, playerXY, rng)
+        doStuff(tiles, m, playerXY, rng)
 
 
     proc updateMonster*(
