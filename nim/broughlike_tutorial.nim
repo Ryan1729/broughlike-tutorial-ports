@@ -10,10 +10,11 @@ from options import Option, isSome, get, none, some
 
 from assets import nil
 from randomness import nil
-from monster import draw
+from tile import Kind, newExit
+from monster import draw, isPlayer, Damage, `+`
 from res import ok, err
-from game import `-=`, `+=`, no_ex, DeltaX, DeltaY, `$`
-from map import generateLevel, randomPassableTile, addMonster, tryMove, getTile
+from game import `-=`, `+=`, `==`, no_ex, DeltaX, DeltaY, `$`
+from map import generateLevel, randomPassableTile, addMonster, tryMove, getTile, replace
 from world import tick, AfterTick
 
 
@@ -52,6 +53,48 @@ no_ex:
     proc errorState(message: string): State =
         State(screen: Screen.Error, error: message)
 
+    proc startLevel(
+        level: game.LevelNum,
+        rng: var randomness.Rand,
+        playerHP: game.HP
+    ): State =
+        var tiles = rng.generateLevel(level)
+        case tiles.isOk:
+        of true:
+            let startingTile = rng.randomPassableTile(tiles.value)
+
+            case startingTile.isOk:
+            of true:
+                let exitTile = rng.randomPassableTile(tiles.value)
+
+                case exitTile.isOk:
+                of true:
+                    let xy = startingTile.value.xy
+                    tiles.value.addMonster(monster.newPlayer(xy, playerHP))
+
+                    tiles.value.replace(exitTile.value.xy, newExit)
+
+                    let spawnRate = game.Counter(15)
+
+                    State(
+                        screen: Screen.Running,
+                        state: (
+                            xy: xy,
+                            tiles: tiles.value,
+                            rng: rng,
+                            level: level,
+                            spawnCounter: spawnRate,
+                            spawnRate: spawnRate
+                        ),
+                    )
+                of false:
+                    exitTile.error.errorState
+            of false:
+                startingTile.error.errorState
+        of false:
+            tiles.error.errorState
+
+
     proc seedState(): State =
         let
             now = times.getTime()
@@ -62,42 +105,25 @@ no_ex:
         echo seed
 
         var rng = randomness.initRand(seed)
-        var tiles = rng.generateLevel(level)
-        case tiles.isOk:
-        of true:
-            let startingTile = rng.randomPassableTile(tiles.value)
+        startLevel(level, rng, game.HP(6))
 
-            case startingTile.isOk:
-            of true:
-                let xy = startingTile.value.xy
-                tiles.value.addMonster(monster.newPlayer(xy))
-
-                let spawnRate = game.Counter(15)
-
-                State(
-                    screen: Screen.Running,
-                    state: (
-                        xy: xy,
-                        tiles: tiles.value,
-                        rng: rng,
-                        level: level,
-                        spawnCounter: spawnRate,
-                        spawnRate: spawnRate
-                    ),
-                )
-            of false:
-                startingTile.error.errorState
-        of false:
-            tiles.error.errorState
 
 # It seems like it should be provable that `state.state` is accessible
 # inside an `if` that checks `state.screen == Screen.Running`, but it
 # doesn't work currently. See https://github.com/nim-lang/Nim/issues/7882
 {.push warning[ProveField]: off.}
 no_ex:
+    proc showTitle(state: var State) =
+        if state.screen == Screen.Dead:
+            state = State(
+                screen: Screen.Title,
+                prevState: some(state.state)
+            )
+
     proc movePlayer(state: var State, dxy: game.DeltaXY) =
         if state.screen == Screen.Running:
-            let monster = state.state.tiles.getTile(state.state.xy).monster
+            let tile = state.state.tiles.getTile(state.state.xy)
+            let monster = tile.monster
             if monster.isSome:
                 let moved = state.state.tiles.tryMove(
                     monster.get,
@@ -105,6 +131,20 @@ no_ex:
                 )
 
                 if moved.isSome:
+                    case tile.kind:
+                    of Kind.Exit:
+                        if monster.get.isPlayer:
+                            if state.state.level == high(game.LevelNum):
+                                state.showTitle
+                            else:
+                                state = startLevel(
+                                    game.LevelNum(int(state.state.level) + 1),
+                                    state.state.rng,
+                                    monster.get.hp + Damage(1)
+                                )
+                    else:
+                        discard
+
                     state.state.xy = moved.get.xy
                     case state.state.tick
                     of AfterTick.NoChange:
@@ -118,13 +158,6 @@ no_ex:
             else:
                 state = errorState("Could not find player!")
 
-
-    proc showTitle(state: var State) =
-        if state.screen == Screen.Dead:
-            state = State(
-                screen: Screen.Title,
-                prevState: some(state.state)
-            )
 {.pop.}
 
 var

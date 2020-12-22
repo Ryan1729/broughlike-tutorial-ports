@@ -6,7 +6,7 @@ from randomness import rand01, tryTo, randomTileXY, shuffle, Rand
 from res import ok, err
 from game import no_ex, `<`, `<=`, TileXY, DeltaX, DeltaY, DeltaXY, `+`, `==`, LevelNum, dist, dec
 from tile import Tile, isPassable, hasMonster
-from monster import Monster, Kind, hit, Damage, markAttacked, markStunned, markUnstunned, heal, withTeleportCounter
+from monster import Monster, Kind, hit, Damage, markAttacked, markStunned, markUnstunned, heal, withTeleportCounter, isPlayer
 
 const tileLen*: int = game.NumTiles * game.NumTiles
 
@@ -63,7 +63,7 @@ no_ex:
 
         connectedTiles
 
-    proc replace(
+    proc replace*(
         tiles: var Tiles,
         xy: TileXY,
         maker: proc (xy: game.TileXY): Tile
@@ -95,7 +95,7 @@ no_ex:
                 let moved = tiles.move(monster, newTile.xy)
                 return some(moved)
             else:
-                if (monster.kind == Kind.Player) != (newTile.monster.get.kind == Kind.Player):
+                if (monster.isPlayer) != (newTile.monster.get.isPlayer):
                     let m = monster.markAttacked()
                     let moved = tiles.move(m, m.xy)
 
@@ -123,7 +123,7 @@ no_ex:
 
         neighbors = neighbors.filter(
             proc (t: Tile): bool =
-                t.monster.isNone or t.monster.get.kind == Kind.Player
+                t.monster.isNone or t.monster.get.isPlayer
         )
         if neighbors.len > 0:
             let distCmp = proc (a, b: Tile): int =

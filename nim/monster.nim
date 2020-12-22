@@ -29,6 +29,14 @@ no_ex:
             hp = high(HP)
         else:
             hp = HP(newHp)
+    func `+`*(hpIn: HP, damage: Damage): HP =
+        var hp = hpIn
+        hp += damage
+        hp
+    func `+`*(damage: Damage, hpIn: HP): HP =
+        var hp = hpIn
+        hp += damage
+        hp
 
     func newMonster*(kind: Kind, xy: game.TileXY, hp: HP): Monster =
         (
@@ -40,10 +48,9 @@ no_ex:
             teleportCounter: Counter(2)
         )
     
-    func newPlayer*(xy: game.TileXY): Monster =
-        result = newMonster(Kind.Player, xy, HP(6))
+    func newPlayer*(xy: game.TileXY, hp: HP): Monster =
+        result = newMonster(Kind.Player, xy, hp)
         result.teleportCounter = Counter(0)
-        
 
     func newBird*(xy: game.TileXY): Monster =
         newMonster(Kind.Bird, xy, HP(6))
@@ -59,6 +66,9 @@ no_ex:
 
     func newJester*(xy: game.TileXY): Monster =
         newMonster(Kind.Jester, xy, HP(4))
+
+    func isPlayer*(m: Monster): bool =
+        m.kind == Kind.Player
 
     func hit*(monster: Monster, damage: Damage): Monster =
         var m = monster

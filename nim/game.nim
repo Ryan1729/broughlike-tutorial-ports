@@ -19,12 +19,9 @@ macro no_ex*(x: untyped): untyped =
 const tileSize*: int = 64
 const NumTiles*: int = 9
 const UIWidth*: int = 4
-const numLevels: int = 6
 
 type
     SpriteIndex* = distinct range[0..16]
-
-    LevelNum* = distinct range[1..numLevels]
 
 template unsignedAdditive(typ, base: typedesc) =
     no_ex:
@@ -77,9 +74,13 @@ no_ex:
         abs(int(source.x)-int(target.x)) + abs(int(source.y)-int(target.y))
 
 type
+    LevelNum* = distinct range[1..6]
+
     HP* = distinct range[0..12]
 
 no_ex:
+    proc `==`*(x, y: LevelNum): bool =
+        int(x) == int(y)
     proc `==`*(x, y: HP): bool =
         int(x) == int(y)
 

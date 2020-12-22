@@ -3,7 +3,7 @@ from options import Option, isSome, get
 from game import no_ex, Counter, dec, `<=`
 from randomness import nil
 from map import getTile, removeMonster, updateMonster, spawnMonster
-from monster import Monster, Kind, dead
+from monster import Monster, Kind, dead, isPlayer
 from tile import Tile
 
 type
@@ -41,7 +41,7 @@ no_ex:
         while k >= 0:
             let m = monsters[k]
 
-            if m.kind == Kind.Player:
+            if m.isPlayer:
                 # We don't check if the player is dead here because the
                 # player may only be killed after it is checked here.
                 discard
