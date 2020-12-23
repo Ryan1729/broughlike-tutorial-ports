@@ -131,7 +131,7 @@ no_ex:
                 )
 
                 if moved.isSome:
-                    case tile.kind:
+                    case state.state.tiles.getTile(moved.get.xy).kind:
                     of Kind.Exit:
                         if monster.get.isPlayer:
                             if state.state.level == high(game.LevelNum):
@@ -142,6 +142,7 @@ no_ex:
                                     state.state.rng,
                                     monster.get.hp + Damage(1)
                                 )
+                            return
                     else:
                         discard
 
@@ -156,7 +157,13 @@ no_ex:
                         )
 
             else:
-                state = errorState("Could not find player!")
+                let message = "Could not find player!\n" &
+                    "expected the player to be at " & $state.state.xy & "\n" &
+                    "but instead got:\n" &
+                    $tile
+                state = errorState(message)
+
+
 
 {.pop.}
 
@@ -288,8 +295,6 @@ no_ex:
         )
 
 sizes = freshSizes()
-
-
 
 while not WindowShouldClose():
     if IsKeyPressed(KEY_F11):
