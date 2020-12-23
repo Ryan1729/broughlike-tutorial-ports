@@ -140,7 +140,7 @@ no_ex:
                                 state = startLevel(
                                     game.LevelNum(int(state.state.level) + 1),
                                     state.state.rng,
-                                    monster.get.hp + Damage(1)
+                                    monster.get.hp + Damage(2)
                                 )
                             return
                     else:

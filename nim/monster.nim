@@ -81,7 +81,7 @@ no_ex:
         m
 
     func dead*(m: Monster): bool =
-        int(m.hp) <= 0
+        int(m.hp) <= 1
 
     func markAttacked*(monster: Monster): Monster =
         var m = monster
