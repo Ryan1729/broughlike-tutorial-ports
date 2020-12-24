@@ -212,6 +212,37 @@ no_ex:
                 )
             )
 
+type
+    TextX = int32
+    TextY = int32
+    FontSize = int32
+
+    TextSpec = tuple
+        text: string
+        size: FontSize
+        centered: bool
+        y: TextY
+        colour: Color
+
+no_ex:
+    proc drawText(spec: TextSpec) =
+        let cText: cstring = spec.text
+
+        let textX: TextX = sizes.playAreaX + (if spec.centered:
+            (sizes.playAreaW - MeasureText(cText, spec.size)) div 2
+        else:
+            sizes.playAreaW - game.UIWidth*sizes.tile + MeasureText("m", spec.size)
+        )
+
+        DrawText(
+            cText,
+            textX,
+            sizes.playAreaY + spec.y,
+            spec.size,
+            spec.colour
+        )
+
+
 const platform = game.Platform(
     sprite: drawSprite,
     hp: drawHp
@@ -223,6 +254,15 @@ no_ex:
 
         for t in state.tiles:
             t.monster.draw(platform)
+
+        const UIFontSize: FontSize = FontSize(30)
+        (
+            text: "Level: " & $int(state.level),
+            size: UIFontSize,
+            centered: false,
+            y: TextY(UIFontSize),
+            colour: VIOLET
+        ).drawText
 
     proc draw() =
         ClearBackground INDIGO
@@ -251,6 +291,23 @@ no_ex:
                 sizes.playAreaH,
                 Color(r: 0, g: 0, b: 0, a: 192)
             )
+
+            (
+                text: "Awes-nim",
+                size: FontSize(40),
+                centered: true,
+                y: TextY(sizes.playAreaH / 2 - 110),
+                colour: WHITE
+            ).drawText
+
+            (
+                text: "Broughlike",
+                size: FontSize(70),
+                centered: true,
+                y: TextY(sizes.playAreaH / 2 - 50),
+                colour: WHITE
+            ).drawText
+
         of Screen.Error:
             DrawTextRec(
                 GetFontDefault(),
