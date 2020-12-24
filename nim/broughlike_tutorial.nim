@@ -115,11 +115,14 @@ no_ex:
 {.push warning[ProveField]: off.}
 no_ex:
     proc showTitle(state: var State) =
-        if state.screen == Screen.Dead:
+        case state.screen:
+        of Screen.Dead, Screen.Running:
             state = State(
                 screen: Screen.Title,
                 prevState: some(state.state)
             )
+        else:
+            discard
 
     proc movePlayer(state: var State, dxy: game.DeltaXY) =
         if state.screen == Screen.Running:
