@@ -69,10 +69,11 @@ no_ex:
 
                 case exitTile.isOk:
                 of true:
+                    # Do the exit tile first so we don't erase the player!
+                    tiles.value.replace(exitTile.value.xy, newExit)
+
                     let xy = startingTile.value.xy
                     tiles.value.addMonster(monster.newPlayer(xy, playerHP))
-
-                    tiles.value.replace(exitTile.value.xy, newExit)
 
                     let spawnRate = game.Counter(15)
 
