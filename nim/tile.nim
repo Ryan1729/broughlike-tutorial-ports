@@ -13,16 +13,20 @@ type
     kind: Kind
     xy: game.TileXY
     monster: Option[Monster]
+    treasure: bool
 
 no_ex:
+    func newTile(kind: Kind, xy: game.TileXY): Tile =
+        (kind: kind, xy: xy, monster: none(Monster), treasure: false)
+    
     func newWall*(xy: game.TileXY): Tile =
-        (kind: Kind.Wall, xy: xy, monster: none(Monster))
+        newTile(Kind.Wall, xy)
 
     func newFloor*(xy: game.TileXY): Tile =
-        (kind: Kind.Floor, xy: xy, monster: none(Monster))
+        newTile(Kind.Floor, xy)
 
     func newExit*(xy: game.TileXY): Tile =
-        (kind: Kind.Exit, xy: xy, monster: none(Monster))
+        newTile(Kind.Exit, xy)
     
     proc draw*(tile: Tile, platform: game.Platform) =
         let sprite = case tile.kind
@@ -37,6 +41,12 @@ no_ex:
             sprite,
             tile.xy
         )
+
+        if tile.treasure:
+            (platform.sprite)(
+                game.SpriteIndex(12),
+                tile.xy
+            )
 
     func isPassable*(kind: Kind): bool =
         case kind

@@ -317,10 +317,10 @@ no_ex:
         var monsterMakers = monster.NonPlayerMakers
         rng.shuffle(monsterMakers)
 
-        let tilesRes = rng.randomPassableTile(tiles)
-        case tilesRes.isOk:
+        let tileRes = rng.randomPassableTile(tiles)
+        case tileRes.isOk:
         of true:
-            let monster = monsterMakers[0](tilesRes.value.xy)
+            let monster = monsterMakers[0](tileRes.value.xy)
             tiles.addMonster(monster)
         of false:
             # The player won't mind if a monter doesn't spawn because it
@@ -331,14 +331,28 @@ no_ex:
         for _ in 0..int(level):
             rng.spawnMonster(tiles)
 
+    proc generateTreasure(rng: var randomness.Rand, tiles: var Tiles) =
+        for _ in 0..<3:
+            let tileRes = rng.randomPassableTile(tiles)
+
+            case tileRes.isOk:
+            of true:
+                tiles[xyToI(tileRes.value.xy)].treasure = true
+            of false:
+                # The player would presumably prefer being able to play a
+                # level missing traeasure, than a crash, etc.
+                discard
+
 type TilesResult = res.ult[Tiles, string]
 
 {.push warning[ProveField]: off.}
 no_ex:
-    proc generateMonstersTilesResult(rng: var randomness.Rand, tilesRes: var TilesResult, level: LevelNum) =
+    proc generateMonstersTreasureTilesResult(rng: var randomness.Rand, tilesRes: var TilesResult, level: LevelNum) =
         case tilesRes.isOk
         of true:
             rng.generateMonsters(tilesRes.value, level)
+
+            rng.generateTreasure(tilesRes.value)
         of false:
             discard
 {.pop.}
@@ -361,7 +375,8 @@ no_ex:
 
         case r.isOk
         of true:
-            rng.generateMonstersTilesResult(tilesRes, level)
+            rng.generateMonstersTreasureTilesResult(tilesRes, level)
+            
             tilesRes
         of false:
             err(r.error)
