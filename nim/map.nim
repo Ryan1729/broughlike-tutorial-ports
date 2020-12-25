@@ -331,13 +331,16 @@ no_ex:
         for _ in 0..int(level):
             rng.spawnMonster(tiles)
 
+    proc setTreasure*(tiles: var Tiles, xy: game.TileXY, isTreasure: bool) =
+        tiles[xyToI(xy)].treasure = isTreasure
+
     proc generateTreasure(rng: var randomness.Rand, tiles: var Tiles) =
         for _ in 0..<3:
             let tileRes = rng.randomPassableTile(tiles)
 
             case tileRes.isOk:
             of true:
-                tiles[xyToI(tileRes.value.xy)].treasure = true
+                tiles.setTreasure(tileRes.value.xy, true)
             of false:
                 # The player would presumably prefer being able to play a
                 # level missing traeasure, than a crash, etc.

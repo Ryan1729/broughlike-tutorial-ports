@@ -1,6 +1,6 @@
 from options import Option, isSome, get
 
-from game import no_ex, Counter, dec, `<=`
+from game import no_ex, Counter, dec, `<=`, Score
 from randomness import nil
 from map import getTile, removeMonster, updateMonster, spawnMonster
 from monster import Monster, Kind, dead, isPlayer
@@ -14,6 +14,7 @@ type
     level: game.LevelNum
     spawnCounter: Counter
     spawnRate: Counter
+    score: Score
 
   AfterTick* = enum
     NoChange

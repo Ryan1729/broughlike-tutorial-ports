@@ -54,7 +54,7 @@ template comparable(typ, base: typedesc) =
         proc `==`*(x: typ, y: base): bool {.borrow.}
         proc `==`*(x: base, y: typ): bool {.borrow.}
 
-template definePos(typ, base: untyped) =
+template defineNumericNewType(typ, base: untyped) =
     type
         typ* = distinct base
     unsignedAdditive(typ, base)
@@ -62,8 +62,10 @@ template definePos(typ, base: untyped) =
     proc `$`*(x: typ): string =
         $base(x)
 
-definePos(TileX, uint8)
-definePos(TileY, uint8)
+defineNumericNewType(Score, uint)
+
+defineNumericNewType(TileX, uint8)
+defineNumericNewType(TileY, uint8)
 
 type TileXY* = tuple
     x: TileX

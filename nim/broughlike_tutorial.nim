@@ -13,8 +13,9 @@ from randomness import nil
 from tile import Kind, newExit
 from monster import draw, isPlayer, Damage, `+`
 from res import ok, err
-from game import `-=`, `+=`, `==`, no_ex, DeltaX, DeltaY, `$`
-from map import generateLevel, randomPassableTile, addMonster, tryMove, getTile, replace
+from game import `-=`, `+=`, `==`, no_ex, DeltaX, DeltaY, `$`, Score
+from map import generateLevel, randomPassableTile, addMonster, spawnMonster,
+        tryMove, getTile, replace, setTreasure
 from world import tick, AfterTick
 
 
@@ -86,7 +87,8 @@ no_ex:
                             rng: rng,
                             level: level,
                             spawnCounter: spawnRate,
-                            spawnRate: spawnRate
+                            spawnRate: spawnRate,
+                            score: Score(0)
                         ),
                     )
                 of false:
@@ -136,7 +138,8 @@ no_ex:
                 )
 
                 if moved.isSome:
-                    case state.state.tiles.getTile(moved.get.xy).kind:
+                    let targetTile = state.state.tiles.getTile(moved.get.xy)
+                    case targetTile.kind:
                     of Kind.Exit:
                         if monster.get.isPlayer:
                             if state.state.level == high(game.LevelNum):
@@ -148,6 +151,12 @@ no_ex:
                                     monster.get.hp + Damage(2)
                                 )
                             return
+                    of Kind.Floor:
+                        if monster.get.isPlayer:
+                            if targetTile.treasure:
+                                state.state.score += 1;
+                                state.state.tiles.setTreasure(targetTile.xy, false)
+                                state.state.rng.spawnMonster(state.state.tiles)
                     else:
                         discard
 
@@ -262,6 +271,14 @@ no_ex:
             size: UIFontSize,
             centered: false,
             y: TextY(UIFontSize),
+            colour: VIOLET
+        ).drawText
+
+        (
+            text: "Score: " & $int(state.score),
+            size: UIFontSize,
+            centered: false,
+            y: TextY(UIFontSize * 2),
             colour: VIOLET
         ).drawText
 
