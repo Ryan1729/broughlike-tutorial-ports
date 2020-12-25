@@ -19,6 +19,7 @@ from world import tick, AfterTick
 
 
 const INDIGO = Color(a: 0xffu8, r: 0x4bu8, g: 0, b: 0x82u8)
+const VIOLET = Color(a: 0xffu8, r: 0xeeu8, g: 0x82u8, b: 0xeeu8)
 
 type
     floatXY = tuple
