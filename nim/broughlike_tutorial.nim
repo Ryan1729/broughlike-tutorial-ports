@@ -4,7 +4,9 @@ import raylib
 # SIGSEGV errors if we call (some?) raylib stuff before calling this.
 InitWindow 0, 0, "AWESOME BROUGHLIKE"
 
+from sequtils import map
 from math import nil
+from json import parseFile, JsonNode, `%`
 from times import nil
 from options import Option, isSome, get, none, some
 
@@ -185,6 +187,48 @@ var
     state = State(screen: Screen.Title, prevState: none(world.State))
     sizes: sizesObj
 
+const SAVE_FILE_NAME = "Awes-nim_Broughlike.sav"
+
+# The game should not have to know or care about how we decide to serialize
+# data on disk.
+type
+    ScoreRowJson* = object
+        score: uint
+        run: uint
+        totalScore: uint
+        active: bool
+
+{.push warning[ProveField]: off.}
+no_ex:
+    proc getScores(): seq[game.ScoreRow] =
+        try:
+            # Apparently (as in according to compile errors) we can
+            # unmarshal into tuples containing distinct types but we can't
+            # directly convert that to JSON? Odd.
+            result = json.to(json.parseFile(SAVE_FILE_NAME), seq[game.ScoreRow])
+        except Exception:
+            result = @[]
+
+{.pop.}
+no_ex:
+    proc scoreRowToJson(row: game.ScoreRow): ScoreRowJson =
+        ScoreRowJson(
+            score: uint(row.score),
+            run: uint(row.run),
+            totalScore: uint(row.totalScore),
+            active: row.active
+        )
+
+    proc saveScores(scores: seq[game.ScoreRow]) =
+        let jsonRows: seq[ScoreRowJson] = scores.map(scoreRowToJson)
+        let node: JsonNode = %(jsonRows)
+        try:
+            writeFile(SAVE_FILE_NAME, json.`$`(node))
+        except Exception:
+            # presumably the player thinks getting to play with no high
+            # scores saved is better than not being able to play.
+            echo getCurrentExceptionMsg()
+
 var spritesheet: Texture2D = LoadTextureFromImage(assets.spritesheetImage)
 
 no_ex:
@@ -255,7 +299,9 @@ no_ex:
 
 const platform = game.Platform(
     sprite: drawSprite,
-    hp: drawHp
+    hp: drawHp,
+    getScores: getScores,
+    saveScores: saveScores
 )
 
 no_ex:

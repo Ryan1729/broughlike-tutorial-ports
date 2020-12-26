@@ -86,9 +86,20 @@ no_ex:
     proc `==`*(x, y: HP): bool =
         int(x) == int(y)
 
-type Platform* = object
-    sprite*: proc(sprite: SpriteIndex, xy: TileXY) {.raises: [].}
-    hp*: proc(hp: HP, xy: TileXY) {.raises: [].}
+type
+    RunNum* = uint
+
+    ScoreRow* = tuple
+        score: Score
+        run: RunNum
+        totalScore: Score
+        active: bool
+
+    Platform* = object
+        sprite*: proc(sprite: SpriteIndex, xy: TileXY) {.raises: [].}
+        hp*: proc(hp: HP, xy: TileXY) {.raises: [].}
+        getScores*: proc(): seq[ScoreRow] {.raises: [].}
+        saveScores*: proc(scores: seq[ScoreRow]) {.raises: [].}
 
 type DeltaX* = enum DX0, DX1, DXm1
 type DeltaY* = enum DY0, DY1, DYm1
