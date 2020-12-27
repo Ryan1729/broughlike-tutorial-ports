@@ -113,6 +113,82 @@ no_ex:
         var rng = randomness.initRand(seed)
         startLevel(level, rng, game.HP(6))
 
+type
+    RunNum* = uint
+
+    ScoreRow* = tuple
+        score: Score
+        run: RunNum
+        totalScore: Score
+        active: bool
+
+    Outcome* = enum
+        Loss
+        Win
+
+    ScoreRowJson* = object
+        score: uint
+        run: uint
+        totalScore: uint
+        active: bool
+
+const SAVE_FILE_NAME = "Awes-nim_Broughlike.sav"
+
+{.push warning[ProveField]: off.}
+no_ex:
+    proc getScores(): seq[ScoreRow] =
+        try:
+            # Apparently (as in according to compile errors) we can
+            # unmarshal into tuples containing distinct types but we can't
+            # directly convert that to JSON? Odd.
+            result = json.to(json.parseFile(SAVE_FILE_NAME), seq[ScoreRow])
+        except Exception:
+            result = @[]
+
+{.pop.}
+no_ex:
+    proc scoreRowToJson(row: ScoreRow): ScoreRowJson =
+        ScoreRowJson(
+            score: uint(row.score),
+            run: uint(row.run),
+            totalScore: uint(row.totalScore),
+            active: row.active
+        )
+
+    proc saveScores(scores: seq[ScoreRow]) =
+        let jsonRows: seq[ScoreRowJson] = scores.map(scoreRowToJson)
+        let node: JsonNode = %(jsonRows)
+        try:
+            writeFile(SAVE_FILE_NAME, json.`$`(node))
+        except Exception:
+            # presumably the player thinks getting to play with no high
+            # scores saved is better than not being able to play.
+            echo getCurrentExceptionMsg()
+
+    proc addScore(score: Score, outcome: Outcome) =
+        var scores = getScores()
+
+        var scoreRow: ScoreRow = (
+            score: score,
+            run: uint(1),
+            totalScore: score,
+            active: outcome == Outcome.Win
+        )
+
+        if scores.len > 0:
+            let lastScore: ScoreRow = scores.pop()
+
+            if lastScore.active:
+                scoreRow.run = lastScore.run + 1
+                scoreRow.totalScore += lastScore.totalScore
+            else:
+                scores.add(lastScore)
+
+
+        scores.add(scoreRow)
+
+        saveScores(scores)
+
 
 # It seems like it should be provable that `state.state` is accessible
 # inside an `if` that checks `state.screen == Screen.Running`, but it
@@ -145,6 +221,7 @@ no_ex:
                     of Kind.Exit:
                         if monster.get.isPlayer:
                             if state.state.level == high(game.LevelNum):
+                                addScore(state.state.score, Outcome.Win)
                                 state.showTitle
                             else:
                                 state = startLevel(
@@ -167,6 +244,8 @@ no_ex:
                     of AfterTick.NoChange:
                         discard
                     of AfterTick.PlayerDied:
+                        addScore(state.state.score, Outcome.Loss)
+
                         state = State(
                             screen: Screen.Dead,
                             state: state.state,
@@ -186,48 +265,6 @@ no_ex:
 var
     state = State(screen: Screen.Title, prevState: none(world.State))
     sizes: sizesObj
-
-const SAVE_FILE_NAME = "Awes-nim_Broughlike.sav"
-
-# The game should not have to know or care about how we decide to serialize
-# data on disk.
-type
-    ScoreRowJson* = object
-        score: uint
-        run: uint
-        totalScore: uint
-        active: bool
-
-{.push warning[ProveField]: off.}
-no_ex:
-    proc getScores(): seq[game.ScoreRow] =
-        try:
-            # Apparently (as in according to compile errors) we can
-            # unmarshal into tuples containing distinct types but we can't
-            # directly convert that to JSON? Odd.
-            result = json.to(json.parseFile(SAVE_FILE_NAME), seq[game.ScoreRow])
-        except Exception:
-            result = @[]
-
-{.pop.}
-no_ex:
-    proc scoreRowToJson(row: game.ScoreRow): ScoreRowJson =
-        ScoreRowJson(
-            score: uint(row.score),
-            run: uint(row.run),
-            totalScore: uint(row.totalScore),
-            active: row.active
-        )
-
-    proc saveScores(scores: seq[game.ScoreRow]) =
-        let jsonRows: seq[ScoreRowJson] = scores.map(scoreRowToJson)
-        let node: JsonNode = %(jsonRows)
-        try:
-            writeFile(SAVE_FILE_NAME, json.`$`(node))
-        except Exception:
-            # presumably the player thinks getting to play with no high
-            # scores saved is better than not being able to play.
-            echo getCurrentExceptionMsg()
 
 var spritesheet: Texture2D = LoadTextureFromImage(assets.spritesheetImage)
 
@@ -299,9 +336,7 @@ no_ex:
 
 const platform = game.Platform(
     sprite: drawSprite,
-    hp: drawHp,
-    getScores: getScores,
-    saveScores: saveScores
+    hp: drawHp
 )
 
 no_ex:
