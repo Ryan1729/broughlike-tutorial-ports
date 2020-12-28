@@ -4,6 +4,8 @@ import raylib
 # SIGSEGV errors if we call (some?) raylib stuff before calling this.
 InitWindow 0, 0, "AWESOME BROUGHLIKE"
 
+from algorithm import sort
+from strutils import replace
 from sequtils import map
 from math import nil
 from json import parseFile, JsonNode, `%`
@@ -20,7 +22,7 @@ from map import generateLevel, randomPassableTile, addMonster, spawnMonster,
         tryMove, getTile, replace, setTreasure
 from world import tick, AfterTick
 
-
+const AQUA = Color(a: 0xffu8, r: 0, g: 0xffu8, b: 0xffu8)
 const INDIGO = Color(a: 0xffu8, r: 0x4bu8, g: 0, b: 0x82u8)
 const VIOLET = Color(a: 0xffu8, r: 0xeeu8, g: 0x82u8, b: 0xeeu8)
 
@@ -54,6 +56,9 @@ type
             error: string
 
 no_ex:
+    proc centerY(ss: sizesObj): Size =
+        ss.playAreaY + ss.playAreaH div 2
+
     proc errorState(message: string): State =
         State(screen: Screen.Error, error: message)
 
@@ -134,17 +139,25 @@ type
 
 const SAVE_FILE_NAME = "Awes-nim_Broughlike.sav"
 
+type ScoreRows = seq[ScoreRow]
+
+var scoresCache = none(ScoreRows)
+
 {.push warning[ProveField]: off.}
 no_ex:
-    proc getScores(): seq[ScoreRow] =
+    proc getScores(): ScoreRows =
+        if scoresCache.isSome:
+            return scoresCache.get.deepCopy
+
         try:
             # Apparently (as in according to compile errors) we can
             # unmarshal into tuples containing distinct types but we can't
             # directly convert that to JSON? Odd.
-            result = json.to(json.parseFile(SAVE_FILE_NAME), seq[ScoreRow])
+            result = json.to(json.parseFile(SAVE_FILE_NAME), ScoreRows)
         except Exception:
             result = @[]
 
+        scoresCache = some(result)
 {.pop.}
 no_ex:
     proc scoreRowToJson(row: ScoreRow): ScoreRowJson =
@@ -155,11 +168,12 @@ no_ex:
             active: row.active
         )
 
-    proc saveScores(scores: seq[ScoreRow]) =
+    proc saveScores(scores: ScoreRows) =
         let jsonRows: seq[ScoreRowJson] = scores.map(scoreRowToJson)
         let node: JsonNode = %(jsonRows)
         try:
             writeFile(SAVE_FILE_NAME, json.`$`(node))
+            scoresCache = none(ScoreRows)
         except Exception:
             # presumably the player thinks getting to play with no high
             # scores saved is better than not being able to play.
@@ -303,26 +317,49 @@ no_ex:
                 )
             )
 
+    proc rightPad(strings: seq[string]): string =
+        result = ""
+
+        for text in strings:
+            result &= text
+            for i in text.len..<10:
+                result &= " "
+
 type
     TextX = int32
     TextY = int32
     FontSize = int32
 
+    TextMode = enum
+        UI
+        TitleScreen
+        Score
+
     TextSpec = tuple
         text: string
         size: FontSize
-        centered: bool
+        mode: TextMode
         y: TextY
         colour: Color
 
+let scoreHeader = rightPad(@["RUN", "SCORE", "TOTAL"])
+
 no_ex:
     proc drawText(spec: TextSpec) =
-        let cText: cstring = spec.text
+        var cText: cstring = spec.text
 
-        let textX: TextX = sizes.playAreaX + (if spec.centered:
-            (sizes.playAreaW - MeasureText(cText, spec.size)) div 2
-        else:
+        let textX: TextX = sizes.playAreaX + (case spec.mode
+        of TextMode.UI:
             sizes.playAreaW - game.UIWidth*sizes.tile + MeasureText("m", spec.size)
+        of TextMode.TitleScreen:
+            (
+                sizes.playAreaW - MeasureText(spec.text, spec.size)
+            ) div 2
+        of TextMode.Score:
+            (
+                #sizes.playAreaW - MeasureText(spec.text, spec.size)
+                sizes.playAreaW - MeasureText(scoreHeader, spec.size)
+            ) div 2
         )
 
         DrawText(
@@ -339,6 +376,7 @@ const platform = game.Platform(
     hp: drawHp
 )
 
+
 no_ex:
     proc drawState(state: world.State) =
         map.draw(state.tiles, platform)
@@ -350,7 +388,7 @@ no_ex:
         (
             text: "Level: " & $int(state.level),
             size: UIFontSize,
-            centered: false,
+            mode: TextMode.UI,
             y: TextY(UIFontSize),
             colour: VIOLET
         ).drawText
@@ -358,10 +396,56 @@ no_ex:
         (
             text: "Score: " & $int(state.score),
             size: UIFontSize,
-            centered: false,
+            mode: TextMode.UI,
             y: TextY(UIFontSize * 2),
             colour: VIOLET
         ).drawText
+
+    proc drawScores() =
+        const ScoresFontSize = FontSize(18)
+
+        var scores = getScores()
+        if scores.len > 0:
+            let baseY = TextY(sizes.centerY + 48)
+
+            (
+                text: scoreHeader,
+                size: ScoresFontSize,
+                mode: TextMode.Score,
+                y: baseY,
+                colour: WHITE
+            ).drawText
+
+            let newestScore = scores.pop()
+
+            let byTotalScore = proc(a: ScoreRow, b: ScoreRow): int =
+                int(b.totalScore) - int(a.totalScore)
+
+            scores.sort(byTotalScore)
+            scores.insert(newestScore)
+
+            var rowCount = scores.len
+            if rowCount > 10:
+                rowCount = 10
+
+            for i in 0..<rowCount:
+                let scoreText = rightPad(@[
+                    $uint(scores[i].run),
+                    $uint(scores[i].score),
+                    $uint(scores[i].totalScore)
+                ])
+
+                (
+                    text: scoreText,
+                    size: ScoresFontSize,
+                    mode: TextMode.Score,
+                    y: TextY(baseY + 24+i*24),
+                    colour: if i == 0:
+                        AQUA
+                    else:
+                        VIOLET
+                ).drawText
+
 
     proc draw() =
         ClearBackground INDIGO
@@ -394,18 +478,20 @@ no_ex:
             (
                 text: "Awes-nim",
                 size: FontSize(40),
-                centered: true,
-                y: TextY(sizes.playAreaH / 2 - 110),
+                mode: TextMode.TitleScreen,
+                y: TextY(sizes.centerY - 110),
                 colour: WHITE
             ).drawText
 
             (
                 text: "Broughlike",
                 size: FontSize(70),
-                centered: true,
-                y: TextY(sizes.playAreaH / 2 - 50),
+                mode: TextMode.TitleScreen,
+                y: TextY(sizes.centerY - 50),
                 colour: WHITE
             ).drawText
+
+            drawScores()
 
         of Screen.Error:
             DrawTextRec(
