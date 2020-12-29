@@ -333,7 +333,9 @@ type
     TextMode = enum
         UI
         TitleScreen
-        Score
+        ScoreCol1
+        ScoreCol2
+        ScoreCol3
 
     TextSpec = tuple
         text: string
@@ -343,23 +345,33 @@ type
         colour: Color
 
 let scoreHeader = rightPad(@["RUN", "SCORE", "TOTAL"])
+let scoreHeaderFirst = rightPad(@["RUN"])
+let scoreHeaderFirst2 = rightPad(@["RUN", "SCORE"])
 
 no_ex:
     proc drawText(spec: TextSpec) =
         var cText: cstring = spec.text
 
+        let em = MeasureText("m", spec.size)
         let textX: TextX = sizes.playAreaX + (case spec.mode
         of TextMode.UI:
-            sizes.playAreaW - game.UIWidth*sizes.tile + MeasureText("m", spec.size)
+            sizes.playAreaW - game.UIWidth*sizes.tile + em
         of TextMode.TitleScreen:
             (
                 sizes.playAreaW - MeasureText(spec.text, spec.size)
             ) div 2
-        of TextMode.Score:
+        of TextMode.ScoreCol1:
             (
-                #sizes.playAreaW - MeasureText(spec.text, spec.size)
-                sizes.playAreaW - MeasureText(scoreHeader, spec.size)
+                sizes.playAreaW - MeasureText(scoreHeader, spec.size) + em
             ) div 2
+        of TextMode.ScoreCol2:
+            (
+                sizes.playAreaW - MeasureText(scoreHeader, spec.size) + em
+            ) div 2 + MeasureText(scoreHeaderFirst, spec.size)
+        of TextMode.ScoreCol3:
+            (
+                sizes.playAreaW - MeasureText(scoreHeader, spec.size) + em
+            ) div 2 + MeasureText(scoreHeaderFirst2, spec.size)
         )
 
         DrawText(
@@ -411,7 +423,7 @@ no_ex:
             (
                 text: scoreHeader,
                 size: ScoresFontSize,
-                mode: TextMode.Score,
+                mode: TextMode.TitleScreen,
                 y: baseY,
                 colour: WHITE
             ).drawText
@@ -429,21 +441,34 @@ no_ex:
                 rowCount = 10
 
             for i in 0..<rowCount:
-                let scoreText = rightPad(@[
-                    $uint(scores[i].run),
-                    $uint(scores[i].score),
-                    $uint(scores[i].totalScore)
-                ])
-
-                (
-                    text: scoreText,
-                    size: ScoresFontSize,
-                    mode: TextMode.Score,
-                    y: TextY(baseY + 24+i*24),
-                    colour: if i == 0:
+                let colour = if i == 0:
                         AQUA
                     else:
                         VIOLET
+                let y = TextY(baseY + 24+i*24)
+
+                (
+                    text: $uint(scores[i].run),
+                    size: ScoresFontSize,
+                    mode: TextMode.ScoreCol1,
+                    y: y,
+                    colour: colour
+                ).drawText
+
+                (
+                    text: $uint(scores[i].score),
+                    size: ScoresFontSize,
+                    mode: TextMode.ScoreCol2,
+                    y: y,
+                    colour: colour
+                ).drawText
+
+                (
+                    text: $uint(scores[i].totalScore),
+                    size: ScoresFontSize,
+                    mode: TextMode.ScoreCol3,
+                    y: y,
+                    colour: colour
                 ).drawText
 
 
