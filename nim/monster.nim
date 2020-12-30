@@ -1,3 +1,4 @@
+from math import nil
 from options import Option, isNone, get
 
 from game import no_ex, TileXY, HP, Counter, `<`
@@ -102,16 +103,30 @@ no_ex:
         var m = monster
         m.teleportCounter = teleportCounter
         m
-    
+
+    proc drawHp(platform: game.Platform, hp: game.HP, xy: game.TileXY) =
+        for i in 0..<(int(hp) div 2):
+            (platform.spriteFloat)(
+                game.SpriteIndex(9),
+                (
+                    x: float(xy.x) + float((i mod 3))*(5.0/16.0),
+                    y: float(xy.y) - math.floor(float(i div 3))*(5.0/16.0)
+                )
+            )
 
     proc draw*(option: Option[Monster], platform: game.Platform) =
         if option.isNone:
             return
         let monster = option.get
+        let floatXY = (
+            x: float(monster.xy.x),
+            y: float(monster.xy.y)
+        )
+        
         if monster.teleportCounter > 0:
-            (platform.sprite)(
+            (platform.spriteFloat)(
                 game.SpriteIndex(10),
-                monster.xy
+                floatXY
             )
             return
         
@@ -132,12 +147,12 @@ no_ex:
         of Jester:
             game.SpriteIndex(8)
 
-        (platform.sprite)(
+        (platform.spriteFloat)(
             sprite,
-            monster.xy
+            floatXY
         )
 
-        (platform.hp)(monster.hp, monster.xy)
+        platform.drawHp(monster.hp, monster.xy)
 
 const NonPlayerMakers*: array[5, auto] = [
   newBird,

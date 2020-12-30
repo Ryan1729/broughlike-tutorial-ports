@@ -298,25 +298,6 @@ no_ex:
             WHITE
         )
 
-    proc drawSprite(sprite: game.SpriteIndex, xy: game.TileXY) =
-        drawSpriteFloat(
-            sprite,
-            (
-                x: float(xy.x),
-                y: float(xy.y)
-            )
-        )
-
-    proc drawHp(hp: game.HP, xy: game.TileXY) =
-        for i in 0..<(int(hp) div 2):
-            drawSpriteFloat(
-                game.SpriteIndex(9),
-                (
-                    x: float(xy.x) + float((i mod 3))*(5.0/16.0),
-                    y: float(xy.y) - math.floor(float(i div 3))*(5.0/16.0)
-                )
-            )
-
     proc rightPad(strings: seq[string]): string =
         result = ""
 
@@ -384,8 +365,7 @@ no_ex:
 
 
 const platform = game.Platform(
-    sprite: drawSprite,
-    hp: drawHp
+    spriteFloat: drawSpriteFloat
 )
 
 

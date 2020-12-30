@@ -88,8 +88,10 @@ no_ex:
 
 type
     Platform* = object
-        sprite*: proc(sprite: SpriteIndex, xy: TileXY) {.raises: [].}
-        hp*: proc(hp: HP, xy: TileXY) {.raises: [].}
+        spriteFloat*: proc(
+            sprite: SpriteIndex,
+            xy: tuple[x: float, y: float]
+        ) {.raises: [].}
 
 
 type DeltaX* = enum DX0, DX1, DXm1

@@ -37,15 +37,20 @@ no_ex:
         of Exit:
             game.SpriteIndex(11)
 
-        (platform.sprite)(
+        let floatXY = (
+            x: float(tile.xy.x),
+            y: float(tile.xy.y)
+        )
+    
+        (platform.spriteFloat)(
             sprite,
-            tile.xy
+            floatXY
         )
 
         if tile.treasure:
-            (platform.sprite)(
+            (platform.spriteFloat)(
                 game.SpriteIndex(12),
-                tile.xy
+                floatXY
             )
 
     func isPassable*(kind: Kind): bool =
