@@ -158,8 +158,8 @@ no_ex:
 
         platform.drawHp(option.get.hp, floatXY)
 
-        option.get.offsetXY.x -= float(math.sgn(option.get.offsetXY.x))*(1.0/8.0)
-        option.get.offsetXY.y -= float(math.sgn(option.get.offsetXY.y))*(1.0/8.0)
+        option.get.offsetXY.x -= float(math.sgn(option.get.offsetXY.x))*(1.0/64.0)
+        option.get.offsetXY.y -= float(math.sgn(option.get.offsetXY.y))*(1.0/64.0)
 
 
 const NonPlayerMakers*: array[5, auto] = [
