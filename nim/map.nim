@@ -77,7 +77,12 @@ no_ex:
         tiles.removeMonster(monster.xy)
 
         var moved = monster
+        moved.offsetXY = (
+            x: float(moved.xy.x) - float(xy.x),
+            y: float(moved.xy.y) - float(xy.y)
+        )
         moved.xy = xy
+        
         tiles[xyToI(xy)].monster = some(moved)
 
         moved

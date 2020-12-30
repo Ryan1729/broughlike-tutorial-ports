@@ -76,9 +76,14 @@ no_ex:
         abs(int(source.x)-int(target.x)) + abs(int(source.y)-int(target.y))
 
 type
+    floatXY* = tuple
+        x: float
+        y: float
+
     LevelNum* = distinct range[1..6]
 
     HP* = distinct range[0..12]
+
 
 no_ex:
     proc `==`*(x, y: LevelNum): bool =

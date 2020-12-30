@@ -1,7 +1,7 @@
 from math import nil
 from options import Option, isNone, get
 
-from game import no_ex, TileXY, HP, Counter, `<`
+from game import no_ex, TileXY, HP, Counter, `<`, floatXY
 
 type
   Kind* = enum
@@ -15,6 +15,7 @@ type
   Monster* = tuple
     kind: Kind
     xy: game.TileXY
+    offsetXY: floatXY
     hp: HP
     attackedThisTurn: bool
     stunned: bool
@@ -43,6 +44,7 @@ no_ex:
         (
             kind: kind,
             xy: xy,
+            offsetXY: (x: 0.0, y: 0.0),
             hp: hp,
             attackedThisTurn: false,
             stunned: false,
@@ -70,6 +72,12 @@ no_ex:
 
     func isPlayer*(m: Monster): bool =
         m.kind == Kind.Player
+
+    func displayXY(monster: Monster): floatXY =
+        (
+            x: monster.offsetXY.x + float(monster.xy.x),
+            y: monster.offsetXY.y + float(monster.xy.y)
+        )
 
     func hit*(monster: Monster, damage: Damage): Monster =
         var m = monster
@@ -104,35 +112,31 @@ no_ex:
         m.teleportCounter = teleportCounter
         m
 
-    proc drawHp(platform: game.Platform, hp: game.HP, xy: game.TileXY) =
+    proc drawHp(platform: game.Platform, hp: game.HP, xy: game.floatXY) =
         for i in 0..<(int(hp) div 2):
             (platform.spriteFloat)(
                 game.SpriteIndex(9),
                 (
-                    x: float(xy.x) + float((i mod 3))*(5.0/16.0),
-                    y: float(xy.y) - math.floor(float(i div 3))*(5.0/16.0)
+                    x: xy.x + float((i mod 3))*(5.0/16.0),
+                    y: xy.y - math.floor(float(i div 3))*(5.0/16.0)
                 )
             )
 
-    proc draw*(option: Option[Monster], platform: game.Platform) =
+    proc draw*(option: var Option[Monster], platform: game.Platform) =
         if option.isNone:
             return
-        let monster = option.get
-        let floatXY = (
-            x: float(monster.xy.x),
-            y: float(monster.xy.y)
-        )
+        let floatXY = option.get.displayXY()
         
-        if monster.teleportCounter > 0:
+        if option.get.teleportCounter > 0:
             (platform.spriteFloat)(
                 game.SpriteIndex(10),
                 floatXY
             )
             return
         
-        let sprite = case monster.kind
+        let sprite = case option.get.kind
         of Player:
-            if monster.dead:
+            if option.get.dead:
                 game.SpriteIndex(1)
             else:
                 game.SpriteIndex(0)
@@ -152,7 +156,11 @@ no_ex:
             floatXY
         )
 
-        platform.drawHp(monster.hp, monster.xy)
+        platform.drawHp(option.get.hp, floatXY)
+
+        option.get.offsetXY.x -= float(math.sgn(option.get.offsetXY.x))*(1.0/8.0)
+        option.get.offsetXY.y -= float(math.sgn(option.get.offsetXY.y))*(1.0/8.0)
+
 
 const NonPlayerMakers*: array[5, auto] = [
   newBird,

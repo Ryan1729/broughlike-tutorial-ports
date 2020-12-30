@@ -7,7 +7,6 @@ InitWindow 0, 0, "AWESOME BROUGHLIKE"
 from algorithm import sort
 from strutils import replace
 from sequtils import map
-from math import nil
 from json import parseFile, JsonNode, `%`
 from times import nil
 from options import Option, isSome, get, none, some
@@ -17,7 +16,7 @@ from randomness import nil
 from tile import Kind, newExit
 from monster import draw, isPlayer, Damage, `+`
 from res import ok, err
-from game import `-=`, `+=`, `==`, no_ex, DeltaX, DeltaY, `$`, Score
+from game import `-=`, `+=`, `==`, no_ex, DeltaX, DeltaY, `$`, Score, floatXY
 from map import generateLevel, randomPassableTile, addMonster, spawnMonster,
         tryMove, getTile, replace, setTreasure
 from world import tick, AfterTick
@@ -27,10 +26,6 @@ const INDIGO = Color(a: 0xffu8, r: 0x4bu8, g: 0, b: 0x82u8)
 const VIOLET = Color(a: 0xffu8, r: 0xeeu8, g: 0x82u8, b: 0xeeu8)
 
 type
-    floatXY = tuple
-        x: float
-        y: float
-
     Size = int32
 
     sizesObj = object
@@ -370,11 +365,11 @@ const platform = game.Platform(
 
 
 no_ex:
-    proc drawState(state: world.State) =
+    proc drawState(state: var world.State) =
         map.draw(state.tiles, platform)
 
-        for t in state.tiles:
-            t.monster.draw(platform)
+        for i in 0..<state.tiles.len:
+            state.tiles[i].monster.draw(platform)
 
         const UIFontSize: FontSize = FontSize(30)
         (
