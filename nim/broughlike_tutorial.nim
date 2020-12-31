@@ -60,7 +60,8 @@ no_ex:
     proc startLevel(
         level: game.LevelNum,
         rng: var randomness.Rand,
-        playerHP: game.HP
+        playerHP: game.HP,
+        score: Score
     ): State =
         var tiles = rng.generateLevel(level)
         case tiles.isOk:
@@ -90,7 +91,7 @@ no_ex:
                             level: level,
                             spawnCounter: spawnRate,
                             spawnRate: spawnRate,
-                            score: Score(0)
+                            score: score
                         ),
                     )
                 of false:
@@ -111,7 +112,7 @@ no_ex:
         echo seed
 
         var rng = randomness.initRand(seed)
-        startLevel(level, rng, game.HP(6))
+        startLevel(level, rng, game.HP(6), Score(0))
 
 type
     RunNum* = uint
@@ -236,7 +237,8 @@ no_ex:
                                 state = startLevel(
                                     game.LevelNum(int(state.state.level) + 1),
                                     state.state.rng,
-                                    monster.get.hp + Damage(2)
+                                    monster.get.hp + Damage(2),
+                                    state.state.score
                                 )
                             return
                     of Kind.Floor:
