@@ -4,7 +4,7 @@ from sequtils import filter, toSeq, any, concat
 
 from randomness import rand01, tryTo, randomTileXY, shuffle, Rand
 from res import ok, err
-from game import no_ex, `<`, `<=`, TileXY, DeltaX, DeltaY, DeltaXY, `+`, `==`, LevelNum, dist, dec, `-`, floatXY
+from game import no_ex, `<`, `<=`, TileXY, DeltaX, DeltaY, DeltaXY, `+`, `==`, LevelNum, dist, dec, `-`, floatXY, `$`
 from tile import Tile, isPassable, hasMonster
 from monster import Monster, Kind, hit, Damage, markAttacked, markStunned, markUnstunned, heal, withTeleportCounter, isPlayer
 
@@ -111,18 +111,13 @@ no_ex:
                 if (monster.isPlayer) != (newTile.monster.get.isPlayer):
                     var m = monster.markAttacked()
 
-                    #~ let moved = tiles.moveWithOffsetXY(
-                        #~ m,
-                        #~ m.xy,
-                        #~ (
-                            #~ x: float(newTile.xy.x - m.xy.x)/2,
-                            #~ y: float(newTile.xy.y - m.xy.y)/2
-                        #~ )
-                    #~ )
-
-                    let moved = tiles.move(
+                    let moved = tiles.moveWithOffsetXY(
                         m,
                         m.xy,
+                        (
+                            x: (float(newTile.xy.x) - float(m.xy.x))/2,
+                            y: (float(newTile.xy.y) - float(m.xy.y))/2
+                        )
                     )
 
                     tiles.addMonster(
