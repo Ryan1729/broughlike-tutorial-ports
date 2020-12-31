@@ -4,7 +4,7 @@ from sequtils import filter, toSeq, any, concat
 
 from randomness import rand01, tryTo, randomTileXY, shuffle, Rand
 from res import ok, err
-from game import no_ex, `<`, `<=`, TileXY, DeltaX, DeltaY, DeltaXY, `+`, `==`, LevelNum, dist, dec
+from game import no_ex, `<`, `<=`, TileXY, DeltaX, DeltaY, DeltaXY, `+`, `==`, LevelNum, dist, dec, `-`, floatXY
 from tile import Tile, isPassable, hasMonster
 from monster import Monster, Kind, hit, Damage, markAttacked, markStunned, markUnstunned, heal, withTeleportCounter, isPlayer
 
@@ -73,19 +73,27 @@ no_ex:
     proc removeMonster*(tiles: var Tiles, xy: TileXY) =
         tiles[xyToI(xy)].monster = none(Monster)
 
-    proc move(tiles: var Tiles, monster: Monster, xy: TileXy): Monster =
+    proc moveWithOffsetXY(tiles: var Tiles, monster: Monster, xy: TileXy, offsetXY: floatXY): Monster =
         tiles.removeMonster(monster.xy)
 
         var moved = monster
-        moved.offsetXY = (
-            x: float(moved.xy.x) - float(xy.x),
-            y: float(moved.xy.y) - float(xy.y)
-        )
+        moved.offsetXY = offsetXY
         moved.xy = xy
         
         tiles[xyToI(xy)].monster = some(moved)
 
         moved
+
+    proc move(tiles: var Tiles, monster: Monster, xy: TileXy): Monster =
+        moveWithOffsetXY(
+            tiles,
+            monster,
+            xy,
+            (
+                x: float(monster.xy.x) - float(xy.x),
+                y: float(monster.xy.y) - float(xy.y)
+            )
+        )
 
     proc addMonster*(tiles: var Tiles, monster: Monster) =
         discard tiles.move(
@@ -101,8 +109,21 @@ no_ex:
                 return some(moved)
             else:
                 if (monster.isPlayer) != (newTile.monster.get.isPlayer):
-                    let m = monster.markAttacked()
-                    let moved = tiles.move(m, m.xy)
+                    var m = monster.markAttacked()
+
+                    #~ let moved = tiles.moveWithOffsetXY(
+                        #~ m,
+                        #~ m.xy,
+                        #~ (
+                            #~ x: float(newTile.xy.x - m.xy.x)/2,
+                            #~ y: float(newTile.xy.y - m.xy.y)/2
+                        #~ )
+                    #~ )
+
+                    let moved = tiles.move(
+                        m,
+                        m.xy,
+                    )
 
                     tiles.addMonster(
                         newTile.monster.get.markStunned.hit(Damage(2))
