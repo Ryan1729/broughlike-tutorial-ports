@@ -91,14 +91,6 @@ no_ex:
     proc `==`*(x, y: HP): bool =
         int(x) == int(y)
 
-type
-    Platform* = object
-        spriteFloat*: proc(
-            sprite: SpriteIndex,
-            xy: tuple[x: float, y: float]
-        ) {.raises: [].}
-
-
 type DeltaX* = enum DX0, DX1, DXm1
 type DeltaY* = enum DY0, DY1, DYm1
 
@@ -182,4 +174,16 @@ no_ex:
     proc dec*(counter: var Counter) =
         if uint64(counter) > 0:
             counter = Counter(uint64(counter) - 1)
+type
+    Shake* = tuple
+        amount: Counter
+        x: float
+        y: float
 
+type
+    Platform* = object
+        spriteFloat*: proc(
+            shake: Shake,
+            sprite: SpriteIndex,
+            xy: tuple[x: float, y: float]
+        ) {.raises: [].}

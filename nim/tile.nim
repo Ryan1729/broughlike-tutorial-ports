@@ -1,6 +1,6 @@
 from options import Option, none, isSome
 
-from game import no_ex
+from game import no_ex, Shake
 from monster import Monster
 
 type
@@ -28,7 +28,7 @@ no_ex:
     func newExit*(xy: game.TileXY): Tile =
         newTile(Kind.Exit, xy)
     
-    proc draw*(tile: Tile, platform: game.Platform) =
+    proc draw*(tile: Tile, shake: Shake, platform: game.Platform) =
         let sprite = case tile.kind
         of Wall:
             game.SpriteIndex(3)
@@ -43,12 +43,14 @@ no_ex:
         )
     
         (platform.spriteFloat)(
+            shake,
             sprite,
             floatXY
         )
 
         if tile.treasure:
             (platform.spriteFloat)(
+                shake,
                 game.SpriteIndex(12),
                 floatXY
             )

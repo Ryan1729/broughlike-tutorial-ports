@@ -1,7 +1,7 @@
 from math import nil
 from options import Option, isNone, get
 
-from game import no_ex, TileXY, HP, Counter, `<`, floatXY
+from game import no_ex, TileXY, HP, Counter, `<`, floatXY, Shake
 
 type
   Kind* = enum
@@ -112,9 +112,10 @@ no_ex:
         m.teleportCounter = teleportCounter
         m
 
-    proc drawHp(platform: game.Platform, hp: game.HP, xy: game.floatXY) =
+    proc drawHp(platform: game.Platform, shake: Shake, hp: game.HP, xy: game.floatXY) =
         for i in 0..<(int(hp) div 2):
             (platform.spriteFloat)(
+                shake,
                 game.SpriteIndex(9),
                 (
                     x: xy.x + float((i mod 3))*(5.0/16.0),
@@ -122,13 +123,14 @@ no_ex:
                 )
             )
 
-    proc draw*(option: var Option[Monster], platform: game.Platform) =
+    proc draw*(option: var Option[Monster], shake: Shake, platform: game.Platform) =
         if option.isNone:
             return
         let floatXY = option.get.displayXY()
         
         if option.get.teleportCounter > 0:
             (platform.spriteFloat)(
+                shake,
                 game.SpriteIndex(10),
                 floatXY
             )
@@ -152,11 +154,12 @@ no_ex:
             game.SpriteIndex(8)
 
         (platform.spriteFloat)(
+            shake,
             sprite,
             floatXY
         )
 
-        platform.drawHp(option.get.hp, floatXY)
+        platform.drawHp(shake, option.get.hp, floatXY)
 
         option.get.offsetXY.x -= float(math.sgn(option.get.offsetXY.x))*(1.0/64.0)
         option.get.offsetXY.y -= float(math.sgn(option.get.offsetXY.y))*(1.0/64.0)

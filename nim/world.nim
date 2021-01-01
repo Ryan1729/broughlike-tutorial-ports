@@ -1,6 +1,6 @@
 from options import Option, isSome, get
 
-from game import no_ex, Counter, dec, `<=`, Score
+from game import no_ex, Counter, dec, `<=`, Score, Shake
 from randomness import nil
 from map import getTile, removeMonster, updateMonster, spawnMonster
 from monster import Monster, Kind, dead, isPlayer
@@ -15,6 +15,7 @@ type
     spawnCounter: Counter
     spawnRate: Counter
     score: Score
+    shake: Shake
 
   AfterTick* = enum
     NoChange
@@ -51,6 +52,7 @@ no_ex:
                 state.tiles.removeMonster(m.xy)
             else:
                 state.tiles.updateMonster(
+                    state.shake,
                     m,
                     state.xy,
                     state.rng

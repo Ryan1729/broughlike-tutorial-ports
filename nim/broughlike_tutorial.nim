@@ -5,6 +5,7 @@ import raylib
 InitWindow 0, 0, "AWESOME BROUGHLIKE"
 
 from algorithm import sort
+from math import nil
 from strutils import replace
 from sequtils import map
 from json import parseFile, JsonNode, `%`
@@ -12,11 +13,12 @@ from times import nil
 from options import Option, isSome, get, none, some
 
 from assets import nil
-from randomness import nil
+from randomness import rand01
 from tile import Kind, newExit
 from monster import draw, isPlayer, Damage, `+`
 from res import ok, err
-from game import `-=`, `+=`, `==`, no_ex, DeltaX, DeltaY, `$`, Score, floatXY
+from game import `-=`, `+=`, `==`, no_ex, DeltaX, DeltaY, `$`, Score, floatXY,
+        Counter, `<`
 from map import generateLevel, randomPassableTile, addMonster, spawnMonster,
         tryMove, getTile, replace, setTreasure
 from world import tick, AfterTick
@@ -82,6 +84,12 @@ no_ex:
 
                     let spawnRate = game.Counter(15)
 
+                    let shake: game.Shake = (
+                        amount: Counter(0),
+                        x: 0.0,
+                        y: 0.0
+                    )
+
                     State(
                         screen: Screen.Running,
                         state: (
@@ -91,8 +99,9 @@ no_ex:
                             level: level,
                             spawnCounter: spawnRate,
                             spawnRate: spawnRate,
-                            score: score
-                        ),
+                            score: score,
+                            shake: shake
+                        )
                     )
                 of false:
                     exitTile.error.errorState
@@ -221,6 +230,7 @@ no_ex:
             let monster = tile.monster
             if monster.isSome:
                 let moved = state.state.tiles.tryMove(
+                    state.state.shake,
                     monster.get,
                     dxy
                 )
@@ -280,13 +290,15 @@ var
 var spritesheet: Texture2D = LoadTextureFromImage(assets.spritesheetImage)
 
 no_ex:
-    proc drawSpriteFloat(sprite: game.SpriteIndex, xy: floatXY) =
+    proc drawSpriteFloat(shake: game.Shake, sprite: game.SpriteIndex, xy: floatXY) =
         DrawTexturePro(
             spritesheet,
             Rectangle(x: float(sprite) * 16, y: 0, width: 16, height: 16),
             Rectangle(
-                x: float(sizes.playAreaX) + (xy.x * float(sizes.tile)),
-                y: float(sizes.playAreaY) + (xy.y * float(sizes.tile)),
+                x: float(sizes.playAreaX) + (xy.x * float(sizes.tile)) +
+                        shake.x,
+                y: float(sizes.playAreaY) + (xy.y * float(sizes.tile)) +
+                        shake.y,
                 width: float(sizes.tile),
                 height: float(sizes.tile)
             ),
@@ -365,13 +377,12 @@ const platform = game.Platform(
     spriteFloat: drawSpriteFloat
 )
 
-
 no_ex:
     proc drawState(state: var world.State) =
-        map.draw(state.tiles, platform)
+        map.draw(state.tiles, state.shake, platform)
 
         for i in 0..<state.tiles.len:
-            state.tiles[i].monster.draw(platform)
+            state.tiles[i].monster.draw(state.shake, platform)
 
         const UIFontSize: FontSize = FontSize(30)
         (
@@ -389,6 +400,15 @@ no_ex:
             y: TextY(UIFontSize * 2),
             colour: VIOLET
         ).drawText
+
+        #screenshake
+        if state.shake.amount > 0:
+            state.shake.amount.dec()
+
+        let shakeAmount = float(state.shake.amount)
+        let shakeAngle = state.rng.rand01()*math.PI*2.0
+        state.shake.x = math.round(math.cos(shakeAngle)*shakeAmount)
+        state.shake.y = math.round(math.sin(shakeAngle)*shakeAmount)
 
     proc drawScores() =
         const ScoresFontSize = FontSize(18)
