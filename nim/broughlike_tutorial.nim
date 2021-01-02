@@ -4,6 +4,8 @@ import raylib
 # SIGSEGV errors if we call (some?) raylib stuff before calling this.
 InitWindow 0, 0, "AWESOME BROUGHLIKE"
 
+InitAudioDevice()
+
 from algorithm import sort
 from math import nil
 from strutils import replace
