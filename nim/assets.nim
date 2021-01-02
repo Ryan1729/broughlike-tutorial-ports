@@ -1,12 +1,13 @@
 import raylib
 
 from spritesheet import nil
+from sound import nil
 
 var spritesheetImage*: Image = spritesheet.image
 
-var hit1*: Sound = LoadSound("./sounds/hit1.wav")
-var hit2*: Sound = LoadSound("./sounds/hit2.wav")
-var treasure*: Sound = LoadSound("./sounds/treasure.wav")
-var newLevel*: Sound = LoadSound("./sounds/newLevel.wav")
-var spell*: Sound = LoadSound("./sounds/spell.wav")
+var hit1*: Wave = sound.hit1
+var hit2*: Wave = sound.hit2
+var treasure*: Wave = sound.treasure
+var newLevel*: Wave = sound.newLevel
+var spell*: Wave = sound.spell
 
