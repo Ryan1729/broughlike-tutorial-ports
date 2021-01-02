@@ -308,13 +308,12 @@ type
         spell: Sound
 
 
-
-var sounds = (
-    hit1: LoadSound("./sounds/hit1.wav"),
-    hit2: LoadSound("./sounds/hit2.wav"),
-    treasure: LoadSound("./sounds/treasure.wav"),
-    newLevel: LoadSound("./sounds/newLevel.wav"),
-    spell: LoadSound("./sounds/spell.wav")
+let sounds = (
+    hit1: assets.hit1,
+    hit2: assets.hit2,
+    treasure: assets.treasure,
+    newLevel: assets.newLevel,
+    spell: assets.spell
 )
 
 no_ex:
