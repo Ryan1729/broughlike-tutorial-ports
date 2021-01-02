@@ -307,11 +307,11 @@ type
 
 
 let sounds = (
-    hit1: LoadSoundFromWave(assets.hit1),
-    hit2: LoadSoundFromWave(assets.hit2),
-    treasure: LoadSoundFromWave(assets.treasure),
-    newLevel: LoadSoundFromWave(assets.newLevel),
-    spell: LoadSoundFromWave(assets.spell)
+    hit1: assets.hit1,
+    hit2: assets.hit2,
+    treasure: assets.treasure,
+    newLevel: assets.newLevel,
+    spell: assets.spell
 )
 
 no_ex:
