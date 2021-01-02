@@ -1,7 +1,7 @@
 from math import nil
 from options import Option, isNone, get
 
-from game import no_ex, TileXY, HP, Counter, `<`, floatXY, Shake
+from game import no_ex, TileXY, HP, Counter, `<`, floatXY, Shake, Platform, SoundSpec
 
 type
   Kind* = enum
@@ -79,9 +79,20 @@ no_ex:
             y: monster.offsetXY.y + float(monster.xy.y)
         )
 
-    func hit*(monster: Monster, damage: Damage): Monster =
+    proc hit*(
+        monster: Monster,
+        platform: Platform,
+        damage: Damage
+    ): Monster =
         var m = monster
         m.hp -= damage
+
+        platform.sound(
+            if m.isPlayer:
+                game.SoundSpec.hit1
+            else:
+                game.SoundSpec.hit2
+        )
         m
 
     func heal*(monster: Monster, damage: Damage): Monster =

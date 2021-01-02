@@ -18,7 +18,7 @@ from tile import Kind, newExit
 from monster import draw, isPlayer, Damage, `+`
 from res import ok, err
 from game import `-=`, `+=`, `==`, no_ex, DeltaX, DeltaY, `$`, Score, floatXY,
-        Counter, `<`
+        Counter, `<`, SoundSpec
 from map import generateLevel, randomPassableTile, addMonster, spawnMonster,
         tryMove, getTile, replace, setTreasure
 from world import tick, AfterTick
@@ -208,81 +208,6 @@ no_ex:
 
         saveScores(scores)
 
-
-# It seems like it should be provable that `state.state` is accessible
-# inside an `if` that checks `state.screen == Screen.Running`, but it
-# doesn't work currently. See https://github.com/nim-lang/Nim/issues/7882
-{.push warning[ProveField]: off.}
-no_ex:
-    proc showTitle(state: var State) =
-        case state.screen:
-        of Screen.Dead, Screen.Running:
-            state = State(
-                screen: Screen.Title,
-                prevState: some(state.state)
-            )
-        else:
-            discard
-
-    proc movePlayer(state: var State, dxy: game.DeltaXY) =
-        if state.screen == Screen.Running:
-            let tile = state.state.tiles.getTile(state.state.xy)
-            let monster = tile.monster
-            if monster.isSome:
-                let moved = state.state.tiles.tryMove(
-                    state.state.shake,
-                    monster.get,
-                    dxy
-                )
-
-                if moved.isSome:
-                    let targetTile = state.state.tiles.getTile(moved.get.xy)
-                    case targetTile.kind:
-                    of Kind.Exit:
-                        if monster.get.isPlayer:
-                            if state.state.level == high(game.LevelNum):
-                                addScore(state.state.score, Outcome.Win)
-                                state.showTitle
-                            else:
-                                state = startLevel(
-                                    game.LevelNum(int(state.state.level) + 1),
-                                    state.state.rng,
-                                    monster.get.hp + Damage(2),
-                                    state.state.score
-                                )
-                            return
-                    of Kind.Floor:
-                        if monster.get.isPlayer:
-                            if targetTile.treasure:
-                                state.state.score += 1;
-                                state.state.tiles.setTreasure(targetTile.xy, false)
-                                state.state.rng.spawnMonster(state.state.tiles)
-                    else:
-                        discard
-
-                    state.state.xy = moved.get.xy
-                    case state.state.tick
-                    of AfterTick.NoChange:
-                        discard
-                    of AfterTick.PlayerDied:
-                        addScore(state.state.score, Outcome.Loss)
-
-                        state = State(
-                            screen: Screen.Dead,
-                            state: state.state,
-                        )
-
-            else:
-                let message = "Could not find player!\n" &
-                    "expected the player to be at " & $state.state.xy & "\n" &
-                    "but instead got:\n" &
-                    $tile
-                state = errorState(message)
-
-
-
-{.pop.}
-
 var
     state = State(screen: Screen.Title, prevState: none(world.State))
     sizes: sizesObj
@@ -372,10 +297,123 @@ no_ex:
             spec.colour
         )
 
+type
+    Sounds = tuple
+        hit1: Sound
+        hit2: Sound
+        treasure: Sound
+        newLevel: Sound
+        spell: Sound
+
+
+let sounds = (
+    hit1: LoadSoundFromWave(assets.hit1),
+    hit2: LoadSoundFromWave(assets.hit2),
+    treasure: LoadSoundFromWave(assets.treasure),
+    newLevel: LoadSoundFromWave(assets.newLevel),
+    spell: LoadSoundFromWave(assets.spell)
+)
+
+no_ex:
+    proc playSpecifiedSound(spec: SoundSpec) =
+        PlaySoundMulti(
+            case spec
+            of hit1:
+                sounds.hit1
+            of hit2:
+                sounds.hit2
+            of treasure:
+                sounds.treasure
+            of newLevel:
+                sounds.newLevel
+            of spell:
+                sounds.spell
+        )
 
 const platform = game.Platform(
-    spriteFloat: drawSpriteFloat
+    spriteFloat: drawSpriteFloat,
+    sound: playSpecifiedSound
 )
+
+# It seems like it should be provable that `state.state` is accessible
+# inside an `if` that checks `state.screen == Screen.Running`, but it
+# doesn't work currently. See https://github.com/nim-lang/Nim/issues/7882
+{.push warning[ProveField]: off.}
+no_ex:
+    proc showTitle(state: var State) =
+        case state.screen:
+        of Screen.Dead, Screen.Running:
+            state = State(
+                screen: Screen.Title,
+                prevState: some(state.state)
+            )
+        else:
+            discard
+
+    proc movePlayer(state: var State, dxy: game.DeltaXY) =
+        if state.screen == Screen.Running:
+            let tile = state.state.tiles.getTile(state.state.xy)
+            let monster = tile.monster
+            if monster.isSome:
+                let moved = state.state.tiles.tryMove(
+                    state.state.shake,
+                    platform,
+                    monster.get,
+                    dxy
+                )
+
+                if moved.isSome:
+                    let targetTile = state.state.tiles.getTile(moved.get.xy)
+                    case targetTile.kind:
+                    of Kind.Exit:
+                        if monster.get.isPlayer:
+                            platform.sound(game.SoundSpec.newLevel)
+
+                            if state.state.level == high(game.LevelNum):
+                                addScore(state.state.score, Outcome.Win)
+                                state.showTitle
+                            else:
+                                state = startLevel(
+                                    game.LevelNum(int(state.state.level) + 1),
+                                    state.state.rng,
+                                    monster.get.hp + Damage(2),
+                                    state.state.score
+                                )
+                            return
+                    of Kind.Floor:
+                        if monster.get.isPlayer:
+                            if targetTile.treasure:
+                                state.state.score += 1;
+
+                                platform.sound(game.SoundSpec.treasure)
+
+                                state.state.tiles.setTreasure(targetTile.xy, false)
+                                state.state.rng.spawnMonster(state.state.tiles)
+                    else:
+                        discard
+
+                    state.state.xy = moved.get.xy
+                    case state.state.tick(platform)
+                    of AfterTick.NoChange:
+                        discard
+                    of AfterTick.PlayerDied:
+                        addScore(state.state.score, Outcome.Loss)
+
+                        state = State(
+                            screen: Screen.Dead,
+                            state: state.state,
+                        )
+
+            else:
+                let message = "Could not find player!\n" &
+                    "expected the player to be at " & $state.state.xy & "\n" &
+                    "but instead got:\n" &
+                    $tile
+                state = errorState(message)
+
+
+
+{.pop.}
 
 no_ex:
     proc drawState(state: var world.State) =

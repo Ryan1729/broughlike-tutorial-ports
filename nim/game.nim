@@ -180,10 +180,19 @@ type
         x: float
         y: float
 
-type
+    SoundSpec* = enum
+        hit1
+        hit2
+        treasure
+        newLevel
+        spell
+
     Platform* = object
         spriteFloat*: proc(
             shake: Shake,
             sprite: SpriteIndex,
             xy: tuple[x: float, y: float]
+        ) {.raises: [].}
+        sound*: proc(
+            spec: SoundSpec
         ) {.raises: [].}

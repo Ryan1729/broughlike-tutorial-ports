@@ -4,7 +4,7 @@ from sequtils import filter, toSeq, any, concat
 
 from randomness import rand01, tryTo, randomTileXY, shuffle, Rand
 from res import ok, err
-from game import no_ex, `<`, `<=`, TileXY, DeltaX, DeltaY, DeltaXY, `+`, `==`, LevelNum, dist, dec, `-`, floatXY, `$`, Counter, Shake
+from game import no_ex, `<`, `<=`, TileXY, DeltaX, DeltaY, DeltaXY, `+`, `==`, LevelNum, dist, dec, `-`, floatXY, `$`, Counter, Shake, Platform
 from tile import Tile, isPassable, hasMonster
 from monster import Monster, Kind, hit, Damage, markAttacked, markStunned, markUnstunned, heal, withTeleportCounter, isPlayer
 
@@ -14,7 +14,7 @@ type
     Tiles* = array[tileLen, tile.Tile]
 
 no_ex:
-    proc draw*(tiles: Tiles, shake: Shake, platform: game.Platform) =
+    proc draw*(tiles: Tiles, shake: Shake, platform: Platform) =
         for t in tiles:
             tile.draw(t, shake, platform)
 
@@ -101,7 +101,13 @@ no_ex:
             monster.xy
         )
 
-    proc tryMove*(tiles: var Tiles, shake: var Shake, monster: Monster, dxy: DeltaXY): Option[Monster] =
+    proc tryMove*(
+        tiles: var Tiles,
+        shake: var Shake,
+        platform: game.Platform,
+        monster: Monster,
+        dxy: DeltaXY
+    ): Option[Monster] =
         let newTile = tiles.getNeighbor(monster.xy, dxy)
         if newTile.isPassable:
             if not newTile.hasMonster:
@@ -123,7 +129,7 @@ no_ex:
                     )
 
                     tiles.addMonster(
-                        newTile.monster.get.markStunned.hit(Damage(2))
+                        newTile.monster.get.markStunned.hit(platform, Damage(2))
                     )
 
                     return some(moved)
@@ -135,6 +141,7 @@ no_ex:
     proc plainDoStuff(
         tiles: var Tiles,
         shake: var Shake,
+        platform: Platform,
         monster: Monster,
         playerXY: TileXY,
         rng: var Rand
@@ -165,6 +172,7 @@ no_ex:
 
             let option = tiles.tryMove(
                 shake,
+                platform,
                 monster,
                 deltas.get
             )
@@ -177,6 +185,7 @@ no_ex:
     proc doStuff(
         tiles: var Tiles,
         shake: var Shake,
+        platform: Platform,
         monster: Monster,
         playerXY: TileXY,
         rng: var Rand
@@ -189,6 +198,7 @@ no_ex:
             plainDoStuff(
                 tiles,
                 shake,
+                platform,
                 monster,
                 playerXY,
                 rng
@@ -203,6 +213,7 @@ no_ex:
             m = plainDoStuff(
                 tiles,
                 shake,
+                platform,
                 m,
                 playerXY,
                 rng
@@ -212,6 +223,7 @@ no_ex:
                 plainDoStuff(
                     tiles,
                     shake,
+                    platform,
                     m,
                     playerXY,
                     rng
@@ -234,6 +246,7 @@ no_ex:
                 plainDoStuff(
                     tiles,
                     shake,
+                    platform,
                     m,
                     playerXY,
                     rng
@@ -251,6 +264,7 @@ no_ex:
 
                 let option = tiles.tryMove(
                     shake,
+                    platform,
                     monster,
                     deltas.get
                 )
@@ -268,6 +282,7 @@ no_ex:
     proc plainUpdateMonster(
         tiles: var Tiles,
         shake: var Shake,
+        platform: Platform,
         monsterIn: Monster,
         playerXY: TileXY,
         rng: var Rand
@@ -286,12 +301,13 @@ no_ex:
             )
         
         
-        doStuff(tiles, shake, m, playerXY, rng)
+        doStuff(tiles, shake, platform, m, playerXY, rng)
 
 
     proc updateMonster*(
         tiles: var Tiles,
         shake: var Shake,
+        platform: Platform,
         monster: Monster,
         playerXY: TileXY,
         rng: var Rand
@@ -299,7 +315,7 @@ no_ex:
         case monster.kind
         of Kind.Tank:        
             let startedStunned = monster.stunned
-            let moved = plainUpdateMonster(tiles, shake, monster, playerXY, rng)
+            let moved = plainUpdateMonster(tiles, shake, platform, monster, playerXY, rng)
 
             if not startedStunned:
                 tiles.addMonster(
@@ -307,7 +323,7 @@ no_ex:
                 )
 
         else:
-            discard plainUpdateMonster(tiles, shake, monster, playerXY, rng)
+            discard plainUpdateMonster(tiles, shake, platform, monster, playerXY, rng)
 
     proc generateTiles(rng: var Rand): tuple[tiles: Tiles, passableCount: int] =
         var tiles: Tiles

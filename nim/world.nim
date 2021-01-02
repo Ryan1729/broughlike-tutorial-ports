@@ -1,6 +1,6 @@
 from options import Option, isSome, get
 
-from game import no_ex, Counter, dec, `<=`, Score, Shake
+from game import no_ex, Counter, dec, `<=`, Score, Shake, Platform
 from randomness import nil
 from map import getTile, removeMonster, updateMonster, spawnMonster
 from monster import Monster, Kind, dead, isPlayer
@@ -21,7 +21,7 @@ type
     NoChange
     PlayerDied
 no_ex:
-    proc tick*(state: var State): AfterTick =
+    proc tick*(state: var State, platform: Platform): AfterTick =
         # We collect the monsters into a list so that we don't hit
         # the same monster twice in the iteration, in case it moves
         
@@ -53,6 +53,7 @@ no_ex:
             else:
                 state.tiles.updateMonster(
                     state.shake,
+                    platform,
                     m,
                     state.xy,
                     state.rng

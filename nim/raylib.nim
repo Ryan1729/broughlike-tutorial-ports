@@ -1195,7 +1195,7 @@ proc IsAudioDeviceReady*(): bool {.RLAPI, importc: "IsAudioDeviceReady".} # Chec
 proc SetMasterVolume*(volume: float32) {.RLAPI, importc: "SetMasterVolume".} # Set master volume (listener)
 # Wave/Sound loading/unloading functions
 proc LoadWave*(fileName: cstring): Wave {.RLAPI, importc: "LoadWave".} # Load wave data from file
-proc LoadWaveFromMemory*(fileType: cstring; fileData: ptr ptr #[unsigned]# char; dataSize: int32): Wave {.RLAPI, importc: "LoadWaveFromMemory".} # Load wave from memory buffer, fileType refers to extension: i.e. "wav"
+proc LoadWaveFromMemory*(fileType: cstring; fileData: ptr #[ptr unsigned]# char; dataSize: int32): Wave {.RLAPI, importc: "LoadWaveFromMemory".} # Load wave from memory buffer, fileType refers to extension: i.e. "wav"
 proc LoadSound*(fileName: cstring): Sound {.RLAPI, importc: "LoadSound".} # Load sound from file
 proc LoadSoundFromWave*(wave: Wave): Sound {.RLAPI, importc: "LoadSoundFromWave".} # Load sound from wave data
 proc UpdateSound*(sound: Sound; data: pointer; samplesCount: int32) {.RLAPI, importc: "UpdateSound".} # Update sound buffer with new data
