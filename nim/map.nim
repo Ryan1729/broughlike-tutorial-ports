@@ -84,7 +84,7 @@ no_ex:
 
         moved
 
-    proc move(tiles: var Tiles, monster: Monster, xy: TileXy): Monster =
+    proc move*(tiles: var Tiles, monster: Monster, xy: TileXy): Monster =
         moveWithOffsetXY(
             tiles,
             monster,

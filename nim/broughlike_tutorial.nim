@@ -413,7 +413,9 @@ no_ex:
                     $tile
                 state = errorState(message)
 
-
+    proc castSpell(state: var State, page: world.SpellPage) =
+        if state.screen == Screen.Running:
+            world.woop(state.state, platform)
 
 {.pop.}
 
@@ -622,6 +624,9 @@ while not WindowShouldClose():
             state.movePlayer((x: DXm1, y: DY0))
         if IsKeyPressed(KEY_D) or IsKeyPressed(KEY_RIGHT):
             state.movePlayer((x: DX1, y: DY0))
+
+        if IsKeyPressed(KEY_ONE):
+            castSpell(state, world.SpellPage(0))
     of Screen.Dead:
         if anyGameplayKeysPressed():
             showTitle(state)

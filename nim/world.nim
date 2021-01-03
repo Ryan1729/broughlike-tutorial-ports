@@ -2,7 +2,7 @@ from options import Option, isSome, get
 
 from game import no_ex, Counter, dec, `<=`, Score, Shake, Platform
 from randomness import nil
-from map import getTile, removeMonster, updateMonster, spawnMonster
+from map import getTile, removeMonster, updateMonster, spawnMonster, randomPassableTile, move
 from monster import Monster, Kind, dead, isPlayer
 from tile import Tile
 
@@ -75,3 +75,48 @@ no_ex:
                 return AfterTick.PlayerDied
 
         AfterTick.NoChange
+
+#
+#  Spells
+#
+
+const maxNumSpells: int = 9
+
+type
+    SpellName = enum
+        WOOP
+
+    SpellBook* = array[maxNumSpells, Option[SpellName]]
+
+    SpellPage* = distinct range[0..maxNumSpells - 1]
+
+    Spell = proc(state: var State, platform: Platform) {. raises: [] .}
+
+no_ex:
+    proc requirePlayer(
+        spellMaker: proc(player: Monster): Spell {. raises: [] .},
+    ): Spell =
+        return proc(state: var State, platform: Platform) =
+            let tile = state.tiles.getTile(state.xy)
+            let monster = tile.monster
+            if monster.isSome:
+                (spellMaker(monster.get))(state, platform)
+            else:
+                # If the player cannot be found now then presumably the
+                # next time the player tries to move, the error message
+                # will be shown
+                discard
+    
+const woop*: Spell = 
+    requirePlayer(
+        proc(player: Monster): Spell =
+            return proc(state: var State, platform: Platform) =
+                let tileRes = state.rng.randomPassableTile(state.tiles)
+                case tileRes.isOk:
+                of true:
+                    discard state.tiles.move(player, tileRes.value.xy)
+                of false:
+                    # If the player tries to teleport when there is no free space
+                    # I'm not sure what else they would expect to happen
+                    discard
+    )
