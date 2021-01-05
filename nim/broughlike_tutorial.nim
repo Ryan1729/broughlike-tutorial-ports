@@ -15,7 +15,7 @@ from times import nil
 from options import Option, isSome, get, none, some
 
 from assets import nil
-from randomness import rand01
+from randomness import rand01, shuffle
 from tile import Kind, newExit
 from monster import draw, isPlayer, Damage, `+`
 from res import ok, err
@@ -23,7 +23,7 @@ from game import `-=`, `+=`, `==`, no_ex, DeltaX, DeltaY, `$`, Score, floatXY,
         Counter, `<`, SoundSpec
 from map import generateLevel, randomPassableTile, addMonster, spawnMonster,
         tryMove, getTile, replace, setTreasure
-from world import tick, AfterTick
+from world import tick, AfterTick, maxNumSpells, SpellCount, addSpell
 
 const AQUA = Color(a: 0xffu8, r: 0, g: 0xffu8, b: 0xffu8)
 const INDIGO = Color(a: 0xffu8, r: 0x4bu8, g: 0, b: 0x82u8)
@@ -92,6 +92,19 @@ no_ex:
                         y: 0.0
                     )
 
+                    let numSpells = world.SpellCount(1)
+                    var spellSeq = world.allSpellNames()
+                    rng.shuffle(spellSeq)
+
+                    var spells: world.SpellBook
+
+                    var spellsToUse = spellSeq.len
+                    if numSpells < spellsToUse:
+                        spellsToUse = numSpells
+
+                    for i in 0..<spellsToUse:
+                        spells[i] = some(spellSeq[i])
+
                     State(
                         screen: Screen.Running,
                         state: (
@@ -102,7 +115,9 @@ no_ex:
                             spawnCounter: spawnRate,
                             spawnRate: spawnRate,
                             score: score,
-                            shake: shake
+                            shake: shake,
+                            spells: spells,
+                            numSpells: numSpells
                         )
                     )
                 of false:
@@ -299,15 +314,6 @@ no_ex:
             spec.colour
         )
 
-type
-    Sounds = tuple
-        hit1: Sound
-        hit2: Sound
-        treasure: Sound
-        newLevel: Sound
-        spell: Sound
-
-
 let sounds = (
     hit1: LoadSoundFromWave(assets.hit1),
     hit2: LoadSoundFromWave(assets.hit2),
@@ -352,6 +358,19 @@ no_ex:
         else:
             discard
 
+    proc handle(afterTick: AfterTick, state: var State) =
+        if state.screen == Screen.Running:
+            case afterTick
+            of AfterTick.NoChange:
+                discard
+            of AfterTick.PlayerDied:
+                addScore(state.state.score, Outcome.Loss)
+
+                state = State(
+                    screen: Screen.Dead,
+                    state: state.state,
+                )
+
     proc movePlayer(state: var State, dxy: game.DeltaXY) =
         if state.screen == Screen.Running:
             let tile = state.state.tiles.getTile(state.state.xy)
@@ -385,7 +404,12 @@ no_ex:
                     of Kind.Floor:
                         if monster.get.isPlayer:
                             if targetTile.treasure:
-                                state.state.score += 1;
+                                state.state.score += 1
+
+                                if int(state.state.score) mod 3 == 0 and
+                                        state.state.numSpells < maxNumSpells:
+                                    state.state.numSpells += 1
+                                    state.state.addSpell()
 
                                 platform.sound(game.SoundSpec.treasure)
 
@@ -395,16 +419,8 @@ no_ex:
                         discard
 
                     state.state.xy = moved.get.xy
-                    case state.state.tick(platform)
-                    of AfterTick.NoChange:
-                        discard
-                    of AfterTick.PlayerDied:
-                        addScore(state.state.score, Outcome.Loss)
+                    state.state.tick(platform).handle(state)
 
-                        state = State(
-                            screen: Screen.Dead,
-                            state: state.state,
-                        )
 
             else:
                 let message = "Could not find player!\n" &
@@ -415,7 +431,7 @@ no_ex:
 
     proc castSpell(state: var State, page: world.SpellPage) =
         if state.screen == Screen.Running:
-            world.woop(state.state, platform)
+            world.castSpell(state.state, platform, page).handle(state)
 
 {.pop.}
 
@@ -442,6 +458,23 @@ no_ex:
             y: TextY(UIFontSize * 2),
             colour: VIOLET
         ).drawText
+
+        for i in 0..<state.spells.len:
+            let spellText = $(i+1) & ") " & (
+                if state.spells[i].isSome:
+                $state.spells[i].get
+            else:
+                ""
+            )
+
+            (
+                text: spellText,
+                size: UIFontSize,
+                mode: TextMode.UI,
+                y: TextY(UIFontSize * 4 + i * 40),
+                colour: AQUA
+            ).drawText
+
 
         #screenshake
         if state.shake.amount > 0:
@@ -573,15 +606,32 @@ no_ex:
                 RED
             )
 
+const GameplayKeys = [
+    KEY_W,
+    KEY_UP,
+    KEY_S,
+    KEY_DOWN,
+    KEY_A,
+    KEY_LEFT,
+    KEY_D,
+    KEY_RIGHT,
+    KEY_ONE,
+    KEY_TWO,
+    KEY_THREE,
+    KEY_FOUR,
+    KEY_FIVE,
+    KEY_SIX,
+    KEY_SEVEN,
+    KEY_EIGHT,
+    KEY_NINE,
+]
+
+no_ex:
     proc anyGameplayKeysPressed(): bool =
-        IsKeyPressed(KEY_W) or
-        IsKeyPressed(KEY_UP) or
-        IsKeyPressed(KEY_S) or
-        IsKeyPressed(KEY_DOWN) or
-        IsKeyPressed(KEY_A) or
-        IsKeyPressed(KEY_LEFT) or
-        IsKeyPressed(KEY_D) or
-        IsKeyPressed(KEY_RIGHT)
+        for key in GameplayKeys:
+            if IsKeyPressed(key):
+                return true
+        return false
 
     proc freshSizes(): sizesObj =
         let w = GetScreenWidth()
@@ -627,6 +677,22 @@ while not WindowShouldClose():
 
         if IsKeyPressed(KEY_ONE):
             castSpell(state, world.SpellPage(0))
+        if IsKeyPressed(KEY_TWO):
+            castSpell(state, world.SpellPage(1))
+        if IsKeyPressed(KEY_THREE):
+            castSpell(state, world.SpellPage(2))
+        if IsKeyPressed(KEY_FOUR):
+            castSpell(state, world.SpellPage(3))
+        if IsKeyPressed(KEY_FIVE):
+            castSpell(state, world.SpellPage(4))
+        if IsKeyPressed(KEY_SIX):
+            castSpell(state, world.SpellPage(5))
+        if IsKeyPressed(KEY_SEVEN):
+            castSpell(state, world.SpellPage(6))
+        if IsKeyPressed(KEY_EIGHT):
+            castSpell(state, world.SpellPage(7))
+        if IsKeyPressed(KEY_NINE):
+            castSpell(state, world.SpellPage(8))
     of Screen.Dead:
         if anyGameplayKeysPressed():
             showTitle(state)
