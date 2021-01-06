@@ -355,11 +355,6 @@ const platform = game.Platform(
     sound: playSpecifiedSound
 )
 
-type
-    PostPlayerMovement = enum
-        NoChange
-        PlayerExited
-
 # It seems like it should be provable that `state.state` is accessible
 # inside an `if` that checks `state.screen == Screen.Running`, but it
 # doesn't work currently. See https://github.com/nim-lang/Nim/issues/7882
@@ -379,9 +374,9 @@ no_ex:
         state: var State,
         platform: game.Platform,
         player: monster.Monster
-    ): PostPlayerMovement =
+    ) =
         if not player.isPlayer:
-            return PostPlayerMovement.NoChange
+            return
 
         let targetTile = state.state.tiles.getTile(player.xy)
         case targetTile.kind:
@@ -398,7 +393,7 @@ no_ex:
                     player.hp + Damage(2),
                     state.state.score
                 )
-            return PostPlayerMovement.PlayerExited
+            return
         of Kind.Floor:
             if targetTile.treasure:
                 state.state.score += 1
@@ -417,20 +412,18 @@ no_ex:
 
         state.state.xy = player.xy
 
-        PostPlayerMovement.NoChange
+        let afterTick = tick(state.state, platform)
 
-    proc handle(afterTick: AfterTick, state: var State) =
-        if state.screen == Screen.Running:
-            case afterTick
-            of AfterTick.NoChange:
-                discard
-            of AfterTick.PlayerDied:
-                addScore(state.state.score, Outcome.Loss)
+        case afterTick
+        of AfterTick.NoChange:
+            discard
+        of AfterTick.PlayerDied:
+            addScore(state.state.score, Outcome.Loss)
 
-                state = State(
-                    screen: Screen.Dead,
-                    state: state.state,
-                )
+            state = State(
+                screen: Screen.Dead,
+                state: state.state,
+            )
 
     proc movePlayer(state: var State, dxy: game.DeltaXY) =
         if state.screen == Screen.Running:
@@ -445,13 +438,7 @@ no_ex:
                 )
 
                 if moved.isSome:
-                    case processPlayerMovement(state, platform, moved.get)
-                    of PlayerExited:
-                        return
-                    else:
-                        discard
-
-                    state.state.tick(platform).handle(state)
+                    processPlayerMovement(state, platform, moved.get)
             else:
                 let message = "Could not find player!\n" &
                     "expected the player to be at " & $state.state.xy & "\n" &
@@ -469,15 +456,9 @@ no_ex:
 
             case postSpell.kind
             of PlayerMoved:
-                case processPlayerMovement(state, platform, postSpell.player)
-                    of PlayerExited:
-                        return
-                    else:
-                        discard
+                processPlayerMovement(state, platform, postSpell.player)
             else:
                 discard
-
-            tick(state.state, platform).handle(state)
 
 {.pop.}
 
