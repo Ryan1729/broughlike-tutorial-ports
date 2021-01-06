@@ -354,6 +354,11 @@ const platform = game.Platform(
     sound: playSpecifiedSound
 )
 
+type
+    PostPlayerMovement = enum
+        NoChange
+        PlayerExited
+
 # It seems like it should be provable that `state.state` is accessible
 # inside an `if` that checks `state.screen == Screen.Running`, but it
 # doesn't work currently. See https://github.com/nim-lang/Nim/issues/7882
@@ -368,6 +373,50 @@ no_ex:
             )
         else:
             discard
+
+    proc processPlayerMovement(
+        state: var State,
+        platform: game.Platform,
+        player: monster.Monster
+    ): PostPlayerMovement =
+        if not player.isPlayer:
+            return PostPlayerMovement.NoChange
+
+        let targetTile = state.state.tiles.getTile(player.xy)
+        case targetTile.kind:
+        of Kind.Exit:
+            platform.sound(game.SoundSpec.newLevel)
+
+            if state.state.level == high(game.LevelNum):
+                addScore(state.state.score, Outcome.Win)
+                state.showTitle
+            else:
+                state = startLevel(
+                    game.LevelNum(int(state.state.level) + 1),
+                    state.state.rng,
+                    player.hp + Damage(2),
+                    state.state.score
+                )
+            return PostPlayerMovement.PlayerExited
+        of Kind.Floor:
+            if targetTile.treasure:
+                state.state.score += 1
+
+                if int(state.state.score) mod 3 == 0 and
+                        state.state.numSpells < maxNumSpells:
+                    state.state.numSpells += 1
+                    state.state.addSpell()
+
+                platform.sound(game.SoundSpec.treasure)
+
+                state.state.tiles.setTreasure(targetTile.xy, false)
+                state.state.rng.spawnMonster(state.state.tiles)
+        else:
+            discard
+
+        state.state.xy = player.xy
+
+        PostPlayerMovement.NoChange
 
     proc handle(afterTick: AfterTick, state: var State) =
         if state.screen == Screen.Running:
@@ -395,44 +444,13 @@ no_ex:
                 )
 
                 if moved.isSome:
-                    let targetTile = state.state.tiles.getTile(moved.get.xy)
-                    case targetTile.kind:
-                    of Kind.Exit:
-                        if monster.get.isPlayer:
-                            platform.sound(game.SoundSpec.newLevel)
-
-                            if state.state.level == high(game.LevelNum):
-                                addScore(state.state.score, Outcome.Win)
-                                state.showTitle
-                            else:
-                                state = startLevel(
-                                    game.LevelNum(int(state.state.level) + 1),
-                                    state.state.rng,
-                                    monster.get.hp + Damage(2),
-                                    state.state.score
-                                )
-                            return
-                    of Kind.Floor:
-                        if monster.get.isPlayer:
-                            if targetTile.treasure:
-                                state.state.score += 1
-
-                                if int(state.state.score) mod 3 == 0 and
-                                        state.state.numSpells < maxNumSpells:
-                                    state.state.numSpells += 1
-                                    state.state.addSpell()
-
-                                platform.sound(game.SoundSpec.treasure)
-
-                                state.state.tiles.setTreasure(targetTile.xy, false)
-                                state.state.rng.spawnMonster(state.state.tiles)
+                    case processPlayerMovement(state, platform, moved.get)
+                    of PlayerExited:
+                        return
                     else:
                         discard
 
-                    state.state.xy = moved.get.xy
                     state.state.tick(platform).handle(state)
-
-
             else:
                 let message = "Could not find player!\n" &
                     "expected the player to be at " & $state.state.xy & "\n" &
