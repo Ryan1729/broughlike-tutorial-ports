@@ -23,7 +23,8 @@ from game import `-=`, `+=`, `==`, no_ex, DeltaX, DeltaY, `$`, Score, floatXY,
         Counter, `<`, SoundSpec
 from map import generateLevel, randomPassableTile, addMonster, spawnMonster,
         tryMove, getTile, replace, setTreasure
-from world import tick, AfterTick, maxNumSpells, SpellCount, addSpell
+from world import tick, AfterTick, maxNumSpells, SpellCount, addSpell,
+        PostSpell, PostSpellKind
 
 const AQUA = Color(a: 0xffu8, r: 0, g: 0xffu8, b: 0xffu8)
 const INDIGO = Color(a: 0xffu8, r: 0x4bu8, g: 0, b: 0x82u8)
@@ -460,7 +461,23 @@ no_ex:
 
     proc castSpell(state: var State, page: world.SpellPage) =
         if state.screen == Screen.Running:
-            world.castSpell(state.state, platform, page).handle(state)
+            let postSpell = world.castSpell(
+                state.state,
+                platform,
+                page
+            )
+
+            case postSpell.kind
+            of PlayerMoved:
+                case processPlayerMovement(state, platform, postSpell.player)
+                    of PlayerExited:
+                        return
+                    else:
+                        discard
+            else:
+                discard
+
+            tick(state.state, platform).handle(state)
 
 {.pop.}
 

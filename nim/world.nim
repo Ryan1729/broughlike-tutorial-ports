@@ -43,7 +43,26 @@ type
         spells: SpellBook
         numSpells: SpellCount
 
-    Spell = proc(state: var State, platform: Platform) {. raises: [] .}
+    PostSpellKind* = enum
+        AllEffectsHandled
+        PlayerMoved
+
+    PostSpell* = object
+        case kind*: PostSpellKind
+        of PostSpellKind.PlayerMoved:
+            player*: Monster
+        of PostSpellKind.AllEffectsHandled:
+            discard
+
+no_ex:
+    func allEffectsHandled(): PostSpell =
+        PostSpell(kind: PostSpellKind.AllEffectsHandled)
+
+    func playerMoved(player: Monster): PostSpell =
+        PostSpell(kind: PostSpellKind.PlayerMoved, player: player)
+        
+type
+    Spell = proc(state: var State, platform: Platform): PostSpell {. raises: [] .}
 
     AfterTick* = enum
         NoChange
@@ -111,7 +130,7 @@ no_ex:
 #
 
 template requirePlayer(spellName, playerName, stateName, platformName, spellBody: untyped) =
-    proc spellName(stateName: var State, platformName: Platform) {. raises: [] .} =
+    proc spellName(stateName: var State, platformName: Platform): PostSpell {. raises: [] .} =
         let tile = stateName.tiles.getTile(stateName.xy)
         let monster = tile.monster
         if monster.isSome:
@@ -122,18 +141,17 @@ template requirePlayer(spellName, playerName, stateName, platformName, spellBody
             # If the player cannot be found now then presumably the
             # next time the player tries to move, the error message
             # will be shown
-            discard
+            allEffectsHandled()
 
 requirePlayer(woop, player, state, platform):
         let tileRes = state.rng.randomPassableTile(state.tiles)
         case tileRes.isOk:
         of true:
-            let moved = state.tiles.move(player, tileRes.value.xy)
-            state.xy = moved.xy
+            playerMoved(state.tiles.move(player, tileRes.value.xy))
         of false:
             # If the player tries to teleport when there is no free space
             # I'm not sure what else they would expect to happen
-            discard
+            allEffectsHandled()
 
 no_ex:
     proc addSpell*(state: var State) =
@@ -153,7 +171,7 @@ no_ex:
 
         state.spells[index] = some(newSpell)
 
-    proc castSpell*(state: var State, platform: Platform, page: SpellPage): AfterTick =
+    proc castSpell*(state: var State, platform: Platform, page: SpellPage): PostSpell =
         let index = int(page)
         let spellName: Option[SpellName] = state.spells[index]
 
@@ -164,9 +182,8 @@ no_ex:
                 of WOOP:
                     woop
 
-            spell(state, platform)
-
             platform.sound(game.SoundSpec.spell)
-            tick(state, platform)
+
+            spell(state, platform)
         else:
-            AfterTick.NoChange
+            allEffectsHandled()
