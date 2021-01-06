@@ -268,6 +268,8 @@ type
         ScoreCol1
         ScoreCol2
         ScoreCol3
+        SpellListNumber
+        SpellListName
 
     TextSpec = tuple
         text: string
@@ -284,10 +286,19 @@ no_ex:
     proc drawText(spec: TextSpec) =
         var cText: cstring = spec.text
 
+        const widestNumber = "8) "
+
         let em = MeasureText("m", spec.size)
         let textX: TextX = sizes.playAreaX + (case spec.mode
         of TextMode.UI:
             sizes.playAreaW - game.UIWidth*sizes.tile + em
+        of TextMode.SpellListNumber:
+            let base = sizes.playAreaW - game.UIWidth*sizes.tile + em
+
+            base + MeasureText(widestNumber, spec.size) - MeasureText(spec.text, spec.size)
+        of TextMode.SpellListName:
+            let base = sizes.playAreaW - game.UIWidth*sizes.tile + em
+            base + MeasureText(widestNumber, spec.size)
         of TextMode.TitleScreen:
             (
                 sizes.playAreaW - MeasureText(spec.text, spec.size)
@@ -460,18 +471,28 @@ no_ex:
         ).drawText
 
         for i in 0..<state.spells.len:
-            let spellText = $(i+1) & ") " & (
-                if state.spells[i].isSome:
+            let spellNumber = $(i+1) & ") "
+
+            let spellName: string = if state.spells[i].isSome:
                 $state.spells[i].get
             else:
                 ""
-            )
+
+            let y = TextY(UIFontSize * 4 + i * 40)
 
             (
-                text: spellText,
+                text: spellNumber,
                 size: UIFontSize,
-                mode: TextMode.UI,
-                y: TextY(UIFontSize * 4 + i * 40),
+                mode: TextMode.SpellListNumber,
+                y: y,
+                colour: AQUA
+            ).drawText
+
+            (
+                text: spellName,
+                size: UIFontSize,
+                mode: TextMode.SpellListName,
+                y: y,
                 colour: AQUA
             ).drawText
 
