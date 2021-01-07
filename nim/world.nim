@@ -181,10 +181,13 @@ proc quake(state: var State, platform: Platform): PostSpell {. raises: [] .} =
 no_ex:
     proc addSpell*(state: var State) =
         var index = -1
-        for i in countdown(high(SpellPage), low(SpellPage)):
+        var i = int(high(SpellPage))
+        while i >= int(low(SpellPage)):
+            echo $int(i)
             if state.spells[int(i)].isNone:
                 index = int(i)
-                break
+
+            i -= 1
 
         if index == -1:
             return
