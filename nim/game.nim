@@ -90,6 +90,8 @@ no_ex:
         int(x) == int(y)
     proc `==`*(x, y: HP): bool =
         int(x) == int(y)
+    proc `$`*(x: HP): string =
+        $int(x)
 
 type DeltaX* = enum DX0, DX1, DXm1
 type DeltaY* = enum DY0, DY1, DYm1

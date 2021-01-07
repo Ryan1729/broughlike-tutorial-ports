@@ -371,6 +371,20 @@ no_ex:
         else:
             discard
 
+    proc doTick(state: var State) =
+        let afterTick = tick(state.state, platform)
+
+        case afterTick
+        of AfterTick.NoChange:
+            discard
+        of AfterTick.PlayerDied:
+            addScore(state.state.score, Outcome.Loss)
+
+            state = State(
+                screen: Screen.Dead,
+                state: state.state,
+            )
+
     proc processPlayerMovement(
         state: var State,
         platform: game.Platform,
@@ -414,18 +428,8 @@ no_ex:
 
         state.state.xy = player.xy
 
-        let afterTick = tick(state.state, platform)
+        doTick(state)
 
-        case afterTick
-        of AfterTick.NoChange:
-            discard
-        of AfterTick.PlayerDied:
-            addScore(state.state.score, Outcome.Loss)
-
-            state = State(
-                screen: Screen.Dead,
-                state: state.state,
-            )
 
     proc movePlayer(state: var State, dxy: game.DeltaXY) =
         if state.screen == Screen.Running:
@@ -460,7 +464,7 @@ no_ex:
             of PlayerMoved:
                 processPlayerMovement(state, platform, postSpell.player)
             else:
-                discard
+                doTick(state)
 
 {.pop.}
 
