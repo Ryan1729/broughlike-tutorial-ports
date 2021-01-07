@@ -66,7 +66,8 @@ no_ex:
         level: game.LevelNum,
         rng: var randomness.Rand,
         playerHP: game.HP,
-        score: Score
+        score: Score,
+        numSpells: world.SpellCount
     ): State =
         var tiles = rng.generateLevel(level)
         case tiles.isOk:
@@ -93,7 +94,6 @@ no_ex:
                         y: 0.0
                     )
 
-                    let numSpells = world.SpellCount(1)
                     var spellSeq = world.allSpellNames()
                     rng.shuffle(spellSeq)
 
@@ -134,12 +134,13 @@ no_ex:
             now = times.getTime()
             seed = times.toUnix(now) * 1_000_000_000 + times.nanosecond(now)
             level = game.LevelNum(1)
+            numSpells = world.SpellCount(1)
 
         # So we can reproduce weird situtations
         echo seed
 
         var rng = randomness.initRand(seed)
-        startLevel(level, rng, game.HP(6), Score(0))
+        startLevel(level, rng, game.HP(6), Score(0), numSpells)
 
 type
     RunNum* = uint
@@ -391,7 +392,8 @@ no_ex:
                     game.LevelNum(int(state.state.level) + 1),
                     state.state.rng,
                     player.hp + Damage(2),
-                    state.state.score
+                    state.state.score,
+                    state.state.numSpells
                 )
             return
         of Kind.Floor:

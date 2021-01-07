@@ -2,8 +2,8 @@ from options import Option, isSome, isNone, get, some, none
 
 from game import no_ex, Counter, dec, `<=`, Score, Shake, Platform
 from randomness import shuffle
-from map import getTile, removeMonster, updateMonster, spawnMonster, randomPassableTile, move
-from monster import Monster, Kind, dead, isPlayer
+from map import getTile, removeMonster, updateMonster, spawnMonster, randomPassableTile, move, addMonster
+from monster import Monster, Kind, dead, isPlayer, hit, Damage
 from tile import Tile
 
 const maxNumSpellsInt: int = 9
@@ -11,6 +11,7 @@ const maxNumSpellsInt: int = 9
 type
     SpellName* = enum
         WOOP
+        QUAKE
 
 no_ex:
     func allSpellNames*(): seq[SpellName] =
@@ -129,6 +130,8 @@ no_ex:
 #  Spells
 #
 
+#  Spell helpers
+
 template requirePlayer(spellName, playerName, stateName, platformName, spellBody: untyped) =
     proc spellName(stateName: var State, platformName: Platform): PostSpell {. raises: [] .} =
         let tile = stateName.tiles.getTile(stateName.xy)
@@ -143,6 +146,8 @@ template requirePlayer(spellName, playerName, stateName, platformName, spellBody
             # will be shown
             allEffectsHandled()
 
+# The spells themselves
+
 requirePlayer(woop, player, state, platform):
         let tileRes = state.rng.randomPassableTile(state.tiles)
         case tileRes.isOk:
@@ -152,6 +157,26 @@ requirePlayer(woop, player, state, platform):
             # If the player tries to teleport when there is no free space
             # I'm not sure what else they would expect to happen
             allEffectsHandled()
+
+proc quake(state: var State, platform: Platform): PostSpell {. raises: [] .} =
+    for i in 0..<state.tiles.len:
+        if state.tiles[i].monster.isSome:
+            let monster = state.tiles[i].monster.get
+            let numWalls = 4 - map.getAdjacentPassableNeighbors(
+                monster.xy,
+                state.tiles,
+                state.rng
+            ).len;
+
+            let damage = numWalls*4
+            if damage > 0:            
+                state.tiles.addMonster(
+                    monster.hit(platform, Damage(damage))
+                )
+
+    state.shake.amount = Counter(20);
+
+# Public spell procs
 
 no_ex:
     proc addSpell*(state: var State) =
@@ -179,8 +204,11 @@ no_ex:
             state.spells[index] = none(SpellName)
 
             let spell: Spell = case spellName.get
+                of QUAKE:
+                    quake
                 of WOOP:
                     woop
+                
 
             platform.sound(game.SoundSpec.spell)
 

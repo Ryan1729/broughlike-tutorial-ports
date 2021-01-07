@@ -45,7 +45,7 @@ no_ex:
         ]
         shuffle(rng, result)
 
-    func getAdjacentPassableNeighbors(txy: TileXY, tiles: Tiles, rng: var Rand): seq[Tile] =
+    func getAdjacentPassableNeighbors*(txy: TileXY, tiles: Tiles, rng: var Rand): seq[Tile] =
         getAdjacentNeighbors(txy, tiles, rng).toSeq.filter(isPassable)
 
     func getConnectedTiles(til: Tile, tiles: Tiles, rng: var Rand): seq[Tile] =
