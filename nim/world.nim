@@ -12,6 +12,7 @@ type
     SpellName* = enum
         WOOP
         QUAKE
+        MAELSTROM
 
 no_ex:
     func allSpellNames*(): seq[SpellName] =
@@ -69,25 +70,30 @@ type
         NoChange
         PlayerDied
 
+# When iterating monsters, We collect the monsters into a list
+# so that we don't hit the same monster twice in the iteration,
+# in case it moves
+template getMonsters(state: State): seq[Monster] =
+    var monsters: seq[Monster] = newSeqOfCap[Monster](map.tileLen)
+
+    for y in 0..<game.NumTiles:
+        for x in 0..<game.NumTiles:
+            let xy = (x: game.TileX(x), y: game.TileY(y))
+
+            var t: Tile = state.tiles.getTile(xy)
+
+            if t.monster.isSome:
+                monsters.add(
+                    t.monster.get
+                )
+
+    monsters
+
+
 no_ex:
     proc tick*(state: var State, platform: Platform): AfterTick =
-        # We collect the monsters into a list so that we don't hit
-        # the same monster twice in the iteration, in case it moves
-
-        var monsters: seq[Monster] = newSeqOfCap[Monster](map.tileLen)
-
-        for y in 0..<game.NumTiles:
-            for x in 0..<game.NumTiles:
-                let xy = (x: game.TileX(x), y: game.TileY(y))
-
-                var t: Tile = state.tiles.getTile(xy)
-
-                if t.monster.isSome:
-                    monsters.add(
-                        t.monster.get
-                    )
-
-
+        var monsters: seq[Monster] = getMonsters(state)
+    
         var k = monsters.len - 1
         while k >= 0:
             let m = monsters[k]
@@ -157,24 +163,42 @@ requirePlayer(woop, player, state, platform):
             # If the player tries to teleport when there is no free space
             # I'm not sure what else they would expect to happen
             allEffectsHandled()
+no_ex:
+    proc quake(state: var State, platform: Platform): PostSpell {. raises: [] .} =
+        for i in 0..<state.tiles.len:
+            if state.tiles[i].monster.isSome:
+                let monster = state.tiles[i].monster.get
+                let numWalls = 4 - map.getAdjacentPassableNeighbors(
+                    monster.xy,
+                    state.tiles,
+                    state.rng
+                ).len;
 
-proc quake(state: var State, platform: Platform): PostSpell {. raises: [] .} =
-    for i in 0..<state.tiles.len:
-        if state.tiles[i].monster.isSome:
-            let monster = state.tiles[i].monster.get
-            let numWalls = 4 - map.getAdjacentPassableNeighbors(
-                monster.xy,
-                state.tiles,
-                state.rng
-            ).len;
+                let damage = numWalls*4
+                if damage > 0:            
+                    state.tiles.addMonster(
+                        monster.hit(platform, Damage(damage))
+                    )
 
-            let damage = numWalls*4
-            if damage > 0:            
-                state.tiles.addMonster(
-                    monster.hit(platform, Damage(damage))
-                )
+        state.shake.amount = Counter(20)
 
-    state.shake.amount = Counter(20);
+    proc maelstrom(state: var State, platform: Platform): PostSpell {. raises: [] .} =
+        var monsters: seq[Monster] = getMonsters(state)
+        for i in 0..<monsters.len:
+            var monster = monsters[i]
+            if monster.isPlayer:
+                continue
+    
+            let tileRes = state.rng.randomPassableTile(state.tiles)
+            case tileRes.isOk:
+            of true:
+                monster.teleportCounter = Counter(2)
+                discard state.tiles.move(monster, tileRes.value.xy)
+            of false:
+                discard
+
+        allEffectsHandled()
+            
 
 # Public spell procs
 
@@ -209,6 +233,8 @@ no_ex:
             let spell: Spell = case spellName.get
                 of QUAKE:
                     quake
+                of MAELSTROM:
+                    maelstrom
                 of WOOP:
                     woop
                 

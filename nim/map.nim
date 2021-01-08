@@ -295,10 +295,13 @@ no_ex:
         )
         
         if m.stunned or m.teleportCounter > 0:
-            return tiles.move(
-                m.markUnstunned,
-                m.xy
-            )
+            m = m.markUnstunned
+            tiles[xyToI(m.xy)].monster = some(m)
+            return m
+            #~ return tiles.move(
+                #~ m.markUnstunned,
+                #~ m.xy
+            #~ )
         
         
         doStuff(tiles, shake, platform, m, playerXY, rng)
