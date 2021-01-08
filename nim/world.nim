@@ -2,7 +2,7 @@ from options import Option, isSome, isNone, get, some, none
 
 from game import no_ex, Counter, dec, `<=`, Score, Shake, Platform
 from randomness import shuffle
-from map import getTile, removeMonster, updateMonster, spawnMonster, randomPassableTile, move, addMonster
+from map import getTile, removeMonster, updateMonster, spawnMonster, randomPassableTile, move, setMonster
 from monster import Monster, Kind, dead, isPlayer, hit, Damage
 from tile import Tile
 
@@ -176,7 +176,7 @@ no_ex:
 
                 let damage = numWalls*4
                 if damage > 0:            
-                    state.tiles.addMonster(
+                    state.tiles.setMonster(
                         monster.hit(platform, Damage(damage))
                     )
 

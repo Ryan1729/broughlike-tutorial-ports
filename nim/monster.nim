@@ -177,7 +177,8 @@ no_ex:
         )
 
         platform.drawHp(shake, option.get.hp, floatXY)
-
+        if option.get.offsetXY.x != 0.0 or option.get.offsetXY.y != 0.0:
+            echo option.get.kind, " draw offsetXY: ", option.get.offsetXY
         option.get.offsetXY.x -= float(math.sgn(option.get.offsetXY.x))*(1.0/64.0)
         option.get.offsetXY.y -= float(math.sgn(option.get.offsetXY.y))*(1.0/64.0)
 

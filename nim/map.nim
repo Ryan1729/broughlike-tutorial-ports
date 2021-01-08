@@ -73,14 +73,19 @@ no_ex:
     proc removeMonster*(tiles: var Tiles, xy: TileXY) =
         tiles[xyToI(xy)].monster = none(Monster)
 
+    proc setMonster*(tiles: var Tiles, monster: Monster) =
+        tiles[xyToI(monster.xy)].monster = some(monster)
+
     proc moveWithOffsetXY(tiles: var Tiles, monster: Monster, xy: TileXy, offsetXY: floatXY): Monster =
         tiles.removeMonster(monster.xy)
 
         var moved = monster
-        moved.offsetXY = offsetXY
-        moved.xy = xy
         
-        tiles[xyToI(xy)].monster = some(moved)
+        if moved.xy != xy:
+            moved.offsetXY = offsetXY
+            moved.xy = xy
+        
+        tiles.setMonster(moved)
 
         moved
 
@@ -93,12 +98,6 @@ no_ex:
                 x: float(monster.xy.x) - float(xy.x),
                 y: float(monster.xy.y) - float(xy.y)
             )
-        )
-
-    proc addMonster*(tiles: var Tiles, monster: Monster) =
-        discard tiles.move(
-            monster,
-            monster.xy
         )
 
     proc tryMove*(
@@ -128,7 +127,7 @@ no_ex:
                         )
                     )
 
-                    tiles.addMonster(
+                    tiles.setMonster(
                         newTile.monster.get.markStunned.hit(platform, Damage(2))
                     )
 
@@ -205,9 +204,9 @@ no_ex:
             )
         of Kind.Snake:
             m.attackedThisTurn = false
-            m = tiles.move(
-                m,
-                m.xy
+
+            tiles.setMonster(
+                m
             )
 
             m = plainDoStuff(
@@ -238,10 +237,13 @@ no_ex:
                 )
             if neighbors.len > 0:
                 tiles.replace(neighbors[0].xy, tile.newFloor)
-                tiles.move(
-                    m.heal(Damage(1)),
-                    m.xy
+                m = m.heal(Damage(1))
+
+                tiles.setMonster(
+                    m
                 )
+                
+                m
             else:
                 plainDoStuff(
                     tiles,
@@ -289,20 +291,17 @@ no_ex:
     ): Monster =
         var m = monsterIn
         m.teleportCounter.dec
-        discard tiles.move(
-            m,
-            m.xy
+        tiles.setMonster(
+            m
         )
         
         if m.stunned or m.teleportCounter > 0:
             m = m.markUnstunned
-            tiles[xyToI(m.xy)].monster = some(m)
+            tiles.setMonster(
+                m
+            )
+            
             return m
-            #~ return tiles.move(
-                #~ m.markUnstunned,
-                #~ m.xy
-            #~ )
-        
         
         doStuff(tiles, shake, platform, m, playerXY, rng)
 
@@ -321,7 +320,7 @@ no_ex:
             let moved = plainUpdateMonster(tiles, shake, platform, monster, playerXY, rng)
 
             if not startedStunned:
-                tiles.addMonster(
+                tiles.setMonster(
                     moved.markStunned
                 )
 
@@ -373,7 +372,7 @@ no_ex:
         case tileRes.isOk:
         of true:
             let monster = monsterMakers[0](tileRes.value.xy)
-            tiles.addMonster(monster)
+            tiles.setMonster(monster)
         of false:
             # The player won't mind if a monter doesn't spawn because it
             # doesn't fit.

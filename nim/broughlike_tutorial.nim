@@ -21,7 +21,7 @@ from monster import draw, isPlayer, Damage, `+`
 from res import ok, err
 from game import `-=`, `+=`, `==`, no_ex, DeltaX, DeltaY, `$`, Score, floatXY,
         Counter, `<`, SoundSpec
-from map import generateLevel, randomPassableTile, addMonster, spawnMonster,
+from map import generateLevel, randomPassableTile, setMonster, spawnMonster,
         tryMove, getTile, replace, setTreasure
 from world import tick, AfterTick, maxNumSpells, SpellCount, addSpell,
         PostSpell, PostSpellKind
@@ -84,7 +84,7 @@ no_ex:
                     tiles.value.replace(exitTile.value.xy, newExit)
 
                     let xy = startingTile.value.xy
-                    tiles.value.addMonster(monster.newPlayer(xy, playerHP))
+                    tiles.value.setMonster(monster.newPlayer(xy, playerHP))
 
                     let spawnRate = game.Counter(15)
 
@@ -134,7 +134,7 @@ no_ex:
             now = times.getTime()
             seed = times.toUnix(now) * 1_000_000_000 + times.nanosecond(now)
             level = game.LevelNum(1)
-            numSpells = world.SpellCount(1)
+            numSpells = world.SpellCount(9)                     #1)
 
         # So we can reproduce weird situtations
         echo seed
