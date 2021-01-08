@@ -151,34 +151,32 @@ no_ex:
                 game.SpriteIndex(10),
                 floatXY
             )
-            return
-        
-        let sprite = case option.get.kind
-        of Player:
-            if option.get.dead:
-                game.SpriteIndex(1)
-            else:
-                game.SpriteIndex(0)
-        of Bird:
-            game.SpriteIndex(4)
-        of Snake:
-            game.SpriteIndex(5)
-        of Tank:
-            game.SpriteIndex(6)
-        of Eater:
-            game.SpriteIndex(7)
-        of Jester:
-            game.SpriteIndex(8)
+        else:
+            let sprite = case option.get.kind
+            of Player:
+                if option.get.dead:
+                    game.SpriteIndex(1)
+                else:
+                    game.SpriteIndex(0)
+            of Bird:
+                game.SpriteIndex(4)
+            of Snake:
+                game.SpriteIndex(5)
+            of Tank:
+                game.SpriteIndex(6)
+            of Eater:
+                game.SpriteIndex(7)
+            of Jester:
+                game.SpriteIndex(8)
 
-        (platform.spriteFloat)(
-            shake,
-            sprite,
-            floatXY
-        )
+            (platform.spriteFloat)(
+                shake,
+                sprite,
+                floatXY
+            )
 
-        platform.drawHp(shake, option.get.hp, floatXY)
-        if option.get.offsetXY.x != 0.0 or option.get.offsetXY.y != 0.0:
-            echo option.get.kind, " draw offsetXY: ", option.get.offsetXY
+            platform.drawHp(shake, option.get.hp, floatXY)
+
         option.get.offsetXY.x -= float(math.sgn(option.get.offsetXY.x))*(1.0/64.0)
         option.get.offsetXY.y -= float(math.sgn(option.get.offsetXY.y))*(1.0/64.0)
 
