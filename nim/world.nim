@@ -13,6 +13,7 @@ type
         WOOP
         QUAKE
         MAELSTROM
+        MULLIGAN
 
 no_ex:
     func allSpellNames*(): seq[SpellName] =
@@ -45,15 +46,17 @@ type
         spells: SpellBook
         numSpells: SpellCount
 
+type
     PostSpellKind* = enum
         AllEffectsHandled
         PlayerMoved
+        StartLevel
 
     PostSpell* = object
         case kind*: PostSpellKind
         of PostSpellKind.PlayerMoved:
             player*: Monster
-        of PostSpellKind.AllEffectsHandled:
+        of PostSpellKind.AllEffectsHandled, PostSpellKind.StartLevel:
             discard
 
 no_ex:
@@ -198,6 +201,9 @@ no_ex:
                 discard
 
         allEffectsHandled()
+
+    proc mulligan(state: var State, platform: Platform): PostSpell {. raises: [] .} =
+        PostSpell(kind: PostSpellKind.StartLevel)
             
 
 # Public spell procs
@@ -235,6 +241,8 @@ no_ex:
                     quake
                 of MAELSTROM:
                     maelstrom
+                of MULLIGAN:
+                    mulligan
                 of WOOP:
                     woop
                 

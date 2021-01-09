@@ -62,12 +62,13 @@ no_ex:
     proc errorState(message: string): State =
         State(screen: Screen.Error, error: message)
 
-    proc startLevel(
+    proc startLevel*(
         level: game.LevelNum,
         rng: var randomness.Rand,
         playerHP: game.HP,
         score: Score,
-        numSpells: world.SpellCount
+        numSpells: world.SpellCount,
+        retainedSpells: Option[world.SpellBook] = none(world.SpellBook)
     ): State =
         var tiles = rng.generateLevel(level)
         case tiles.isOk:
@@ -94,17 +95,20 @@ no_ex:
                         y: 0.0
                     )
 
-                    var spellSeq = world.allSpellNames()
-                    rng.shuffle(spellSeq)
-
                     var spells: world.SpellBook
 
-                    var spellsToUse = spellSeq.len
-                    if numSpells < spellsToUse:
-                        spellsToUse = numSpells
+                    if retainedSpells.isSome:
+                        spells = retainedSpells.get
+                    else:
+                        var spellSeq = world.allSpellNames()
+                        rng.shuffle(spellSeq)
 
-                    for i in 0..<spellsToUse:
-                        spells[i] = some(spellSeq[i])
+                        var spellsToUse = spellSeq.len
+                        if numSpells < spellsToUse:
+                            spellsToUse = numSpells
+
+                        for i in 0..<spellsToUse:
+                            spells[i] = some(spellSeq[i])
 
                     State(
                         screen: Screen.Running,
@@ -127,7 +131,6 @@ no_ex:
                 startingTile.error.errorState
         of false:
             tiles.error.errorState
-
 
     proc seedState(): State =
         let
@@ -463,8 +466,20 @@ no_ex:
             case postSpell.kind
             of PlayerMoved:
                 processPlayerMovement(state, platform, postSpell.player)
-            else:
-                doTick(state)
+                return # we already did the tick
+            of StartLevel:
+                state = startLevel(
+                    state.state.level,
+                    state.state.rng,
+                    game.HP(2),
+                    state.state.score,
+                    state.state.numSpells,
+                    some(state.state.spells)
+                )
+            of AllEffectsHandled:
+                discard
+
+            doTick(state)
 
 {.pop.}
 
