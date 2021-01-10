@@ -237,7 +237,10 @@ var
 var spritesheet: Texture2D = LoadTextureFromImage(assets.spritesheetImage)
 
 no_ex:
-    proc drawSpriteFloat(shake: game.Shake, sprite: game.SpriteIndex, xy: floatXY) =
+    proc drawSpriteFloat(shake: game.Shake, sprite: game.SpriteIndex,
+            xy: floatXY, alpha: float = 1.0) =
+        var tint = WHITE
+        tint.a = uint8(alpha * float(255))
         DrawTexturePro(
             spritesheet,
             Rectangle(x: float(sprite) * 16, y: 0, width: 16, height: 16),
@@ -251,7 +254,7 @@ no_ex:
             ),
             Vector2(x: 0, y: 0),
             0.0,
-            WHITE
+            tint
         )
 
     proc rightPad(strings: seq[string]): string =

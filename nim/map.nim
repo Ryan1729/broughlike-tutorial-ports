@@ -14,9 +14,9 @@ type
     Tiles* = array[tileLen, tile.Tile]
 
 no_ex:
-    proc draw*(tiles: Tiles, shake: Shake, platform: Platform) =
-        for t in tiles:
-            tile.draw(t, shake, platform)
+    proc draw*(tiles: var Tiles, shake: Shake, platform: Platform) =
+        for i in 0..<tileLen:
+            tile.draw(tiles[i], shake, platform)
 
     func xyToI(xy: game.TileXY): int =
         int(xy.y) * game.NumTiles + int(xy.x)
@@ -36,7 +36,7 @@ no_ex:
     func getNeighbor(tiles: Tiles, txy: TileXY, dxy: DeltaXY): Tile =
         getTile(tiles, txy + dxy)
 
-    func getAdjacentNeighbors(txy: TileXY, tiles: Tiles, rng: var Rand): array[4, Tile] =
+    func getAdjacentNeighbors*(txy: TileXY, tiles: Tiles, rng: var Rand): array[4, Tile] =
         result = [
             tiles.getNeighbor(txy, (x: DX0, y: DYm1)),
             tiles.getNeighbor(txy, (x: DX0, y: DY1)),
@@ -56,7 +56,7 @@ no_ex:
                                 .xy
                                 .getAdjacentPassableNeighbors(tiles, rng)
                                 .filter(proc(t: Tile): bool =
-                                    not connectedTiles.any(proc(ct: Tile): bool = ct == t)
+                                    not connectedTiles.any(proc(ct: Tile): bool = ct.xy == t.xy)
                                 )
             connectedTiles = connectedTiles.concat(neighbors)
             frontier = frontier.concat(neighbors)
@@ -75,6 +75,9 @@ no_ex:
 
     proc setMonster*(tiles: var Tiles, monster: Monster) =
         tiles[xyToI(monster.xy)].monster = some(monster)
+
+    proc setEffect*(tiles: var Tiles, xy: TileXY, sprite: game.SpriteIndex) =
+        tile.setEffect(tiles[xyToI(xy)], sprite)
 
     proc moveWithOffsetXY(tiles: var Tiles, monster: Monster, xy: TileXy, offsetXY: floatXY): Monster =
         tiles.removeMonster(monster.xy)
@@ -304,7 +307,6 @@ no_ex:
             return m
         
         doStuff(tiles, shake, platform, m, playerXY, rng)
-
 
     proc updateMonster*(
         tiles: var Tiles,

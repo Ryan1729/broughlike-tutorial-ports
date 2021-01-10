@@ -193,7 +193,8 @@ type
         spriteFloat*: proc(
             shake: Shake,
             sprite: SpriteIndex,
-            xy: tuple[x: float, y: float]
+            xy: tuple[x: float, y: float],
+            alpha: float = 1.0
         ) {.raises: [].}
         sound*: proc(
             spec: SoundSpec

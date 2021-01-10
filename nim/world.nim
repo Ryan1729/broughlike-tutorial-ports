@@ -2,8 +2,8 @@ from options import Option, isSome, isNone, get, some, none
 
 from game import no_ex, Counter, dec, `<=`, Score, Shake, Platform
 from randomness import shuffle
-from map import getTile, removeMonster, updateMonster, spawnMonster, randomPassableTile, move, setMonster
-from monster import Monster, Kind, dead, isPlayer, hit, Damage
+from map import getTile, removeMonster, updateMonster, spawnMonster, randomPassableTile, move, setMonster, getAdjacentNeighbors, setEffect
+from monster import Monster, Kind, dead, isPlayer, hit, Damage, heal
 from tile import Tile
 
 const maxNumSpellsInt: int = 9
@@ -14,6 +14,7 @@ type
         QUAKE
         MAELSTROM
         MULLIGAN
+        AURA
 
 no_ex:
     func allSpellNames*(): seq[SpellName] =
@@ -204,7 +205,18 @@ no_ex:
 
     proc mulligan(state: var State, platform: Platform): PostSpell {. raises: [] .} =
         PostSpell(kind: PostSpellKind.StartLevel)
+
+requirePlayer(aura, player, state, platform):
+        for t in state.xy.getAdjacentNeighbors(state.tiles, state.rng):
+            state.tiles.setEffect(t.xy, game.SpriteIndex(13))
             
+            if t.monster.isSome:
+                state.tiles.setMonster(t.monster.get.heal(Damage(2)))
+
+        state.tiles.setEffect(state.xy, game.SpriteIndex(13))
+        state.tiles.setMonster(player.heal(Damage(2)))
+        
+        allEffectsHandled()
 
 # Public spell procs
 
@@ -243,6 +255,8 @@ no_ex:
                     maelstrom
                 of MULLIGAN:
                     mulligan
+                of AURA:
+                    aura
                 of WOOP:
                     woop
                 

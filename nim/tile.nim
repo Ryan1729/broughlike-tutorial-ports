@@ -1,7 +1,9 @@
 from options import Option, none, isSome
 
-from game import no_ex, Shake
+from game import no_ex, Shake, Counter, `<`
 from monster import Monster
+
+const EffectCounterMax = 255
 
 type
   Kind* = enum
@@ -9,15 +11,20 @@ type
     Floor,
     Exit
 
+  Effect* = tuple
+    sprite: game.SpriteIndex
+    counter: Counter
+
   Tile* = tuple
     kind: Kind
     xy: game.TileXY
     monster: Option[Monster]
     treasure: bool
+    effect: Effect
 
 no_ex:
     func newTile(kind: Kind, xy: game.TileXY): Tile =
-        (kind: kind, xy: xy, monster: none(Monster), treasure: false)
+        (kind: kind, xy: xy, monster: none(Monster), treasure: false, effect: (sprite: game.SpriteIndex(1), counter: Counter(0)))
     
     func newWall*(xy: game.TileXY): Tile =
         newTile(Kind.Wall, xy)
@@ -28,7 +35,7 @@ no_ex:
     func newExit*(xy: game.TileXY): Tile =
         newTile(Kind.Exit, xy)
     
-    proc draw*(tile: Tile, shake: Shake, platform: game.Platform) =
+    proc draw*(tile: var Tile, shake: Shake, platform: game.Platform) =
         let sprite = case tile.kind
         of Wall:
             game.SpriteIndex(3)
@@ -54,6 +61,18 @@ no_ex:
                 game.SpriteIndex(12),
                 floatXY
             )
+
+        if tile.effect.counter > 0:
+            (platform.spriteFloat)(
+                shake,
+                tile.effect.sprite,
+                floatXY,
+                float(tile.effect.counter) / EffectCounterMax
+            )
+            tile.effect.counter.dec()
+            
+    proc setEffect*(tile: var Tile, sprite: game.SpriteIndex) =
+        tile.effect = (sprite: sprite, counter: Counter(EffectCounterMax))
 
     func isPassable*(kind: Kind): bool =
         case kind
