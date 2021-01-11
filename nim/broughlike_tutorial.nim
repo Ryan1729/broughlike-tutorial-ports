@@ -20,7 +20,7 @@ from tile import Kind, newExit
 from monster import draw, isPlayer, Damage, `+`
 from res import ok, err
 from game import `-=`, `+=`, `==`, no_ex, DeltaX, DeltaY, `$`, Score, floatXY,
-        Counter, `<`, SoundSpec
+        Counter, `<`, SoundSpec, deltasFrom
 from map import generateLevel, randomPassableTile, setMonster, spawnMonster,
         tryMove, getTile, replace, setTreasure
 from world import tick, AfterTick, maxNumSpells, SpellCount, addSpell,
@@ -122,7 +122,8 @@ no_ex:
                             score: score,
                             shake: shake,
                             spells: spells,
-                            numSpells: numSpells
+                            numSpells: numSpells,
+                            lastMove: (x: game.DXm1, y: game.DY0)
                         )
                     )
                 of false:
@@ -431,6 +432,10 @@ no_ex:
                 state.state.rng.spawnMonster(state.state.tiles)
         else:
             discard
+
+        let deltas = (source: state.state.xy, target: player.xy).deltasFrom
+        if deltas.isSome:
+            state.state.lastMove = deltas.get
 
         state.state.xy = player.xy
 

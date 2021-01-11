@@ -1,10 +1,10 @@
 from options import Option, isSome, isNone, get, some, none
 
-from game import no_ex, Counter, dec, `<=`, Score, Shake, Platform
+from game import no_ex, Counter, dec, `<=`, Score, Shake, Platform, DeltaXY
 from randomness import shuffle
-from map import getTile, removeMonster, updateMonster, spawnMonster, randomPassableTile, move, setMonster, getAdjacentNeighbors, setEffect
-from monster import Monster, Kind, dead, isPlayer, hit, Damage, heal
-from tile import Tile
+from map import getTile, removeMonster, updateMonster, spawnMonster, randomPassableTile, move, setMonster, getAdjacentNeighbors, setEffect, getNeighbor
+from monster import Monster, Kind, dead, isPlayer, hit, Damage, heal, markStunned
+from tile import Tile, isPassable
 
 const maxNumSpellsInt: int = 9
 
@@ -15,6 +15,7 @@ type
         MAELSTROM
         MULLIGAN
         AURA
+        DASH
 
 no_ex:
     func allSpellNames*(): seq[SpellName] =
@@ -46,6 +47,7 @@ type
         shake: Shake
         spells: SpellBook
         numSpells: SpellCount
+        lastMove: DeltaXY
 
 type
     PostSpellKind* = enum
@@ -66,7 +68,7 @@ no_ex:
 
     func playerMoved(player: Monster): PostSpell =
         PostSpell(kind: PostSpellKind.PlayerMoved, player: player)
-        
+
 type
     Spell = proc(state: var State, platform: Platform): PostSpell {. raises: [] .}
 
@@ -97,7 +99,7 @@ template getMonsters(state: State): seq[Monster] =
 no_ex:
     proc tick*(state: var State, platform: Platform): AfterTick =
         var monsters: seq[Monster] = getMonsters(state)
-    
+
         var k = monsters.len - 1
         while k >= 0:
             let m = monsters[k]
@@ -179,7 +181,7 @@ no_ex:
                 ).len;
 
                 let damage = numWalls*4
-                if damage > 0:            
+                if damage > 0:
                     state.tiles.setMonster(
                         monster.hit(platform, Damage(damage))
                     )
@@ -192,7 +194,7 @@ no_ex:
             var monster = monsters[i]
             if monster.isPlayer:
                 continue
-    
+
             let tileRes = state.rng.randomPassableTile(state.tiles)
             case tileRes.isOk:
             of true:
@@ -209,14 +211,55 @@ no_ex:
 requirePlayer(aura, player, state, platform):
         for t in state.xy.getAdjacentNeighbors(state.tiles, state.rng):
             state.tiles.setEffect(t.xy, game.SpriteIndex(13))
-            
+
             if t.monster.isSome:
                 state.tiles.setMonster(t.monster.get.heal(Damage(2)))
 
         state.tiles.setEffect(state.xy, game.SpriteIndex(13))
         state.tiles.setMonster(player.heal(Damage(2)))
-        
+
         allEffectsHandled()
+
+requirePlayer(dash, player, state, platform):
+        var newTile = state.tiles.getTile(state.xy)
+        let monster = newTile.monster
+        if monster.isSome:
+            let player = monster.get
+
+            while true:
+                let testTile = state.tiles.getNeighbor(
+                    newTile.xy,
+                    state.lastMove
+                )
+
+                if testTile.isPassable and not testTile.monster.isSome:
+                    newTile = testTile
+                else:
+                    break
+
+            if player.xy != newTile.xy:
+                let moved = state.tiles.move(player, newTile.xy)
+
+                for t in newTile.xy.getAdjacentNeighbors(state.tiles, state.rng):
+                    if t.monster.isSome:
+                        state.tiles.setEffect(
+                            t.xy,
+                            game.SpriteIndex(14)
+                        )
+
+                        state.tiles.setMonster(
+                            t.monster.get.markStunned().hit(platform, Damage(2))
+                        )
+
+                return playerMoved(moved)
+
+
+        # If the player cannot be found now then presumably the
+        # next time the player tries to move, the error message
+        # will be shown
+        allEffectsHandled()
+
+
 
 # Public spell procs
 
@@ -257,9 +300,11 @@ no_ex:
                     mulligan
                 of AURA:
                     aura
+                of DASH:
+                    dash
                 of WOOP:
                     woop
-                
+
 
             platform.sound(game.SoundSpec.spell)
 

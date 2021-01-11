@@ -33,7 +33,7 @@ no_ex:
         else:
             tile.newWall(xy)
 
-    func getNeighbor(tiles: Tiles, txy: TileXY, dxy: DeltaXY): Tile =
+    func getNeighbor*(tiles: Tiles, txy: TileXY, dxy: DeltaXY): Tile =
         getTile(tiles, txy + dxy)
 
     func getAdjacentNeighbors*(txy: TileXY, tiles: Tiles, rng: var Rand): array[4, Tile] =
