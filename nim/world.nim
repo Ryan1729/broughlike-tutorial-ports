@@ -2,7 +2,7 @@ from options import Option, isSome, isNone, get, some, none
 
 from game import no_ex, Counter, dec, `<=`, Score, Shake, Platform, DeltaXY
 from randomness import shuffle
-from map import getTile, removeMonster, updateMonster, spawnMonster, randomPassableTile, move, setMonster, getAdjacentNeighbors, setEffect, getNeighbor, replace
+from map import getTile, removeMonster, updateMonster, spawnMonster, randomPassableTile, move, setMonster, getAdjacentNeighbors, setEffect, getNeighbor, replace, setTreasure
 from monster import Monster, Kind, dead, isPlayer, hit, Damage, heal, markStunned
 from tile import Tile, isPassable
 
@@ -17,6 +17,7 @@ type
         AURA
         DASH
         DIG
+        KINGMAKER
 
 no_ex:
     func allSpellNames*(): seq[SpellName] =
@@ -278,6 +279,23 @@ requirePlayer(dig, player, state, platform):
 
         allEffectsHandled()
 
+no_ex:
+    proc kingmaker(state: var State, platform: Platform): PostSpell {. raises: [] .} =
+        var monsters: seq[Monster] = getMonsters(state)
+        for i in 0..<monsters.len:
+            let monster = monsters[i]
+            if monster.isPlayer:
+                continue
+
+            state.tiles.setMonster(
+                monster.heal(Damage(2))
+            )
+            state.tiles.setTreasure(
+                monster.xy,
+                true
+            )
+
+
 
 # Public spell procs
 
@@ -322,6 +340,8 @@ no_ex:
                     dash
                 of DIG:
                     dig
+                of KINGMAKER:
+                    kingmaker
                 of WOOP:
                     woop
 
