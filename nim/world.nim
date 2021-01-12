@@ -2,7 +2,7 @@ from options import Option, isSome, isNone, get, some, none
 
 from game import no_ex, Counter, dec, `<=`, Score, Shake, Platform, DeltaXY
 from randomness import shuffle
-from map import getTile, removeMonster, updateMonster, spawnMonster, randomPassableTile, move, setMonster, getAdjacentNeighbors, setEffect, getNeighbor
+from map import getTile, removeMonster, updateMonster, spawnMonster, randomPassableTile, move, setMonster, getAdjacentNeighbors, setEffect, getNeighbor, replace
 from monster import Monster, Kind, dead, isPlayer, hit, Damage, heal, markStunned
 from tile import Tile, isPassable
 
@@ -16,6 +16,7 @@ type
         MULLIGAN
         AURA
         DASH
+        DIG
 
 no_ex:
     func allSpellNames*(): seq[SpellName] =
@@ -259,6 +260,21 @@ requirePlayer(dash, player, state, platform):
         # will be shown
         allEffectsHandled()
 
+requirePlayer(dig, player, state, platform):
+        for i in 0..<state.tiles.len:
+            let t = state.tiles[i]
+            if not t.isPassable:
+                state.tiles.replace(t.xy, tile.newFloor)
+
+        state.tiles.setEffect(
+            player.xy,
+            game.SpriteIndex(13)
+        )
+        state.tiles.setMonster(
+            player.heal(Damage(4))
+        )
+
+        allEffectsHandled()
 
 
 # Public spell procs
@@ -302,6 +318,8 @@ no_ex:
                     aura
                 of DASH:
                     dash
+                of DIG:
+                    dig
                 of WOOP:
                     woop
 
