@@ -71,7 +71,8 @@ no_ex:
         xy: TileXY,
         maker: proc (xy: game.TileXY): Tile
     ) =
-        tiles[xyToI(xy)] = maker(xy)
+        if inBounds(xy):
+            tiles[xyToI(xy)] = maker(xy)
 
     proc removeMonster*(tiles: var Tiles, xy: TileXY) =
         tiles[xyToI(xy)].monster = none(Monster)
