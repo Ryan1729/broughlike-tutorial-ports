@@ -6,7 +6,7 @@ from randomness import rand01, tryTo, randomTileXY, shuffle, Rand
 from res import ok, err
 from game import no_ex, `<`, `<=`, TileXY, DeltaX, DeltaY, DeltaXY, `+`, `==`, LevelNum, dist, dec, `-`, floatXY, `$`, Counter, Shake, Platform
 from tile import Tile, isPassable, hasMonster
-from monster import Monster, Kind, hit, Damage, markAttacked, markStunned, markUnstunned, heal, withTeleportCounter, isPlayer
+from monster import Monster, Kind, hit, Damage, markAttacked, markStunned, markUnstunned, heal, withTeleportCounter, isPlayer, draw
 
 const tileLen*: int = game.NumTiles * game.NumTiles
 
@@ -17,6 +17,9 @@ no_ex:
     proc draw*(tiles: var Tiles, shake: Shake, platform: Platform) =
         for i in 0..<tileLen:
             tile.draw(tiles[i], shake, platform)
+
+        for i in 0..<tileLen:
+            tiles[i].monster.draw(shake, platform)
 
     func xyToI(xy: game.TileXY): int =
         int(xy.y) * game.NumTiles + int(xy.x)

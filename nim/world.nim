@@ -172,20 +172,20 @@ requirePlayer(woop, player, state, platform):
             allEffectsHandled()
 no_ex:
     proc quake(state: var State, platform: Platform): PostSpell {. raises: [] .} =
-        for i in 0..<state.tiles.len:
-            if state.tiles[i].monster.isSome:
-                let monster = state.tiles[i].monster.get
-                let numWalls = 4 - map.getAdjacentPassableNeighbors(
-                    monster.xy,
-                    state.tiles,
-                    state.rng
-                ).len;
+        var monsters: seq[Monster] = getMonsters(state)
+        for i in 0..<monsters.len:
+            let monster = monsters[i]
+            let numWalls = 4 - map.getAdjacentPassableNeighbors(
+                monster.xy,
+                state.tiles,
+                state.rng
+            ).len;
 
-                let damage = numWalls*4
-                if damage > 0:
-                    state.tiles.setMonster(
-                        monster.hit(platform, Damage(damage))
-                    )
+            let damage = numWalls*4
+            if damage > 0:
+                state.tiles.setMonster(
+                    monster.hit(platform, Damage(damage))
+                )
 
         state.shake.amount = Counter(20)
 
@@ -261,10 +261,12 @@ requirePlayer(dash, player, state, platform):
         allEffectsHandled()
 
 requirePlayer(dig, player, state, platform):
-        for i in 0..<state.tiles.len:
-            let t = state.tiles[i]
-            if not t.isPassable:
-                state.tiles.replace(t.xy, tile.newFloor)
+        for y in 0..<game.NumTiles:
+            for x in 0..<game.NumTiles:
+                let xy: game.TileXY = (x: game.TileX(x), y: game.TileY(y))
+                let t = state.tiles.getTile(xy)
+                if not t.isPassable:
+                    state.tiles.replace(t.xy, tile.newFloor)
 
         state.tiles.setEffect(
             player.xy,

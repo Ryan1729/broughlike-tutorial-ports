@@ -495,9 +495,6 @@ no_ex:
     proc drawState(state: var world.State) =
         map.draw(state.tiles, state.shake, platform)
 
-        for i in 0..<state.tiles.len:
-            state.tiles[i].monster.draw(state.shake, platform)
-
         const UIFontSize: FontSize = FontSize(30)
         (
             text: "Level: " & $int(state.level),
