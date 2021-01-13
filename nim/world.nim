@@ -225,7 +225,8 @@ requirePlayer(aura, player, state, platform):
 
         allEffectsHandled()
 
-requirePlayer(dash, player, state, platform):
+no_ex:
+    proc dash(state: var State, platform: Platform): PostSpell =
         var newTile = state.tiles.getTile(state.xy)
         let monster = newTile.monster
         if monster.isSome:
