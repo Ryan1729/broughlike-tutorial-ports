@@ -19,6 +19,7 @@ type
         DIG
         KINGMAKER
         ALCHEMY
+        POWER
 
 no_ex:
     func allSpellNames*(): seq[SpellName] =
@@ -51,6 +52,7 @@ type
         spells: SpellBook
         numSpells: SpellCount
         lastMove: DeltaXY
+        bonusAttack: Option[Damage]
 
 type
     PostSpellKind* = enum
@@ -315,6 +317,11 @@ no_ex:
 
         allEffectsHandled()
 
+    proc power(state: var State, platform: Platform): PostSpell =
+        state.bonusAttack = some(Damage(10))
+
+        allEffectsHandled()
+
 # Public spell procs
 
 no_ex:
@@ -362,6 +369,8 @@ no_ex:
                     kingmaker
                 of ALCHEMY:
                     alchemy
+                of POWER:
+                    power
                 of WOOP:
                     woop
 

@@ -6,7 +6,7 @@ from randomness import rand01, tryTo, randomTileXY, shuffle, Rand
 from res import ok, err
 from game import no_ex, `<`, `<=`, TileXY, DeltaX, DeltaY, DeltaXY, `+`, `==`, LevelNum, dist, dec, `-`, floatXY, `$`, Counter, Shake, Platform
 from tile import Tile, isPassable, hasMonster
-from monster import Monster, Kind, hit, Damage, markAttacked, markStunned, markUnstunned, heal, withTeleportCounter, isPlayer, draw
+from monster import Monster, Kind, hit, Damage, markAttacked, markStunned, markUnstunned, heal, withTeleportCounter, isPlayer, draw, `+`
 
 const tileLen*: int = game.NumTiles * game.NumTiles
 
@@ -110,6 +110,7 @@ no_ex:
     proc tryMove*(
         tiles: var Tiles,
         shake: var Shake,
+        playerBonusAttack: var Option[Damage],
         platform: game.Platform,
         monster: Monster,
         dxy: DeltaXY
@@ -134,8 +135,15 @@ no_ex:
                         )
                     )
 
+                    var damage = Damage(2)
+
+                    if monster.isPlayer and playerBonusAttack.isSome:
+                        damage = damage + playerBonusAttack.get;
+
+                        playerBonusAttack = none(Damage);
+
                     tiles.setMonster(
-                        newTile.monster.get.markStunned.hit(platform, Damage(2))
+                        newTile.monster.get.markStunned.hit(platform, damage)
                     )
 
                     return some(moved)
@@ -143,6 +151,26 @@ no_ex:
                 return some(monster)
 
         none(Monster)
+
+    
+    proc tryNonPlayerMove(
+        tiles: var Tiles,
+        shake: var Shake,
+        platform: game.Platform,
+        monster: Monster,
+        dxy: DeltaXY
+    ): Option[Monster] =
+        # Since we know we `monster` should not be the player, the bonus
+        # attack amount doesn't need to be the real one.
+        var dummyDamage = none(Damage)
+        tryMove(
+            tiles,
+            shake,
+            dummyDamage,
+            platform,
+            monster,
+            dxy
+        )
 
     proc plainDoStuff(
         tiles: var Tiles,
@@ -152,6 +180,9 @@ no_ex:
         playerXY: TileXY,
         rng: var Rand
     ): Monster =
+        if monster.isPlayer:
+            return monster
+
         var neighbors: seq[Tile] = getAdjacentPassableNeighbors(
             monster.xy,
             tiles,
@@ -176,7 +207,7 @@ no_ex:
                 # The player genrally won't mind if a monster doesn't move.
                 return monster
 
-            let option = tiles.tryMove(
+            let option = tiles.tryNonPlayerMove(
                 shake,
                 platform,
                 monster,
@@ -271,7 +302,7 @@ no_ex:
                     # The player genrally won't mind if a monster doesn't move.
                     return monster
 
-                let option = tiles.tryMove(
+                let option = tiles.tryNonPlayerMove(
                     shake,
                     platform,
                     monster,

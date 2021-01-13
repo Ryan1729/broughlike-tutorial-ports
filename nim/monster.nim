@@ -24,6 +24,13 @@ type
   Damage* = distinct range[1 .. int(high(HP))]
 
 no_ex:
+    func `+`*(d1: Damage, d2: Damage): Damage =
+        let newDamage = int(d1) + int(d2)
+        if newDamage > int(high(Damage)):
+            high(Damage)
+        else:
+            Damage(newDamage)
+    
     func `-=`(hp: var HP, damage: Damage) =
         let newHp = int(hp) - int(damage)
         if newHp < int(low(HP)):
