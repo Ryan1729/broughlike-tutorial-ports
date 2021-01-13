@@ -18,6 +18,7 @@ type
         DASH
         DIG
         KINGMAKER
+        ALCHEMY
 
 no_ex:
     func allSpellNames*(): seq[SpellName] =
@@ -172,7 +173,7 @@ requirePlayer(woop, player, state, platform):
             # I'm not sure what else they would expect to happen
             allEffectsHandled()
 no_ex:
-    proc quake(state: var State, platform: Platform): PostSpell {. raises: [] .} =
+    proc quake(state: var State, platform: Platform): PostSpell =
         var monsters: seq[Monster] = getMonsters(state)
         for i in 0..<monsters.len:
             let monster = monsters[i]
@@ -190,7 +191,7 @@ no_ex:
 
         state.shake.amount = Counter(20)
 
-    proc maelstrom(state: var State, platform: Platform): PostSpell {. raises: [] .} =
+    proc maelstrom(state: var State, platform: Platform): PostSpell =
         var monsters: seq[Monster] = getMonsters(state)
         for i in 0..<monsters.len:
             var monster = monsters[i]
@@ -207,7 +208,7 @@ no_ex:
 
         allEffectsHandled()
 
-    proc mulligan(state: var State, platform: Platform): PostSpell {. raises: [] .} =
+    proc mulligan(state: var State, platform: Platform): PostSpell =
         PostSpell(kind: PostSpellKind.StartLevel)
 
 requirePlayer(aura, player, state, platform):
@@ -280,7 +281,7 @@ requirePlayer(dig, player, state, platform):
         allEffectsHandled()
 
 no_ex:
-    proc kingmaker(state: var State, platform: Platform): PostSpell {. raises: [] .} =
+    proc kingmaker(state: var State, platform: Platform): PostSpell =
         var monsters: seq[Monster] = getMonsters(state)
         for i in 0..<monsters.len:
             let monster = monsters[i]
@@ -295,7 +296,20 @@ no_ex:
                 true
             )
 
-
+no_ex:
+    proc alchemy(state: var State, platform: Platform): PostSpell =
+        for neighbor in state.xy.getAdjacentNeighbors(state.tiles, state.rng):
+            if not neighbor.isPassable:
+                state.tiles.replace(neighbor.xy, tile.newFloor)
+                let floorTile = state.tiles.getTile(neighbor.xy)
+                # If replacement didn't happen (say because it's an outer wall
+                # tile then don't embed the treasure in the outer wall, possibly
+                # making the player think there's a way to get it.
+                if floorTile.isPassable:
+                    state.tiles.setTreasure(
+                        floorTile.xy,
+                        true
+                    )
 
 # Public spell procs
 
@@ -342,6 +356,8 @@ no_ex:
                     dig
                 of KINGMAKER:
                     kingmaker
+                of ALCHEMY:
+                    alchemy
                 of WOOP:
                     woop
 
