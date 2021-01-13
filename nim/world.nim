@@ -296,6 +296,8 @@ no_ex:
                 true
             )
 
+        allEffectsHandled()
+
 no_ex:
     proc alchemy(state: var State, platform: Platform): PostSpell =
         for neighbor in state.xy.getAdjacentNeighbors(state.tiles, state.rng):
@@ -310,6 +312,8 @@ no_ex:
                         floorTile.xy,
                         true
                     )
+
+        allEffectsHandled()
 
 # Public spell procs
 
