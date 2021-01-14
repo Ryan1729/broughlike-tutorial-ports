@@ -20,6 +20,7 @@ type
         KINGMAKER
         ALCHEMY
         POWER
+        BUBBLE
 
 no_ex:
     func allSpellNames*(): seq[SpellName] =
@@ -323,6 +324,15 @@ no_ex:
 
         allEffectsHandled()
 
+    proc bubble(state: var State, platform: Platform): PostSpell =
+        var i = state.spells.len-1
+        while i > 0:
+            if state.spells[i].isNone:
+                state.spells[i] = state.spells[i-1]
+
+            i -= 1
+
+
 # Public spell procs
 
 no_ex:
@@ -372,6 +382,8 @@ no_ex:
                     alchemy
                 of POWER:
                     power
+                of BUBBLE:
+                    bubble
                 of WOOP:
                     woop
 
