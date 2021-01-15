@@ -31,3 +31,10 @@ A version of the code for the [go programming language](https://golang.org/).
 A version of the code for the [elm programming language](https://elm-lang.org/).
 
 [Web Version](https://ryan1729.github.io/broughlike-tutorial-ports/elm/index.html)
+
+
+## nim
+
+A version of the code for the [nim programming language](https://nim-lang.org/).
+
+(Desktop Binary only)
