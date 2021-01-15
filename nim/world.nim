@@ -21,6 +21,7 @@ type
         ALCHEMY
         POWER
         BUBBLE
+        BRAVERY
 
 no_ex:
     func allSpellNames*(): seq[SpellName] =
@@ -54,6 +55,7 @@ type
         numSpells: SpellCount
         lastMove: DeltaXY
         bonusAttack: Option[Damage]
+        shield: Counter
 
 type
     PostSpellKind* = enum
@@ -128,12 +130,13 @@ no_ex:
 
             k -= 1
 
+        state.shield.dec
+
         state.spawnCounter.dec
         if state.spawnCounter <= 0u64:
             state.rng.spawnMonster(state.tiles)
             state.spawnCounter = state.spawnRate
             state.spawnRate.dec
-
 
         var t: Tile = state.tiles.getTile(state.xy)
 
@@ -332,6 +335,20 @@ no_ex:
 
             i -= 1
 
+    proc bravery(state: var State, platform: Platform): PostSpell =
+        state.shield = Counter(2)
+
+        var monsters: seq[Monster] = getMonsters(state)
+        for i in 0..<monsters.len:
+            let monster = monsters[i]
+            if monster.isPlayer:
+                continue
+
+            state.tiles.setMonster(
+                monster.markStunned()
+            )
+
+
 
 # Public spell procs
 
@@ -384,6 +401,8 @@ no_ex:
                     power
                 of BUBBLE:
                     bubble
+                of BRAVERY:
+                    bravery
                 of WOOP:
                     woop
 

@@ -111,6 +111,7 @@ no_ex:
         tiles: var Tiles,
         shake: var Shake,
         playerBonusAttack: var Option[Damage],
+        playerShield: Counter,
         platform: game.Platform,
         monster: Monster,
         dxy: DeltaXY
@@ -142,9 +143,12 @@ no_ex:
 
                         playerBonusAttack = none(Damage);
 
-                    tiles.setMonster(
-                        newTile.monster.get.markStunned.hit(platform, damage)
-                    )
+                    if newTile.monster.get.isPlayer and playerShield > 0:
+                        discard
+                    else:
+                        tiles.setMonster(
+                            newTile.monster.get.markStunned.hit(platform, damage)
+                        )
 
                     return some(moved)
 
@@ -163,10 +167,12 @@ no_ex:
         # Since we know we `monster` should not be the player, the bonus
         # attack amount doesn't need to be the real one.
         var dummyDamage = none(Damage)
+        var dummyShield = Counter(0)
         tryMove(
             tiles,
             shake,
             dummyDamage,
+            dummyShield,
             platform,
             monster,
             dxy

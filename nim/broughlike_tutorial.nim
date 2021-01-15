@@ -124,7 +124,8 @@ no_ex:
                             spells: spells,
                             numSpells: numSpells,
                             lastMove: (x: game.DXm1, y: game.DY0),
-                            bonusAttack: none(Damage)
+                            bonusAttack: none(Damage),
+                            shield: Counter(0)
                         )
                     )
                 of false:
@@ -451,6 +452,7 @@ no_ex:
                 let moved = state.state.tiles.tryMove(
                     state.state.shake,
                     state.state.bonusAttack,
+                    state.state.shield,
                     platform,
                     monster.get,
                     dxy
