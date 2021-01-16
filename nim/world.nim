@@ -22,6 +22,7 @@ type
         POWER
         BUBBLE
         BRAVERY
+        BOLT
 
 no_ex:
     func allSpellNames*(): seq[SpellName] =
@@ -166,6 +167,33 @@ template requirePlayer(spellName, playerName, stateName, platformName, spellBody
             # next time the player tries to move, the error message
             # will be shown
             allEffectsHandled()
+
+no_ex:
+    proc boltTravel(
+        state: var State,
+        platform: Platform,
+        deltas: DeltaXY,
+        effect: game.SpriteIndex,
+        damage: Damage
+    ): PostSpell =
+        var xy = state.xy;
+
+        while true:
+            let testTile = state.tiles.getNeighbor(xy, deltas)
+            if testTile.isPassable:
+                if xy == testTile.xy:
+                    break
+
+                xy = testTile.xy
+                if testTile.monster.isSome:
+                    state.tiles.setMonster(
+                        testTile.monster.get.hit(platform, damage)
+                    )
+
+                state.tiles.setEffect(xy, effect)
+            else:
+                break
+
 
 # The spells themselves
 
@@ -348,6 +376,21 @@ no_ex:
                 monster.markStunned()
             )
 
+    proc bolt(state: var State, platform: Platform): PostSpell =
+        boltTravel(
+            state,
+            platform,
+            state.lastMove,
+            game.SpriteIndex(
+                if state.lastMove.y == game.DeltaY.DY0:
+                    15
+                else:
+                    16
+            ),
+            Damage(8)
+        )
+
+        
 
 
 # Public spell procs
@@ -403,6 +446,8 @@ no_ex:
                     bubble
                 of BRAVERY:
                     bravery
+                of BOLT:
+                    bolt
                 of WOOP:
                     woop
 
