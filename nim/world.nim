@@ -23,6 +23,7 @@ type
         BUBBLE
         BRAVERY
         BOLT
+        CROSS
 
 no_ex:
     func allSpellNames*(): seq[SpellName] =
@@ -175,7 +176,7 @@ no_ex:
         deltas: DeltaXY,
         effect: game.SpriteIndex,
         damage: Damage
-    ): PostSpell =
+    ) =
         var xy = state.xy;
 
         while true:
@@ -390,6 +391,28 @@ no_ex:
             Damage(8)
         )
 
+    proc cross(state: var State, platform: Platform): PostSpell =
+        let directions = [
+            (x: game.DeltaX.DX0, y: game.DeltaY.DYm1),
+            (x: game.DeltaX.DX0, y: game.DeltaY.DY1),
+            (x: game.DeltaX.DXm1, y: game.DeltaY.DY0),
+            (x: game.DeltaX.DX1, y: game.DeltaY.DY0)
+        ];
+
+        for direction in directions:
+            boltTravel(
+                state,
+                platform,
+                direction,
+                game.SpriteIndex(
+                    if direction.y == game.DeltaY.DY0:
+                        15
+                    else:
+                        16
+                ),
+                Damage(4)
+            )
+
         
 
 
@@ -448,6 +471,8 @@ no_ex:
                     bravery
                 of BOLT:
                     bolt
+                of CROSS:
+                    cross
                 of WOOP:
                     woop
 
