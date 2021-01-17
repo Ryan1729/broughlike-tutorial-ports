@@ -24,6 +24,7 @@ type
         BRAVERY
         BOLT
         CROSS
+        EX
 
 no_ex:
     func allSpellNames*(): seq[SpellName] =
@@ -413,6 +414,22 @@ no_ex:
                 Damage(4)
             )
 
+    proc ex(state: var State, platform: Platform): PostSpell =
+        let directions = [
+            (x: game.DeltaX.DXm1, y: game.DeltaY.DYm1),
+            (x: game.DeltaX.DXm1, y: game.DeltaY.DY1),
+            (x: game.DeltaX.DX1, y: game.DeltaY.DYm1),
+            (x: game.DeltaX.DX1, y: game.DeltaY.DY1)
+        ];
+
+        for direction in directions:
+            boltTravel(
+                state,
+                platform,
+                direction,
+                game.SpriteIndex(14),
+                Damage(6)
+            )
         
 
 
@@ -473,6 +490,8 @@ no_ex:
                     bolt
                 of CROSS:
                     cross
+                of EX:
+                    ex
                 of WOOP:
                     woop
 
