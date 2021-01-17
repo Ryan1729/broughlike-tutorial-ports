@@ -140,7 +140,7 @@ no_ex:
             now = times.getTime()
             seed = times.toUnix(now) * 1_000_000_000 + times.nanosecond(now)
             level = game.LevelNum(1)
-            numSpells = world.SpellCount(9)                     #1)
+            numSpells = world.SpellCount(1)
 
         # So we can reproduce weird situtations
         echo seed
