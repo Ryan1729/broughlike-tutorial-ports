@@ -440,7 +440,6 @@ no_ex:
         var index = -1
         var i = int(high(SpellPage))
         while i >= int(low(SpellPage)):
-            echo $int(i)
             if state.spells[int(i)].isNone:
                 index = int(i)
 
