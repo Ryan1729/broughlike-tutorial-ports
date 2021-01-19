@@ -32,6 +32,7 @@ name = "broughlike-tutorial"
 version = "0.1.0"
 dependencies = [
  "macroquad",
+ "state",
 ]
 
 [[package]]
@@ -309,6 +310,10 @@ dependencies = [
  "cc",
  "libc",
 ]
+
+[[package]]
+name = "state"
+version = "0.1.0"
 
 [[package]]
 name = "stb_truetype"

@@ -1,0 +1,1 @@
+cargo clippy --color=always --release && cargo run --color=always --release

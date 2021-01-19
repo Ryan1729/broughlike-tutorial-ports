@@ -8,3 +8,4 @@ edition = "2018"
 
 [dependencies]
 macroquad = "0.2.9"
+state = { path = "libs/state" }
