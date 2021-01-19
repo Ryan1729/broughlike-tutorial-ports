@@ -3,11 +3,11 @@ async fn main() {
     loop {
         macroquad::clear_background(macroquad::BLACK);
 
-        macroquad::draw_text(
-            "Hello world!",
-            20.0,
-            20.0,
-            40.0,
+        macroquad::draw_rectangle(
+            20.,
+            20.,
+            20.,
+            20.,
             macroquad::WHITE
         );
 
