@@ -1,6 +1,11 @@
 #![no_std]
 #![deny(clippy::float_arithmetic)]
 
+pub type TileCount = u8;
+
+pub const NUM_TILES: TileCount = 9;
+pub const UI_WIDTH: TileCount = 4;
+
 pub type TileX = u8;
 pub type TileY = u8;
 
