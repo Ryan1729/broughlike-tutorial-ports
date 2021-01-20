@@ -52,7 +52,7 @@ async fn main() {
                 take_input!($input, $input)
             };
             ($input: ident, $key_code: ident) => {
-                if macroquad::is_key_down(macroquad::KeyCode::$key_code) {
+                if macroquad::is_key_pressed(macroquad::KeyCode::$key_code) {
                     input = Input::$input;
                 }
             }
