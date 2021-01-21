@@ -2,8 +2,19 @@ use state::{State, Input};
 
 const INDIGO: macroquad::Color = macroquad::Color([0x4b, 0, 0x82, 0xff]);
 
+const SPRITESHEET_BYTES: &[u8] = include_bytes!("../assets/spritesheet.png");
+
 #[macroquad::main("AWESOME BROUGHLIKE")]
 async fn main() {
+    let spritesheet = {
+        let mut ctx = miniquad::graphics::Context::new();
+        macroquad::Texture2D::from_file_with_format(
+            &mut ctx,
+            SPRITESHEET_BYTES,
+            None,
+        )
+    };
+
     let state: &mut State = &mut State::default();
 
     type Size = f32;
@@ -79,12 +90,21 @@ async fn main() {
             macroquad::WHITE
         );
 
-        macroquad::draw_rectangle(
+        macroquad::draw_texture_ex(
+            spritesheet,
             sizes.play_area_x + sizes.tile * (state.xy.x as Size),
             sizes.play_area_y + sizes.tile * (state.xy.y as Size),
-            sizes.tile,
-            sizes.tile,
-            macroquad::WHITE
+            macroquad::WHITE,
+            macroquad::DrawTextureParams {
+                dest_size: Some(macroquad::Vec2::new(sizes.tile, sizes.tile)),
+                source: Some(macroquad::Rect {
+                    x: 0.,
+                    y: 0.,
+                    w: 16.,
+                    h: 16.,
+                }),
+                rotation: 0.,
+            }
         );
 
         macroquad::next_frame().await
