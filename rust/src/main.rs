@@ -7,12 +7,16 @@ const SPRITESHEET_BYTES: &[u8] = include_bytes!("../assets/spritesheet.png");
 #[macroquad::main("AWESOME BROUGHLIKE")]
 async fn main() {
     let spritesheet = {
-        let mut ctx = miniquad::graphics::Context::new();
-        macroquad::Texture2D::from_file_with_format(
-            &mut ctx,
+        let ctx = &mut miniquad::graphics::Context::new();
+        let texture = macroquad::Texture2D::from_file_with_format(
+            ctx,
             SPRITESHEET_BYTES,
             None,
-        )
+        );
+
+        texture.set_filter(ctx, macroquad::FilterMode::Nearest);
+
+        texture
     };
 
     let state: &mut State = &mut State::default();
