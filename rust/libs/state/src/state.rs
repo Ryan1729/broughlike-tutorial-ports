@@ -29,15 +29,83 @@ pub const UI_WIDTH: TileCount = 4;
 pub type TileX = u8;
 pub type TileY = u8;
 
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct TileXY {
     pub x: TileX,
     pub y: TileY,
 }
 
-#[derive(Default)]
+pub type SpriteIndex = u8;
+
+#[derive(Clone, Copy)]
+pub enum TileKind {
+    Floor,
+    Wall
+}
+
+impl Default for TileKind {
+    fn default() -> Self {
+        Self::Floor
+    }
+}
+
+#[derive(Clone, Copy, Default)]
+pub struct Tile {
+    pub xy: TileXY,
+    pub sprite: SpriteIndex,
+    pub kind: TileKind,
+}
+
+type Tiles = [Tile; NUM_TILES as usize * NUM_TILES as usize];
+
 pub struct State {
-    pub xy: TileXY
+    pub xy: TileXY,
+    rng: Xs,
+    pub tiles: Tiles,
+}
+
+pub type Seed = [u8; 16];
+
+impl State {
+    pub fn from_seed(mut seed: Seed) -> Self {
+        // 0 doesn't work as a seed, so use this one instead.
+        if seed == [0; 16] {
+            seed = 0xBAD_5EED_u128.to_le_bytes();
+        }
+
+        macro_rules! wrap {
+            ($i0: literal, $i1: literal, $i2: literal, $i3: literal) => {
+                core::num::Wrapping(
+                    u32::from_le_bytes([
+                        seed[$i0],
+                        seed[$i1],
+                        seed[$i2],
+                        seed[$i3],
+                    ])
+                )
+            }
+        }
+
+        let mut rng: Xs = [
+            wrap!( 0,  1,  2,  3),
+            wrap!( 4,  5,  6,  7),
+            wrap!( 8,  9, 10, 11),
+            wrap!(12, 13, 14, 15),
+        ];
+
+        let tiles = generate_tiles(&mut rng);
+
+        Self {
+            xy: TileXY::default(),
+            rng,
+            tiles,
+        }
+    }
+}
+
+fn generate_tiles(rng: &mut Xs) -> Tiles {
+    // TODO generate tiles
+    [Tile::default(); NUM_TILES as usize * NUM_TILES as usize]
 }
 
 #[derive(Copy, Clone)]

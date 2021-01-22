@@ -19,7 +19,23 @@ async fn main() {
         texture
     };
 
-    let state: &mut State = &mut State::default();
+    let seed: u128 = {
+        use std::time::SystemTime;
+
+        let duration = match 
+            SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+        {
+            Ok(d) => d,
+            Err(err) => err.duration(),
+        };
+
+        duration.as_nanos()
+    };
+
+    println!("{}", seed);
+
+    let state: &mut State = &mut State::from_seed(seed.to_le_bytes());
 
     type Size = f32;
 
