@@ -147,7 +147,7 @@ fn generate_tiles(rng: &mut Xs) -> Tiles {
             let xy = TileXY{ x, y };
             let i = xy_to_i(xy);
 
-            if xs_u32(rng, 0, 10) < 3 {
+            if !in_bounds(xy) || xs_u32(rng, 0, 10) < 3 {
                 tiles[i] = make_wall(xy);
             }else{
                 tiles[i] = make_floor(xy);
