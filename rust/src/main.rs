@@ -110,22 +110,33 @@ async fn main() {
             macroquad::WHITE
         );
 
-        macroquad::draw_texture_ex(
-            spritesheet,
-            sizes.play_area_x + sizes.tile * (state.xy.x as Size),
-            sizes.play_area_y + sizes.tile * (state.xy.y as Size),
-            macroquad::WHITE,
-            macroquad::DrawTextureParams {
-                dest_size: Some(macroquad::Vec2::new(sizes.tile, sizes.tile)),
-                source: Some(macroquad::Rect {
-                    x: 0.,
-                    y: 0.,
-                    w: 16.,
-                    h: 16.,
-                }),
-                rotation: 0.,
-            }
-        );
+        let draw_sprite = |sprite: state::SpriteIndex, xy: state::TileXY| {
+            macroquad::draw_texture_ex(
+                spritesheet,
+                sizes.play_area_x + sizes.tile * (xy.x as Size),
+                sizes.play_area_y + sizes.tile * (xy.y as Size),
+                macroquad::WHITE,
+                macroquad::DrawTextureParams {
+                    dest_size: Some(macroquad::Vec2::new(sizes.tile, sizes.tile)),
+                    source: Some(macroquad::Rect {
+                        x: 16. * sprite as f32,
+                        y: 0.,
+                        w: 16.,
+                        h: 16.,
+                    }),
+                    rotation: 0.,
+                }
+            );
+        };
+
+        for t in state.tiles.iter() {
+            draw_sprite(match t.kind {
+                state::TileKind::Floor => 2,
+                state::TileKind::Wall => 3,
+            }, t.xy);
+        }
+
+        draw_sprite(0, state.xy);
 
         macroquad::next_frame().await
     }

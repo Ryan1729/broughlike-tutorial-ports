@@ -39,24 +39,60 @@ pub type SpriteIndex = u8;
 
 #[derive(Clone, Copy)]
 pub enum TileKind {
+    Wall,
     Floor,
-    Wall
 }
 
 impl Default for TileKind {
     fn default() -> Self {
-        Self::Floor
+        Self::Wall
     }
 }
 
 #[derive(Clone, Copy, Default)]
 pub struct Tile {
     pub xy: TileXY,
-    pub sprite: SpriteIndex,
     pub kind: TileKind,
 }
 
-type Tiles = [Tile; NUM_TILES as usize * NUM_TILES as usize];
+pub struct Tiles([Tile; NUM_TILES as usize * NUM_TILES as usize]);
+
+fn make_wall(xy: TileXY) -> Tile {
+    Tile {
+        xy,
+        kind: TileKind::Wall,
+    }
+}
+
+fn make_floor(xy: TileXY) -> Tile {
+    Tile {
+        xy,
+        kind: TileKind::Floor,
+    }
+}
+
+impl Tiles {
+    pub fn iter(&self) -> impl Iterator<Item = &Tile> {
+        self.0.iter()
+    }
+
+    pub fn get_tile(&self, xy: TileXY) -> Tile {
+        if in_bounds(xy) {
+            self.0[xy_to_i(xy)]
+        } else {
+            make_wall(xy)
+        }
+    }
+}
+
+fn in_bounds(TileXY{x, y}: TileXY) -> bool {
+    x > 0 && y > 0 && x < NUM_TILES-1 && y < NUM_TILES-1
+}
+
+fn xy_to_i(TileXY{x, y}: TileXY) -> usize {
+    (y * NUM_TILES + x) as _
+}
+
 
 pub struct State {
     pub xy: TileXY,
@@ -104,8 +140,22 @@ impl State {
 }
 
 fn generate_tiles(rng: &mut Xs) -> Tiles {
-    // TODO generate tiles
-    [Tile::default(); NUM_TILES as usize * NUM_TILES as usize]
+    let mut tiles = [Tile::default(); NUM_TILES as usize * NUM_TILES as usize];
+
+    for y in 0..NUM_TILES {
+        for x in 0..NUM_TILES {
+            let xy = TileXY{ x, y };
+            let i = xy_to_i(xy);
+
+            if xs_u32(rng, 0, 10) < 3 {
+                tiles[i] = make_wall(xy);
+            }else{
+                tiles[i] = make_floor(xy);
+            }
+        }
+    }
+
+    Tiles(tiles)
 }
 
 #[derive(Copy, Clone)]
