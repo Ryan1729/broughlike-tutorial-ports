@@ -35,7 +35,8 @@ async fn main() {
 
     println!("{}", seed);
 
-    let state: &mut State = &mut State::from_seed(seed.to_le_bytes());
+    let state: &mut State = &mut State::from_seed(seed.to_le_bytes())
+        .expect("state to be generated");
 
     type Size = f32;
 

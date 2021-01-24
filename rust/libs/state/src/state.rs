@@ -1,6 +1,13 @@
 #![no_std]
 #![deny(clippy::float_arithmetic)]
 
+#[derive(Debug)]
+pub enum Error {
+    TimeoutWhileTryingTo(&'static str)
+}
+
+pub type Res<A> = Result<A, Error>;
+
 type Xs = [core::num::Wrapping<u32>; 4];
 
 fn xorshift(xs: &mut Xs) -> u32 {
@@ -49,10 +56,20 @@ impl Default for TileKind {
     }
 }
 
+// TODO
+type Monster = ();
+
 #[derive(Clone, Copy, Default)]
 pub struct Tile {
     pub xy: TileXY,
     pub kind: TileKind,
+    pub monster: Option<Monster>
+}
+
+impl Tile {
+    fn is_passable(&self) -> bool {
+        matches!(self.kind, TileKind::Floor)
+    }
 }
 
 pub struct Tiles([Tile; NUM_TILES as usize * NUM_TILES as usize]);
@@ -61,6 +78,7 @@ fn make_wall(xy: TileXY) -> Tile {
     Tile {
         xy,
         kind: TileKind::Wall,
+        ..<_>::default()
     }
 }
 
@@ -68,6 +86,7 @@ fn make_floor(xy: TileXY) -> Tile {
     Tile {
         xy,
         kind: TileKind::Floor,
+        ..<_>::default()
     }
 }
 
@@ -103,7 +122,7 @@ pub struct State {
 pub type Seed = [u8; 16];
 
 impl State {
-    pub fn from_seed(mut seed: Seed) -> Self {
+    pub fn from_seed(mut seed: Seed) -> Res<Self> {
         // 0 doesn't work as a seed, so use this one instead.
         if seed == [0; 16] {
             seed = 0xBAD_5EED_u128.to_le_bytes();
@@ -131,12 +150,44 @@ impl State {
 
         let tiles = generate_tiles(&mut rng);
 
-        Self {
-            xy: TileXY::default(),
-            rng,
-            tiles,
+        random_passable_tile(&mut rng, &tiles).map(|t| {
+            Self {
+                xy: t.xy,
+                rng,
+                tiles,
+            }   
+        })
+    }
+}
+
+fn random_passable_tile(rng: &mut Xs, tiles: &Tiles) -> Res<Tile> {
+    try_to(
+        "get random passable tile",
+        || {
+            use core::convert::TryInto;
+            let x = xs_u32(rng, 0, (NUM_TILES-1).into()).try_into().map_err(|_| ())?;
+            let y = xs_u32(rng, 0, (NUM_TILES-1).into()).try_into().map_err(|_| ())?;
+            let tile = Tiles::get_tile(tiles, TileXY{x, y});
+            if tile.is_passable() && tile.monster.is_none(){
+                Ok(tile)
+            } else {
+                Err(())
+            }
+        }
+    )
+}
+
+fn try_to<Out, F>(description: &'static str, mut callback: F) -> Res<Out>
+where 
+    F: FnMut() -> Result<Out, ()> {
+
+    for _ in 0..1000 {
+        if let Ok(out) = callback() {
+            return Ok(out);
         }
     }
+
+    Err(Error::TimeoutWhileTryingTo(description))
 }
 
 fn generate_tiles(rng: &mut Xs) -> Tiles {
