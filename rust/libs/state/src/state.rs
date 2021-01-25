@@ -30,21 +30,49 @@ fn xs_u32(xs: &mut Xs, min: u32, max: u32) -> u32 {
 
 pub type TileCount = u8;
 
+/// The number of tiles across and tall that the grid is.
 pub const NUM_TILES: TileCount = 9;
+
 pub const UI_WIDTH: TileCount = 4;
 
 pub type TileX = u8;
 pub type TileY = u8;
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub struct TileXY {
     pub x: TileX,
     pub y: TileY,
 }
 
+// Should only be in the range [-1, 0, 1]
+pub type DeltaX = i8;
+// Should only be in the range [-1, 0, 1]
+pub type DeltaY = i8;
+
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
+pub struct DeltaXY {
+    pub x: DeltaX,
+    pub y: DeltaY,
+}
+
+macro_rules! dxy {
+    ($x: literal, $y: literal) => {
+        DeltaXY {
+            x: $x,
+            y: $y,
+        }
+    };
+    ($x: ident, $y: ident) => {
+        DeltaXY {
+            x: $x,
+            y: $y,
+        }
+    };
+}
+
 pub type SpriteIndex = u8;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum TileKind {
     Wall,
     Floor,
@@ -59,7 +87,7 @@ impl Default for TileKind {
 // TODO
 type Monster = ();
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub struct Tile {
     pub xy: TileXY,
     pub kind: TileKind,
@@ -72,7 +100,9 @@ impl Tile {
     }
 }
 
-pub struct Tiles([Tile; NUM_TILES as usize * NUM_TILES as usize]);
+const TOTAL_TILE_COUNT: TileCount = NUM_TILES * NUM_TILES;
+
+pub struct Tiles([Tile; TOTAL_TILE_COUNT as _]);
 
 fn make_wall(xy: TileXY) -> Tile {
     Tile {
@@ -112,7 +142,6 @@ fn xy_to_i(TileXY{x, y}: TileXY) -> usize {
     (y * NUM_TILES + x) as _
 }
 
-
 pub struct State {
     pub xy: TileXY,
     rng: Xs,
@@ -148,7 +177,7 @@ impl State {
             wrap!(12, 13, 14, 15),
         ];
 
-        let tiles = generate_tiles(&mut rng);
+        let tiles = generate_level(&mut rng)?;
 
         random_passable_tile(&mut rng, &tiles).map(|t| {
             Self {
@@ -158,6 +187,148 @@ impl State {
             }   
         })
     }
+}
+
+fn generate_level(rng: &mut Xs) -> Res<Tiles> {
+    try_to(
+        "generate map",
+        || {
+            let (tiles, passable_count) = generate_tiles(rng);
+
+            let reachable_count = random_passable_tile(rng, &tiles)
+                .map(|t| {
+                    get_connected_tiles(rng, &tiles, t).length
+                }).map_err(|_| ())?;
+
+            if reachable_count == passable_count{
+                Ok(tiles)
+            } else {
+                Err(())
+            }
+        }
+    )    
+}
+
+fn generate_tiles(rng: &mut Xs) -> (Tiles, TileCount) {
+    let mut tiles = [Tile::default(); TOTAL_TILE_COUNT as _];
+
+    let mut passable_tiles = 0;
+
+    for y in 0..NUM_TILES {
+        for x in 0..NUM_TILES {
+            let xy = TileXY{ x, y };
+            let i = xy_to_i(xy);
+
+            if !in_bounds(xy) || xs_u32(rng, 0, 10) < 3 {
+                tiles[i] = make_wall(xy);
+            }else{
+                tiles[i] = make_floor(xy);
+
+                passable_tiles += 1;
+            }
+        }
+    }
+
+    (Tiles(tiles), passable_tiles)
+}
+
+#[derive(Clone)]
+struct TileStack {
+    pool: [Tile; TOTAL_TILE_COUNT as _],
+    length: TileCount,
+}
+
+impl TileStack {
+    fn push_saturating(&mut self, tile: Tile) {
+        if self.length as usize >= self.pool.len() {
+            debug_assert!(
+                !(self.length as usize >= self.pool.len()),
+                "TileStack overflow!"
+            );
+            return;
+        }
+
+        self.pool[self.length as usize] = tile;
+        self.length += 1;
+    }
+
+    fn iter(&self) -> impl Iterator<Item = &Tile> {
+        self.pool.iter().take(self.length as _)
+    }
+}
+
+fn get_connected_tiles(rng: &mut Xs, tiles: &Tiles, tile: Tile) -> TileStack {
+    let mut connected = TileStack{
+        pool: [Tile::default(); TOTAL_TILE_COUNT as _],
+        length: 0,
+    };
+
+    connected.push_saturating(tile);
+
+    let mut frontier = connected.clone();
+
+    while frontier.length > 0 {
+        // We currently know frontier.length > 0
+        let popped: Tile = frontier.pool[frontier.length as usize - 1];
+        frontier.length -= 1;
+
+        let neighbors = get_adjacent_neighbors(rng, tiles, popped.xy);
+
+        let mut filtered = neighbors.iter()
+                            .filter(|t| t.is_passable())
+                            .filter(|n|
+                                !connected.iter().any(|c| c == *n)
+                            );
+        let filtered = [filtered.next(), filtered.next(), filtered.next(), filtered.next()];
+
+        for tile in filtered.iter() {
+            if let Some(&t) = tile {
+                connected.push_saturating(t);
+                frontier.push_saturating(t);
+            }        
+        }
+    }
+
+    connected
+}
+
+fn get_adjacent_neighbors(
+    rng: &mut Xs,
+    tiles: &Tiles,
+    xy: TileXY
+) -> [Tile; 4] {
+    let mut neighbors = [
+        get_neighbor(tiles, xy, dxy!(0, -1)),
+        get_neighbor(tiles, xy, dxy!(0, 1)),
+        get_neighbor(tiles, xy, dxy!(-1, 0)),
+        get_neighbor(tiles, xy, dxy!(1, 0))
+    ];
+
+    shuffle(rng, &mut neighbors);
+
+    neighbors
+}
+
+fn shuffle<A>(rng: &mut Xs, slice: &mut [A]) {
+    for i in 1..slice.len() as u32 {
+        // This only shuffles the first u32::MAX_VALUE elements.
+        let r = xs_u32(rng, 0, i) as usize;
+        let i = i as usize;
+        slice.swap(i, r);
+    }
+}
+
+fn get_neighbor(
+    tiles: &Tiles,
+    TileXY{x, y}: TileXY,
+    dxy!{dx, dy}: DeltaXY,
+) -> Tile {
+    tiles.get_tile(
+        TileXY {
+            x: (x as DeltaX + dx) as TileX,
+            y: (y as DeltaY + dy) as TileY,
+        }
+    )
 }
 
 fn random_passable_tile(rng: &mut Xs, tiles: &Tiles) -> Res<Tile> {
@@ -188,25 +359,6 @@ where
     }
 
     Err(Error::TimeoutWhileTryingTo(description))
-}
-
-fn generate_tiles(rng: &mut Xs) -> Tiles {
-    let mut tiles = [Tile::default(); NUM_TILES as usize * NUM_TILES as usize];
-
-    for y in 0..NUM_TILES {
-        for x in 0..NUM_TILES {
-            let xy = TileXY{ x, y };
-            let i = xy_to_i(xy);
-
-            if !in_bounds(xy) || xs_u32(rng, 0, 10) < 3 {
-                tiles[i] = make_wall(xy);
-            }else{
-                tiles[i] = make_floor(xy);
-            }
-        }
-    }
-
-    Tiles(tiles)
 }
 
 #[derive(Copy, Clone)]
