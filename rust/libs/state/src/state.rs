@@ -3,7 +3,9 @@
 
 #[derive(Debug)]
 pub enum Error {
-    TimeoutWhileTryingTo(&'static str)
+    TimeoutWhileTryingTo(&'static str),
+    ExpectedNonPlayerToBePlayer(TileXY, MonsterKind),
+    CouldNotFindPlayer(TileXY)
 }
 
 pub type Res<A> = Result<A, Error>;
@@ -38,7 +40,7 @@ pub const UI_WIDTH: TileCount = 4;
 pub type TileX = u8;
 pub type TileY = u8;
 
-#[derive(Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct TileXY {
     pub x: TileX,
     pub y: TileY,
@@ -49,7 +51,7 @@ pub type DeltaX = i8;
 // Should only be in the range [-1, 0, 1]
 pub type DeltaY = i8;
 
-#[derive(Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct DeltaXY {
     pub x: DeltaX,
     pub y: DeltaY,
@@ -72,7 +74,7 @@ macro_rules! dxy {
 
 pub type SpriteIndex = u8;
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TileKind {
     Wall,
     Floor,
@@ -84,10 +86,73 @@ impl Default for TileKind {
     }
 }
 
-// TODO
-type Monster = ();
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MonsterKind {
+    Player,
+}
 
-#[derive(Clone, Copy, Default, PartialEq, Eq)]
+impl Default for MonsterKind {
+    fn default() -> Self {
+        Self::Player
+    }
+}
+
+pub type HP = u8;
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Monster {
+    pub xy: TileXY,
+    pub kind: MonsterKind,
+    pub hp: HP
+}
+
+fn remove_monster(tiles: &mut Tiles, xy: TileXY) {
+    tiles.0[xy_to_i(xy)].monster = None;
+}
+
+fn set_monster(tiles: &mut Tiles, monster: Monster) {
+    tiles.0[xy_to_i(monster.xy)].monster = Some(monster);
+}
+
+fn move_player(state: &mut State, dxy: DeltaXY) -> Res<()> {
+    let tile = state.tiles.get_tile(state.xy);
+    if let Some(monster) = tile.monster {
+        if monster.kind == MonsterKind::Player {
+            let moved = try_move(state, monster, dxy);
+
+            state.xy = moved.xy;
+
+            Ok(())
+        } else {
+            Err(Error::ExpectedNonPlayerToBePlayer(state.xy, monster.kind))
+        }
+    } else {
+        Err(Error::CouldNotFindPlayer(state.xy))
+    }
+}
+
+fn try_move(state: &mut State, monster: Monster, dxy: DeltaXY) -> Monster {
+    let new_tile = get_neighbor(&state.tiles, monster.xy, dxy);
+
+    if new_tile.is_passable() && new_tile.monster.is_none() {
+        r#move(&mut state.tiles, monster, new_tile.xy)
+    } else {
+        monster
+    }
+}
+
+fn r#move(tiles: &mut Tiles, monster: Monster, xy: TileXY) -> Monster {
+    remove_monster(tiles, monster.xy);
+
+    let mut moved = monster;
+    moved.xy = xy;
+
+    set_monster(tiles, moved);
+
+    moved
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Tile {
     pub xy: TileXY,
     pub kind: TileKind,
@@ -102,6 +167,7 @@ impl Tile {
 
 const TOTAL_TILE_COUNT: TileCount = NUM_TILES * NUM_TILES;
 
+#[derive(Debug)]
 pub struct Tiles([Tile; TOTAL_TILE_COUNT as _]);
 
 fn make_wall(xy: TileXY) -> Tile {
@@ -142,6 +208,7 @@ fn xy_to_i(TileXY{x, y}: TileXY) -> usize {
     (y * NUM_TILES + x) as _
 }
 
+#[derive(Debug)]
 pub struct State {
     pub xy: TileXY,
     rng: Xs,
@@ -177,9 +244,16 @@ impl State {
             wrap!(12, 13, 14, 15),
         ];
 
-        let tiles = generate_level(&mut rng)?;
+        let mut tiles = generate_level(&mut rng)?;
 
         random_passable_tile(&mut rng, &tiles).map(|t| {
+            let player = Monster{
+                xy: t.xy,
+                ..Monster::default()
+            };
+
+            set_monster(&mut tiles, player);
+
             Self {
                 xy: t.xy,
                 rng,
@@ -258,7 +332,7 @@ impl TileStack {
 }
 
 fn get_connected_tiles(rng: &mut Xs, tiles: &Tiles, tile: Tile) -> TileStack {
-    let mut connected = TileStack{
+    let mut connected = TileStack {
         pool: [Tile::default(); TOTAL_TILE_COUNT as _],
         length: 0,
     };
@@ -370,22 +444,24 @@ pub enum Input {
     Right,
 }
 
-pub fn update(state: &mut State, input: Input) {
+pub fn update(state: &mut State, input: Input) -> Res<()> {
     use Input::*;
 
     match input {
-        Empty => {},
+        Empty => {
+            Ok(())
+        },
         Up => {
-            state.xy.y = state.xy.y.saturating_sub(1);
+            move_player(state, dxy!(0, -1))
         },
         Down => {
-            state.xy.y = state.xy.y.saturating_add(1);
+            move_player(state, dxy!(0, 1))
         },
         Left => {
-            state.xy.x = state.xy.x.saturating_sub(1);
+            move_player(state, dxy!(-1, 0))
         },
         Right => {
-            state.xy.x = state.xy.x.saturating_add(1);
+            move_player(state, dxy!(1, 0))
         },
     }
 }

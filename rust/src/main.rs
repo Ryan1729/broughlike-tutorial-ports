@@ -1,3 +1,4 @@
+#[deny(unused)]
 use state::{State, Input};
 
 const INDIGO: macroquad::Color = macroquad::Color([0x4b, 0, 0x82, 0xff]);
@@ -98,7 +99,10 @@ async fn main() {
         take_input!(Up);
         take_input!(Up, W);
 
-        state::update(state, input);
+        if let Err(err) = state::update(state, input) {
+            println!("{:?}", err);
+            panic!("post state::update {:#?}", state);
+        }
 
         // the -1 and +2 business makes the border lie just outside the actual
         // play area
