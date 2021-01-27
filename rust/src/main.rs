@@ -139,9 +139,18 @@ async fn main() {
                 state::TileKind::Floor => 2,
                 state::TileKind::Wall => 3,
             }, t.xy);
-        }
 
-        draw_sprite(0, state.xy);
+            if let Some(monster) = t.monster {
+                draw_sprite(match monster.kind {
+                    state::MonsterKind::Player => 0,
+                    state::MonsterKind::Bird => 4,
+                    state::MonsterKind::Snake => 5,
+                    state::MonsterKind::Tank => 6,
+                    state::MonsterKind::Eater => 7,
+                    state::MonsterKind::Jester => 8,
+                }, t.xy);    
+            }
+        }
 
         macroquad::next_frame().await
     }

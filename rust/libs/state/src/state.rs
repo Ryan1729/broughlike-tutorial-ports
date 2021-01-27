@@ -2,13 +2,97 @@
 #![deny(clippy::float_arithmetic)]
 
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Error {
     TimeoutWhileTryingTo(&'static str),
     ExpectedNonPlayerToBePlayer(TileXY, MonsterKind),
-    CouldNotFindPlayer(TileXY)
+    CouldNotFindPlayer(TileXY),
+    OneIsZero
 }
 
 pub type Res<A> = Result<A, Error>;
+
+pub type Level = core::num::NonZeroU8;
+
+#[derive(Debug)]
+pub struct State {
+    pub xy: TileXY,
+    rng: Xs,
+    pub tiles: Tiles,
+    pub level: Level,
+}
+
+pub type Seed = [u8; 16];
+
+impl State {
+    pub fn from_seed(mut seed: Seed) -> Res<Self> {
+        // 0 doesn't work as a seed, so use this one instead.
+        if seed == [0; 16] {
+            seed = 0xBAD_5EED_u128.to_le_bytes();
+        }
+
+        macro_rules! wrap {
+            ($i0: literal, $i1: literal, $i2: literal, $i3: literal) => {
+                core::num::Wrapping(
+                    u32::from_le_bytes([
+                        seed[$i0],
+                        seed[$i1],
+                        seed[$i2],
+                        seed[$i3],
+                    ])
+                )
+            }
+        }
+
+        let mut rng: Xs = [
+            wrap!( 0,  1,  2,  3),
+            wrap!( 4,  5,  6,  7),
+            wrap!( 8,  9, 10, 11),
+            wrap!(12, 13, 14, 15),
+        ];
+
+        // I guess this is better than using unsafe?
+        let level = Level::new(1).ok_or(Error::OneIsZero)?;
+
+        let mut tiles = generate_level(&mut rng, level)?;
+
+        random_passable_tile(&mut rng, &tiles).map(|t| {
+            let player = Monster{
+                xy: t.xy,
+                ..Monster::default()
+            };
+
+            set_monster(&mut tiles, player);
+
+            Self {
+                xy: t.xy,
+                rng,
+                tiles,
+                level,
+            }   
+        })
+    }
+
+    // When iterating monsters, We collect the monsters into a list
+    // so that we don't hit the same monster twice in the iteration,
+    // in case it moves
+    pub fn get_monsters(&self) -> TileStack<Monster> {
+        let mut monsters = TileStack::<Monster>::default();
+
+        for y in 0..NUM_TILES {
+            for x in 0..NUM_TILES {
+                let xy = TileXY{ x, y };
+                let t: Tile = self.tiles.get_tile(xy);
+    
+                if let Some(m) = t.monster {
+                    monsters.push_saturating(m);
+                }
+            }
+        }
+    
+        monsters
+    }
+}
 
 type Xs = [core::num::Wrapping<u32>; 4];
 
@@ -27,7 +111,7 @@ fn xorshift(xs: &mut Xs) -> u32 {
 }
 
 fn xs_u32(xs: &mut Xs, min: u32, max: u32) -> u32 {
-    (xorshift(xs) % (max - min)) + min
+    (xorshift(xs) % (max - min + 1)) + min
 }
 
 pub type TileCount = u8;
@@ -89,6 +173,11 @@ impl Default for TileKind {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MonsterKind {
     Player,
+    Bird,
+    Snake,
+    Tank,
+    Eater,
+    Jester,
 }
 
 impl Default for MonsterKind {
@@ -104,6 +193,46 @@ pub struct Monster {
     pub xy: TileXY,
     pub kind: MonsterKind,
     pub hp: HP
+}
+
+fn make_bird(xy: TileXY) -> Monster {
+    Monster {
+        xy,
+        kind: MonsterKind::Bird,
+        hp: 3
+    }
+}
+
+fn make_snake(xy: TileXY) -> Monster {
+    Monster {
+        xy,
+        kind: MonsterKind::Snake,
+        hp: 1
+    }
+}
+
+fn make_tank(xy: TileXY) -> Monster {
+    Monster {
+        xy,
+        kind: MonsterKind::Tank,
+        hp: 2
+    }
+}
+
+fn make_eater(xy: TileXY) -> Monster {
+    Monster {
+        xy,
+        kind: MonsterKind::Eater,
+        hp: 1
+    }
+}
+
+fn make_jester(xy: TileXY) -> Monster {
+    Monster {
+        xy,
+        kind: MonsterKind::Jester,
+        hp: 2
+    }
 }
 
 fn remove_monster(tiles: &mut Tiles, xy: TileXY) {
@@ -208,63 +337,8 @@ fn xy_to_i(TileXY{x, y}: TileXY) -> usize {
     (y * NUM_TILES + x) as _
 }
 
-#[derive(Debug)]
-pub struct State {
-    pub xy: TileXY,
-    rng: Xs,
-    pub tiles: Tiles,
-}
-
-pub type Seed = [u8; 16];
-
-impl State {
-    pub fn from_seed(mut seed: Seed) -> Res<Self> {
-        // 0 doesn't work as a seed, so use this one instead.
-        if seed == [0; 16] {
-            seed = 0xBAD_5EED_u128.to_le_bytes();
-        }
-
-        macro_rules! wrap {
-            ($i0: literal, $i1: literal, $i2: literal, $i3: literal) => {
-                core::num::Wrapping(
-                    u32::from_le_bytes([
-                        seed[$i0],
-                        seed[$i1],
-                        seed[$i2],
-                        seed[$i3],
-                    ])
-                )
-            }
-        }
-
-        let mut rng: Xs = [
-            wrap!( 0,  1,  2,  3),
-            wrap!( 4,  5,  6,  7),
-            wrap!( 8,  9, 10, 11),
-            wrap!(12, 13, 14, 15),
-        ];
-
-        let mut tiles = generate_level(&mut rng)?;
-
-        random_passable_tile(&mut rng, &tiles).map(|t| {
-            let player = Monster{
-                xy: t.xy,
-                ..Monster::default()
-            };
-
-            set_monster(&mut tiles, player);
-
-            Self {
-                xy: t.xy,
-                rng,
-                tiles,
-            }   
-        })
-    }
-}
-
-fn generate_level(rng: &mut Xs) -> Res<Tiles> {
-    try_to(
+fn generate_level(rng: &mut Xs, level: Level) -> Res<Tiles> {
+    let mut tiles = try_to(
         "generate map",
         || {
             let (tiles, passable_count) = generate_tiles(rng);
@@ -280,7 +354,11 @@ fn generate_level(rng: &mut Xs) -> Res<Tiles> {
                 Err(())
             }
         }
-    )    
+    )?;
+
+    generate_monsters(rng, &mut tiles, level);
+
+    Ok(tiles)
 }
 
 fn generate_tiles(rng: &mut Xs) -> (Tiles, TileCount) {
@@ -306,14 +384,41 @@ fn generate_tiles(rng: &mut Xs) -> (Tiles, TileCount) {
     (Tiles(tiles), passable_tiles)
 }
 
+fn generate_monsters(rng: &mut Xs, tiles: &mut Tiles, level: Level) {
+    for _ in 0..level.get() + 1 {
+        spawn_monster(rng, tiles);
+    }
+}
+
+fn spawn_monster(rng: &mut Xs, tiles: &mut Tiles) {
+    // The player won't mind if a monster doesn't spawn.
+    if let Ok(tile) = random_passable_tile(rng, tiles) {
+        let mut makers = [make_bird, make_snake, make_tank, make_eater, make_jester];
+        shuffle(rng, &mut makers);
+
+        let monster = makers[0](tile.xy);
+    
+        set_monster(tiles, monster);
+    }
+}
+
 #[derive(Clone)]
-struct TileStack {
-    pool: [Tile; TOTAL_TILE_COUNT as _],
+pub struct TileStack<A = Tile> {
+    pool: [A; TOTAL_TILE_COUNT as _],
     length: TileCount,
 }
 
-impl TileStack {
-    fn push_saturating(&mut self, tile: Tile) {
+impl <A: Default + Copy> Default for TileStack<A> {
+    fn default() -> Self {
+        Self {
+            pool: [A::default(); TOTAL_TILE_COUNT as _],
+            length: 0,
+        }
+    }
+}
+
+impl <A> TileStack<A> {
+    fn push_saturating(&mut self, a: A) {
         if self.length as usize >= self.pool.len() {
             debug_assert!(
                 !(self.length as usize >= self.pool.len()),
@@ -322,20 +427,17 @@ impl TileStack {
             return;
         }
 
-        self.pool[self.length as usize] = tile;
+        self.pool[self.length as usize] = a;
         self.length += 1;
     }
 
-    fn iter(&self) -> impl Iterator<Item = &Tile> {
+    pub fn iter(&self) -> impl Iterator<Item = &A> {
         self.pool.iter().take(self.length as _)
     }
 }
 
 fn get_connected_tiles(rng: &mut Xs, tiles: &Tiles, tile: Tile) -> TileStack {
-    let mut connected = TileStack {
-        pool: [Tile::default(); TOTAL_TILE_COUNT as _],
-        length: 0,
-    };
+    let mut connected = TileStack::default();
 
     connected.push_saturating(tile);
 
