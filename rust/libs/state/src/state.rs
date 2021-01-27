@@ -110,8 +110,8 @@ fn xorshift(xs: &mut Xs) -> u32 {
     xs[0].0
 }
 
-fn xs_u32(xs: &mut Xs, min: u32, max: u32) -> u32 {
-    (xorshift(xs) % (max - min + 1)) + min
+fn xs_u32(xs: &mut Xs, min: u32, one_past_max: u32) -> u32 {
+    (xorshift(xs) % (one_past_max - min)) + min
 }
 
 pub type TileCount = u8;
@@ -487,8 +487,8 @@ fn get_adjacent_neighbors(
 
 fn shuffle<A>(rng: &mut Xs, slice: &mut [A]) {
     for i in 1..slice.len() as u32 {
-        // This only shuffles the first u32::MAX_VALUE elements.
-        let r = xs_u32(rng, 0, i) as usize;
+        // This only shuffles the first u32::MAX_VALUE - 1 elements.
+        let r = xs_u32(rng, 0, i + 1) as usize;
         let i = i as usize;
         slice.swap(i, r);
     }
@@ -512,8 +512,8 @@ fn random_passable_tile(rng: &mut Xs, tiles: &Tiles) -> Res<Tile> {
         "get random passable tile",
         || {
             use core::convert::TryInto;
-            let x = xs_u32(rng, 0, (NUM_TILES-1).into()).try_into().map_err(|_| ())?;
-            let y = xs_u32(rng, 0, (NUM_TILES-1).into()).try_into().map_err(|_| ())?;
+            let x = xs_u32(rng, 0, (NUM_TILES).into()).try_into().map_err(|_| ())?;
+            let y = xs_u32(rng, 0, (NUM_TILES).into()).try_into().map_err(|_| ())?;
             let tile = Tiles::get_tile(tiles, TileXY{x, y});
             if tile.is_passable() && tile.monster.is_none(){
                 Ok(tile)
