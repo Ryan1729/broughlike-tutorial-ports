@@ -130,6 +130,26 @@ pub struct TileXY {
     pub y: TileY,
 }
 
+macro_rules! txy {
+    ($x: literal, $y: literal) => {
+        TileXY {
+            x: $x,
+            y: $y,
+        }
+    };
+    ($x: ident, $y: ident) => {
+        TileXY {
+            x: $x,
+            y: $y,
+        }
+    };
+}
+
+// Manhattan distance
+fn dist(txy!(x1, y1): TileXY, txy!(x2, y2): TileXY) -> TileCount {
+    ((x1 as i8 - x2 as i8).abs() + (y1 as i8 - y2 as i8).abs()) as TileCount
+}
+
 // Should only be in the range [-1, 0, 1]
 pub type DeltaX = i8;
 // Should only be in the range [-1, 0, 1]
@@ -149,6 +169,12 @@ macro_rules! dxy {
         }
     };
     ($x: ident, $y: ident) => {
+        DeltaXY {
+            x: $x,
+            y: $y,
+        }
+    };
+    ($x: expr, $y: expr) => {
         DeltaXY {
             x: $x,
             y: $y,
@@ -235,6 +261,16 @@ fn make_jester(xy: TileXY) -> Monster {
     }
 }
 
+impl Monster {
+    fn is_dead(&self) -> bool {
+        self.hp == 0
+    }
+
+    fn is_player(&self) -> bool {
+        self.kind == MonsterKind::Player
+    }
+}
+
 fn remove_monster(tiles: &mut Tiles, xy: TileXY) {
     tiles.0[xy_to_i(xy)].monster = None;
 }
@@ -247,9 +283,11 @@ fn move_player(state: &mut State, dxy: DeltaXY) -> Res<()> {
     let tile = state.tiles.get_tile(state.xy);
     if let Some(monster) = tile.monster {
         if monster.kind == MonsterKind::Player {
-            let moved = try_move(state, monster, dxy);
+            if let Some(moved) = try_move(state, monster, dxy) {
+                state.xy = moved.xy;
 
-            state.xy = moved.xy;
+                tick(state);
+            }
 
             Ok(())
         } else {
@@ -260,13 +298,29 @@ fn move_player(state: &mut State, dxy: DeltaXY) -> Res<()> {
     }
 }
 
-fn try_move(state: &mut State, monster: Monster, dxy: DeltaXY) -> Monster {
+fn tick(state: &mut State) {
+    let monsters = state.get_monsters();
+
+    for monster in monsters.iter() {
+        if monster.is_player() {
+            continue;
+        }
+
+        if monster.is_dead() {
+            remove_monster(&mut state.tiles, monster.xy);
+        } else {
+            update_monster(state, *monster);
+        }
+    }
+}
+
+fn try_move(state: &mut State, monster: Monster, dxy: DeltaXY) -> Option<Monster> {
     let new_tile = get_neighbor(&state.tiles, monster.xy, dxy);
 
     if new_tile.is_passable() && new_tile.monster.is_none() {
-        r#move(&mut state.tiles, monster, new_tile.xy)
+        Some(r#move(&mut state.tiles, monster, new_tile.xy))
     } else {
-        monster
+        None
     }
 }
 
@@ -279,6 +333,44 @@ fn r#move(tiles: &mut Tiles, monster: Monster, xy: TileXY) -> Monster {
     set_monster(tiles, moved);
 
     moved
+}
+
+fn update_monster(state: &mut State, monster: Monster) {
+    do_stuff(state, monster);
+}
+
+fn do_stuff(state: &mut State, monster: Monster) {
+    let neighbors = get_adjacent_neighbors(
+        &mut state.rng,
+        &state.tiles,
+        monster.xy
+    );
+
+    let mut filtered = neighbors.iter()
+                        .filter(|t| t.is_passable())
+                        .filter(|t|
+                            t.monster.is_none() || t.monster.unwrap().is_player()
+                        );
+
+    let neighbors = [filtered.next(), filtered.next(), filtered.next(), filtered.next()];
+
+    
+    if let Some(Some(new_tile)) = neighbors.iter().min_by_key(|t|
+        match t {
+            Some(t) => dist(t.xy, state.xy),
+            None => TileCount::MAX,
+        }
+    ) {
+
+        try_move(
+            state,
+            monster,
+            dxy!(
+                new_tile.xy.x as DeltaX - monster.xy.x as DeltaX,
+                new_tile.xy.y as DeltaY - monster.xy.y as DeltaY
+            )
+        );
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
