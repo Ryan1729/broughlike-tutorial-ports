@@ -115,11 +115,11 @@ async fn main() {
             macroquad::WHITE
         );
 
-        let draw_sprite = |sprite: state::SpriteIndex, xy: state::TileXY| {
+        let draw_sprite_float = |sprite: state::SpriteIndex, (x, y): (Size, Size)| {
             macroquad::draw_texture_ex(
                 spritesheet,
-                sizes.play_area_x + sizes.tile * (xy.x as Size),
-                sizes.play_area_y + sizes.tile * (xy.y as Size),
+                sizes.play_area_x + x,
+                sizes.play_area_y + y,
                 macroquad::WHITE,
                 macroquad::DrawTextureParams {
                     dest_size: Some(macroquad::Vec2::new(sizes.tile, sizes.tile)),
@@ -134,6 +134,16 @@ async fn main() {
             );
         };
 
+        let draw_sprite = |sprite: state::SpriteIndex, xy: state::TileXY| {
+            draw_sprite_float(
+                sprite,
+                (
+                    sizes.tile * (xy.x as Size),
+                    sizes.tile * (xy.y as Size)
+                )
+            )
+        };
+
         for t in state.tiles.iter() {
             draw_sprite(match t.kind {
                 state::TileKind::Floor => 2,
@@ -141,14 +151,35 @@ async fn main() {
             }, t.xy);
 
             if let Some(monster) = t.monster {
-                draw_sprite(match monster.kind {
+                let monster_sprite = match monster.kind {
                     state::MonsterKind::Player => 0,
                     state::MonsterKind::Bird => 4,
                     state::MonsterKind::Snake => 5,
                     state::MonsterKind::Tank => 6,
                     state::MonsterKind::Eater => 7,
                     state::MonsterKind::Jester => 8,
-                }, t.xy);    
+                };
+
+                draw_sprite(monster_sprite, monster.xy);
+
+                // drawing the HP {
+                for i in 0..monster.hp {
+                    draw_sprite_float(
+                        9,
+                        (
+                            sizes.tile * (
+                                monster.xy.x as Size 
+                                + (i % 3) as Size * (5./16.)
+                            ),
+                            sizes.tile * (
+                                monster.xy.y as Size 
+                                - (i / 3) as Size * (5./16.)
+                            )
+                        )
+                    );
+                }
+
+                // }
             }
         }
 

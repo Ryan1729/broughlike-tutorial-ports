@@ -59,6 +59,7 @@ impl State {
         random_passable_tile(&mut rng, &tiles).map(|t| {
             let player = Monster{
                 xy: t.xy,
+                hp: 3,
                 ..Monster::default()
             };
 
