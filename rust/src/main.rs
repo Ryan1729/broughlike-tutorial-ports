@@ -152,7 +152,11 @@ async fn main() {
 
             if let Some(monster) = t.monster {
                 let monster_sprite = match monster.kind {
-                    state::MonsterKind::Player => 0,
+                    state::MonsterKind::Player => if monster.hp == 0 {
+                        1
+                    } else {
+                        0
+                    },
                     state::MonsterKind::Bird => 4,
                     state::MonsterKind::Snake => 5,
                     state::MonsterKind::Tank => 6,

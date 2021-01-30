@@ -214,6 +214,7 @@ impl Default for MonsterKind {
 }
 
 pub type HP = u8;
+pub type Damage = u8;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Monster {
@@ -270,6 +271,13 @@ impl Monster {
     fn is_player(&self) -> bool {
         self.kind == MonsterKind::Player
     }
+
+    fn hit(&self, damage: Damage) -> Monster {
+        Monster {
+            hp: self.hp.saturating_sub(damage),
+            ..*self
+        }
+    }
 }
 
 fn remove_monster(tiles: &mut Tiles, xy: TileXY) {
@@ -318,8 +326,16 @@ fn tick(state: &mut State) {
 fn try_move(state: &mut State, monster: Monster, dxy: DeltaXY) -> Option<Monster> {
     let new_tile = get_neighbor(&state.tiles, monster.xy, dxy);
 
-    if new_tile.is_passable() && new_tile.monster.is_none() {
-        Some(r#move(&mut state.tiles, monster, new_tile.xy))
+    if new_tile.is_passable() {
+        if let Some(target) = new_tile.monster {
+            if monster.is_player() != target.is_player() {
+                set_monster(&mut state.tiles, target.hit(1));
+            };
+
+            Some(monster)
+        } else {
+            Some(r#move(&mut state.tiles, monster, new_tile.xy))
+        }
     } else {
         None
     }
