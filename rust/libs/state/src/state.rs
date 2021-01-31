@@ -220,14 +220,16 @@ pub type Damage = u8;
 pub struct Monster {
     pub xy: TileXY,
     pub kind: MonsterKind,
-    pub hp: HP
+    pub hp: HP,
+    pub attacked_this_turn: bool
 }
 
 fn make_bird(xy: TileXY) -> Monster {
     Monster {
         xy,
         kind: MonsterKind::Bird,
-        hp: 3
+        hp: 3,
+        ..Monster::default()
     }
 }
 
@@ -235,7 +237,8 @@ fn make_snake(xy: TileXY) -> Monster {
     Monster {
         xy,
         kind: MonsterKind::Snake,
-        hp: 1
+        hp: 1,
+        ..Monster::default()
     }
 }
 
@@ -243,7 +246,8 @@ fn make_tank(xy: TileXY) -> Monster {
     Monster {
         xy,
         kind: MonsterKind::Tank,
-        hp: 2
+        hp: 2,
+        ..Monster::default()
     }
 }
 
@@ -251,7 +255,8 @@ fn make_eater(xy: TileXY) -> Monster {
     Monster {
         xy,
         kind: MonsterKind::Eater,
-        hp: 1
+        hp: 1,
+        ..Monster::default()
     }
 }
 
@@ -259,7 +264,8 @@ fn make_jester(xy: TileXY) -> Monster {
     Monster {
         xy,
         kind: MonsterKind::Jester,
-        hp: 2
+        hp: 2,
+        ..Monster::default()
     }
 }
 
@@ -329,6 +335,11 @@ fn try_move(state: &mut State, monster: Monster, dxy: DeltaXY) -> Option<Monster
     if new_tile.is_passable() {
         if let Some(target) = new_tile.monster {
             if monster.is_player() != target.is_player() {
+                set_monster(&mut state.tiles, Monster{
+                    attacked_this_turn: true,
+                    ..monster
+                });
+
                 set_monster(&mut state.tiles, target.hit(1));
             };
 
@@ -352,11 +363,28 @@ fn r#move(tiles: &mut Tiles, monster: Monster, xy: TileXY) -> Monster {
     moved
 }
 
-fn update_monster(state: &mut State, monster: Monster) {
-    do_stuff(state, monster);
+fn update_monster(state: &mut State, mut monster: Monster) {
+    match monster.kind {
+        MonsterKind::Snake => {
+            monster.attacked_this_turn = false;
+
+            set_monster(&mut state.tiles, monster);
+
+            if let Some(monster) = do_stuff(state, monster) {
+                if !monster.attacked_this_turn {
+                    do_stuff(state, monster);
+                }
+            }
+        },
+        _ => {
+            do_stuff(state, monster);
+        }
+    }
+
+    
 }
 
-fn do_stuff(state: &mut State, monster: Monster) {
+fn do_stuff(state: &mut State, monster: Monster) -> Option<Monster> {
     let neighbors = get_adjacent_neighbors(
         &mut state.rng,
         &state.tiles,
@@ -378,7 +406,6 @@ fn do_stuff(state: &mut State, monster: Monster) {
             None => TileCount::MAX,
         }
     ) {
-
         try_move(
             state,
             monster,
@@ -386,7 +413,9 @@ fn do_stuff(state: &mut State, monster: Monster) {
                 new_tile.xy.x as DeltaX - monster.xy.x as DeltaX,
                 new_tile.xy.y as DeltaY - monster.xy.y as DeltaY
             )
-        );
+        )
+    } else {
+        None
     }
 }
 
