@@ -399,52 +399,6 @@ fn update_monster(state: &mut State, mut monster: Monster) {
     }
 }
 
-fn update_monster_(state: &mut State, mut monster: Monster) {
-    match monster.kind {
-        MonsterKind::Tank => {
-            let started_stunned = monster.stunned;
-
-            monster = plain_update_monster(state, monster).unwrap_or(monster);
-    
-            if !started_stunned{
-                monster.stunned = true;
-                set_monster(&mut state.tiles, monster);
-            }
-        },
-        _ => {
-            plain_update_monster(state, monster);
-        }
-    }
-}
-
-fn plain_update_monster(state: &mut State, mut monster: Monster) -> Option<Monster> {
-    if monster.stunned {
-        monster.stunned = false;
-
-        set_monster(&mut state.tiles, monster);
-        return Some(monster);
-    }
-
-    match monster.kind {
-        MonsterKind::Snake => {
-            monster.attacked_this_turn = false;
-
-            set_monster(&mut state.tiles, monster);
-
-            if let Some(monster) = do_stuff(state, monster) {
-                if !monster.attacked_this_turn {
-                    return do_stuff(state, monster);
-                }
-            }
-            
-            Some(monster)
-        },
-        _ => {
-            do_stuff(state, monster)
-        }
-    }
-}
-
 fn do_stuff(state: &mut State, monster: Monster) -> Option<Monster> {
     let neighbors = get_adjacent_neighbors(
         &mut state.rng,
