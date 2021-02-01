@@ -330,16 +330,15 @@ fn tick(state: &mut State) {
     }
 }
 
-fn try_move(state: &mut State, monster: Monster, dxy: DeltaXY) -> Option<Monster> {
+fn try_move(state: &mut State, mut monster: Monster, dxy: DeltaXY) -> Option<Monster> {
     let new_tile = get_neighbor(&state.tiles, monster.xy, dxy);
 
     if new_tile.is_passable() {
         if let Some(target) = new_tile.monster {
             if monster.is_player() != target.is_player() {
-                set_monster(&mut state.tiles, Monster{
-                    attacked_this_turn: true,
-                    ..monster
-                });
+                monster.attacked_this_turn = true;
+
+                set_monster(&mut state.tiles, monster);
 
                 set_monster(&mut state.tiles, Monster {
                     stunned: true,
