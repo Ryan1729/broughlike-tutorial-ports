@@ -367,24 +367,16 @@ fn r#move(tiles: &mut Tiles, monster: Monster, xy: TileXY) -> Monster {
 }
 
 fn update_monster(state: &mut State, mut monster: Monster) {
-    if let MonsterKind::Tank = monster.kind {
-        let started_stunned = monster.stunned;
-        if started_stunned {
-            monster.stunned = false;
+    
+    if monster.stunned {
+        monster.stunned = false;
 
-            set_monster(&mut state.tiles, monster);
-        } else {
+        set_monster(&mut state.tiles, monster);
+    } else {
+        if let MonsterKind::Tank = monster.kind {
             monster = do_stuff(state, monster).unwrap_or(monster);
     
-            if !started_stunned {
-                monster.stunned = true;
-                set_monster(&mut state.tiles, monster);
-            }
-        }
-    } else {
-        if monster.stunned {
-            monster.stunned = false;
-    
+            monster.stunned = true;
             set_monster(&mut state.tiles, monster);
         } else {
             match monster.kind {
