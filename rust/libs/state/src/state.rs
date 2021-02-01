@@ -367,34 +367,34 @@ fn r#move(tiles: &mut Tiles, monster: Monster, xy: TileXY) -> Monster {
 }
 
 fn update_monster(state: &mut State, mut monster: Monster) {
-    
     if monster.stunned {
         monster.stunned = false;
 
         set_monster(&mut state.tiles, monster);
-    } else {
-        if let MonsterKind::Tank = monster.kind {
+
+        return;
+    }
+
+    match monster.kind {
+        MonsterKind::Tank => {
             monster = do_stuff(state, monster).unwrap_or(monster);
-    
+
             monster.stunned = true;
             set_monster(&mut state.tiles, monster);
-        } else {
-            match monster.kind {
-                MonsterKind::Snake => {
-                    monster.attacked_this_turn = false;
-        
-                    set_monster(&mut state.tiles, monster);
-        
-                    if let Some(m) = do_stuff(state, monster) {
-                        if !m.attacked_this_turn {
-                            monster = do_stuff(state, m).unwrap_or(m);
-                        }
-                    }
-                },
-                _ => {
-                    monster = do_stuff(state, monster).unwrap_or(monster);
+        }
+        MonsterKind::Snake => {
+            monster.attacked_this_turn = false;
+
+            set_monster(&mut state.tiles, monster);
+
+            if let Some(m) = do_stuff(state, monster) {
+                if !m.attacked_this_turn {
+                    monster = do_stuff(state, m).unwrap_or(m);
                 }
             }
+        },
+        _ => {
+            monster = do_stuff(state, monster).unwrap_or(monster);
         }
     }
 }
