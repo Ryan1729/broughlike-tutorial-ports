@@ -367,6 +367,47 @@ fn r#move(tiles: &mut Tiles, monster: Monster, xy: TileXY) -> Monster {
 }
 
 fn update_monster(state: &mut State, mut monster: Monster) {
+    if let MonsterKind::Tank = monster.kind {
+        let started_stunned = monster.stunned;
+        if started_stunned {
+            monster.stunned = false;
+
+            set_monster(&mut state.tiles, monster);
+        } else {
+            monster = do_stuff(state, monster).unwrap_or(monster);
+    
+            if !started_stunned {
+                monster.stunned = true;
+                set_monster(&mut state.tiles, monster);
+            }
+        }
+    } else {
+        if monster.stunned {
+            monster.stunned = false;
+    
+            set_monster(&mut state.tiles, monster);
+        } else {
+            match monster.kind {
+                MonsterKind::Snake => {
+                    monster.attacked_this_turn = false;
+        
+                    set_monster(&mut state.tiles, monster);
+        
+                    if let Some(m) = do_stuff(state, monster) {
+                        if !m.attacked_this_turn {
+                            monster = do_stuff(state, m).unwrap_or(m);
+                        }
+                    }
+                },
+                _ => {
+                    monster = do_stuff(state, monster).unwrap_or(monster);
+                }
+            }
+        }
+    }
+}
+
+fn update_monster_(state: &mut State, mut monster: Monster) {
     match monster.kind {
         MonsterKind::Tank => {
             let started_stunned = monster.stunned;
@@ -386,10 +427,10 @@ fn update_monster(state: &mut State, mut monster: Monster) {
 
 fn plain_update_monster(state: &mut State, mut monster: Monster) -> Option<Monster> {
     if monster.stunned {
-       monster.stunned = false;
+        monster.stunned = false;
 
-       set_monster(&mut state.tiles, monster);
-       return Some(monster);
+        set_monster(&mut state.tiles, monster);
+        return Some(monster);
     }
 
     match monster.kind {
