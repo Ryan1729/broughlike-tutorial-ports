@@ -387,14 +387,14 @@ fn update_monster(state: &mut State, mut monster: Monster) {
 
             set_monster(&mut state.tiles, monster);
 
-            if let Some(m) = do_stuff(state, monster) {
-                if !m.attacked_this_turn {
-                    monster = do_stuff(state, m).unwrap_or(m);
+            if let Some(monster) = do_stuff(state, monster) {
+                if !monster.attacked_this_turn {
+                    do_stuff(state, monster);
                 }
             }
         },
         _ => {
-            monster = do_stuff(state, monster).unwrap_or(monster);
+            do_stuff(state, monster);
         }
     }
 }
