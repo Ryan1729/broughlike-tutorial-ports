@@ -221,7 +221,8 @@ pub struct Monster {
     pub xy: TileXY,
     pub kind: MonsterKind,
     pub hp: HP,
-    pub attacked_this_turn: bool
+    pub attacked_this_turn: bool,
+    pub stunned: bool
 }
 
 fn make_bird(xy: TileXY) -> Monster {
@@ -340,7 +341,10 @@ fn try_move(state: &mut State, monster: Monster, dxy: DeltaXY) -> Option<Monster
                     ..monster
                 });
 
-                set_monster(&mut state.tiles, target.hit(1));
+                set_monster(&mut state.tiles, Monster {
+                    stunned: true,
+                    ..target.hit(1)
+                });
             };
 
             Some(monster)
@@ -365,6 +369,31 @@ fn r#move(tiles: &mut Tiles, monster: Monster, xy: TileXY) -> Monster {
 
 fn update_monster(state: &mut State, mut monster: Monster) {
     match monster.kind {
+        MonsterKind::Tank => {
+            let started_stunned = monster.stunned;
+
+            monster = plain_update_monster(state, monster).unwrap_or(monster);
+    
+            if !started_stunned{
+                monster.stunned = true;
+                set_monster(&mut state.tiles, monster);
+            }
+        },
+        _ => {
+            plain_update_monster(state, monster);
+        }
+    }
+}
+
+fn plain_update_monster(state: &mut State, mut monster: Monster) -> Option<Monster> {
+    if monster.stunned {
+       monster.stunned = false;
+
+       set_monster(&mut state.tiles, monster);
+       return Some(monster);
+    }
+
+    match monster.kind {
         MonsterKind::Snake => {
             monster.attacked_this_turn = false;
 
@@ -372,16 +401,16 @@ fn update_monster(state: &mut State, mut monster: Monster) {
 
             if let Some(monster) = do_stuff(state, monster) {
                 if !monster.attacked_this_turn {
-                    do_stuff(state, monster);
+                    return do_stuff(state, monster);
                 }
             }
+            
+            Some(monster)
         },
         _ => {
-            do_stuff(state, monster);
+            do_stuff(state, monster)
         }
     }
-
-    
 }
 
 fn do_stuff(state: &mut State, monster: Monster) -> Option<Monster> {
