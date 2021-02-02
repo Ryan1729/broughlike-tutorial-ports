@@ -1,4 +1,5 @@
-#[deny(unused)]
+#![deny(unused)]
+
 use state::{State, Input};
 
 const INDIGO: macroquad::Color = macroquad::Color([0x4b, 0, 0x82, 0xff]);
@@ -152,7 +153,7 @@ async fn main() {
 
             if let Some(monster) = t.monster {
                 let monster_sprite = match monster.kind {
-                    state::MonsterKind::Player => if monster.hp == 0 {
+                    state::MonsterKind::Player => if monster.is_dead() {
                         1
                     } else {
                         0
@@ -167,7 +168,8 @@ async fn main() {
                 draw_sprite(monster_sprite, monster.xy);
 
                 // drawing the HP {
-                for i in 0..monster.hp {
+                let pips = state::hp!(get pips monster.hp);
+                for i in 0..pips {
                     draw_sprite_float(
                         9,
                         (

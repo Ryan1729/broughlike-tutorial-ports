@@ -59,7 +59,7 @@ impl State {
         random_passable_tile(&mut rng, &tiles).map(|t| {
             let player = Monster{
                 xy: t.xy,
-                hp: 3,
+                hp: hp!(3),
                 ..Monster::default()
             };
 
@@ -213,8 +213,42 @@ impl Default for MonsterKind {
     }
 }
 
-pub type HP = u8;
-pub type Damage = u8;
+type HPRaw = u8;
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct HP {
+    pub use_the_macro_instead: HPRaw
+}
+
+#[macro_export]
+macro_rules! hp {
+    (get $hp: expr) => { $hp.use_the_macro_instead };
+    (get pips $hp: expr) => { ($hp.use_the_macro_instead + 1) / 2 };
+    (0) => { hp!(raw 0) };
+    (0.5) => { hp!(raw 1) };
+    (1) => { hp!(raw 2) };
+    (2) => { hp!(raw 4) };
+    (3) => { hp!(raw 6) };
+    (raw $hp: expr) => { $crate::HP { use_the_macro_instead: $hp } };
+}
+
+impl HP {
+    const MAX: HPRaw = 12;
+
+    fn saturating_add(&self, hp: HP) -> HP {
+        let added = hp!(get self).saturating_add(hp!(get hp));
+
+        hp!(raw if added > Self::MAX {
+            Self::MAX
+        } else {
+            added
+        })
+    }
+
+    fn saturating_sub(&self, hp: HP) -> HP {
+        hp!(raw hp!(get self).saturating_sub(hp!(get hp)))
+    }
+}
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Monster {
@@ -229,7 +263,7 @@ fn make_bird(xy: TileXY) -> Monster {
     Monster {
         xy,
         kind: MonsterKind::Bird,
-        hp: 3,
+        hp: hp!(3),
         ..Monster::default()
     }
 }
@@ -238,7 +272,7 @@ fn make_snake(xy: TileXY) -> Monster {
     Monster {
         xy,
         kind: MonsterKind::Snake,
-        hp: 1,
+        hp: hp!(1),
         ..Monster::default()
     }
 }
@@ -247,7 +281,7 @@ fn make_tank(xy: TileXY) -> Monster {
     Monster {
         xy,
         kind: MonsterKind::Tank,
-        hp: 2,
+        hp: hp!(2),
         ..Monster::default()
     }
 }
@@ -256,7 +290,7 @@ fn make_eater(xy: TileXY) -> Monster {
     Monster {
         xy,
         kind: MonsterKind::Eater,
-        hp: 1,
+        hp: hp!(1),
         ..Monster::default()
     }
 }
@@ -265,25 +299,18 @@ fn make_jester(xy: TileXY) -> Monster {
     Monster {
         xy,
         kind: MonsterKind::Jester,
-        hp: 2,
+        hp: hp!(2),
         ..Monster::default()
     }
 }
 
 impl Monster {
-    fn is_dead(&self) -> bool {
-        self.hp == 0
+    pub fn is_dead(&self) -> bool {
+        self.hp == hp!(0)
     }
 
     fn is_player(&self) -> bool {
         self.kind == MonsterKind::Player
-    }
-
-    fn hit(&self, damage: Damage) -> Monster {
-        Monster {
-            hp: self.hp.saturating_sub(damage),
-            ..*self
-        }
     }
 }
 
@@ -293,6 +320,10 @@ fn remove_monster(tiles: &mut Tiles, xy: TileXY) {
 
 fn set_monster(tiles: &mut Tiles, monster: Monster) {
     tiles.0[xy_to_i(monster.xy)].monster = Some(monster);
+}
+
+fn replace(tiles: &mut Tiles, xy: TileXY, maker: fn(xy: TileXY) -> Tile) {
+    tiles.0[xy_to_i(xy)] = maker(xy);
 }
 
 fn move_player(state: &mut State, dxy: DeltaXY) -> Res<()> {
@@ -334,16 +365,16 @@ fn try_move(state: &mut State, mut monster: Monster, dxy: DeltaXY) -> Option<Mon
     let new_tile = get_neighbor(&state.tiles, monster.xy, dxy);
 
     if new_tile.is_passable() {
-        if let Some(target) = new_tile.monster {
+        if let Some(mut target) = new_tile.monster {
             if monster.is_player() != target.is_player() {
                 monster.attacked_this_turn = true;
 
                 set_monster(&mut state.tiles, monster);
 
-                set_monster(&mut state.tiles, Monster {
-                    stunned: true,
-                    ..target.hit(1)
-                });
+                target.stunned = true;
+                target.hp = target.hp.saturating_sub(hp!(1));
+                
+                set_monster(&mut state.tiles, target);
             };
 
             Some(monster)
@@ -391,6 +422,20 @@ fn update_monster(state: &mut State, mut monster: Monster) {
                 if !monster.attacked_this_turn {
                     do_stuff(state, monster);
                 }
+            }
+        },
+        MonsterKind::Eater => {
+            let neighbors = get_adjacent_neighbors(&mut state.rng, &state.tiles, monster.xy);
+            let mut filtered = neighbors.iter()
+                            .filter(|t| !t.is_passable() && in_bounds(t.xy));
+    
+            if let Some(neighbor) = filtered.next() {
+                replace(&mut state.tiles, neighbor.xy, make_floor);
+                
+                monster.hp = monster.hp.saturating_add(hp!(0.5));
+                set_monster(&mut state.tiles, monster);
+            } else {
+                do_stuff(state, monster);
             }
         },
         _ => {
