@@ -438,6 +438,23 @@ fn update_monster(state: &mut State, mut monster: Monster) {
                 do_stuff(state, monster);
             }
         },
+        MonsterKind::Jester => {
+            let neighbors = get_adjacent_neighbors(&mut state.rng, &state.tiles, monster.xy);
+                
+            let mut filtered = neighbors.iter()
+                .filter(|t| t.is_passable());
+
+            if let Some(new_tile) = filtered.next() {
+                try_move(
+                    state,
+                    monster,
+                    dxy!(
+                        new_tile.xy.x as DeltaX - monster.xy.x as DeltaX,
+                        new_tile.xy.y as DeltaY - monster.xy.y as DeltaY
+                    )
+                );
+            }
+        },
         _ => {
             do_stuff(state, monster);
         }

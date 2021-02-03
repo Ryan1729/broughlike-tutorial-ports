@@ -35,8 +35,9 @@ async fn main() {
         duration.as_nanos()
     };
 
-    println!("{}", seed);
 
+    println!("{}", seed);
+let seed = 1612155043484889785u128;
     let state: &mut State = &mut State::from_seed(seed.to_le_bytes())
         .expect("state to be generated");
 
