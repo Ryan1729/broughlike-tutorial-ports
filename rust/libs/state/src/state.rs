@@ -7,7 +7,8 @@ pub enum Error {
     TimeoutWhileTryingTo(&'static str),
     ExpectedNonPlayerToBePlayer(TileXY, MonsterKind),
     CouldNotFindPlayer(TileXY),
-    OneIsZero
+    OneIsZero,
+    ZombieState,
 }
 
 pub type Res<A> = Result<A, Error>;
@@ -15,17 +16,35 @@ pub type Res<A> = Result<A, Error>;
 pub type Level = core::num::NonZeroU8;
 
 #[derive(Debug)]
-pub struct State {
+pub enum State {
+    TitleFirst(Seed),
+    TitleReturn(World),
+    Running(World),
+    Dead(World),
+    Error(Error)
+}
+
+pub type Seed = [u8; 16];
+
+impl State {
+    fn from_seed(seed: Seed) -> Self {
+        match World::from_seed(seed) {
+            Ok(w) => Self::Running(w),
+            Err(e) => Self::Error(e),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct World {
     pub xy: TileXY,
     rng: Xs,
     pub tiles: Tiles,
     pub level: Level,
 }
 
-pub type Seed = [u8; 16];
-
-impl State {
-    pub fn from_seed(mut seed: Seed) -> Res<Self> {
+impl World {
+    fn from_seed(mut seed: Seed) -> Res<Self> {
         // 0 doesn't work as a seed, so use this one instead.
         if seed == [0; 16] {
             seed = 0xBAD_5EED_u128.to_le_bytes();
@@ -326,27 +345,27 @@ fn replace(tiles: &mut Tiles, xy: TileXY, maker: fn(xy: TileXY) -> Tile) {
     tiles.0[xy_to_i(xy)] = maker(xy);
 }
 
-fn move_player(state: &mut State, dxy: DeltaXY) -> Res<()> {
-    let tile = state.tiles.get_tile(state.xy);
+fn move_player(world: &mut World, dxy: DeltaXY) -> Res<()> {
+    let tile = world.tiles.get_tile(world.xy);
     if let Some(monster) = tile.monster {
         if monster.kind == MonsterKind::Player {
-            if let Some(moved) = try_move(state, monster, dxy) {
-                state.xy = moved.xy;
+            if let Some(moved) = try_move(world, monster, dxy) {
+                world.xy = moved.xy;
 
-                tick(state);
+                tick(world);
             }
 
             Ok(())
         } else {
-            Err(Error::ExpectedNonPlayerToBePlayer(state.xy, monster.kind))
+            Err(Error::ExpectedNonPlayerToBePlayer(world.xy, monster.kind))
         }
     } else {
-        Err(Error::CouldNotFindPlayer(state.xy))
+        Err(Error::CouldNotFindPlayer(world.xy))
     }
 }
 
-fn tick(state: &mut State) {
-    let monsters = state.get_monsters();
+fn tick(world: &mut World) {
+    let monsters = world.get_monsters();
 
     for monster in monsters.iter() {
         if monster.is_player() {
@@ -354,32 +373,32 @@ fn tick(state: &mut State) {
         }
 
         if monster.is_dead() {
-            remove_monster(&mut state.tiles, monster.xy);
+            remove_monster(&mut world.tiles, monster.xy);
         } else {
-            update_monster(state, *monster);
+            update_monster(world, *monster);
         }
     }
 }
 
-fn try_move(state: &mut State, mut monster: Monster, dxy: DeltaXY) -> Option<Monster> {
-    let new_tile = get_neighbor(&state.tiles, monster.xy, dxy);
+fn try_move(world: &mut World, mut monster: Monster, dxy: DeltaXY) -> Option<Monster> {
+    let new_tile = get_neighbor(&world.tiles, monster.xy, dxy);
 
     if new_tile.is_passable() {
         if let Some(mut target) = new_tile.monster {
             if monster.is_player() != target.is_player() {
                 monster.attacked_this_turn = true;
 
-                set_monster(&mut state.tiles, monster);
+                set_monster(&mut world.tiles, monster);
 
                 target.stunned = true;
                 target.hp = target.hp.saturating_sub(hp!(1));
                 
-                set_monster(&mut state.tiles, target);
+                set_monster(&mut world.tiles, target);
             };
 
             Some(monster)
         } else {
-            Some(r#move(&mut state.tiles, monster, new_tile.xy))
+            Some(r#move(&mut world.tiles, monster, new_tile.xy))
         }
     } else {
         None
@@ -397,56 +416,56 @@ fn r#move(tiles: &mut Tiles, monster: Monster, xy: TileXY) -> Monster {
     moved
 }
 
-fn update_monster(state: &mut State, mut monster: Monster) {
+fn update_monster(world: &mut World, mut monster: Monster) {
     if monster.stunned {
         monster.stunned = false;
 
-        set_monster(&mut state.tiles, monster);
+        set_monster(&mut world.tiles, monster);
 
         return;
     }
 
     match monster.kind {
         MonsterKind::Tank => {
-            monster = do_stuff(state, monster).unwrap_or(monster);
+            monster = do_stuff(world, monster).unwrap_or(monster);
 
             monster.stunned = true;
-            set_monster(&mut state.tiles, monster);
+            set_monster(&mut world.tiles, monster);
         }
         MonsterKind::Snake => {
             monster.attacked_this_turn = false;
 
-            set_monster(&mut state.tiles, monster);
+            set_monster(&mut world.tiles, monster);
 
-            if let Some(monster) = do_stuff(state, monster) {
+            if let Some(monster) = do_stuff(world, monster) {
                 if !monster.attacked_this_turn {
-                    do_stuff(state, monster);
+                    do_stuff(world, monster);
                 }
             }
         },
         MonsterKind::Eater => {
-            let neighbors = get_adjacent_neighbors(&mut state.rng, &state.tiles, monster.xy);
+            let neighbors = get_adjacent_neighbors(&mut world.rng, &world.tiles, monster.xy);
             let mut filtered = neighbors.iter()
                             .filter(|t| !t.is_passable() && in_bounds(t.xy));
     
             if let Some(neighbor) = filtered.next() {
-                replace(&mut state.tiles, neighbor.xy, make_floor);
+                replace(&mut world.tiles, neighbor.xy, make_floor);
                 
                 monster.hp = monster.hp.saturating_add(hp!(0.5));
-                set_monster(&mut state.tiles, monster);
+                set_monster(&mut world.tiles, monster);
             } else {
-                do_stuff(state, monster);
+                do_stuff(world, monster);
             }
         },
         MonsterKind::Jester => {
-            let neighbors = get_adjacent_neighbors(&mut state.rng, &state.tiles, monster.xy);
+            let neighbors = get_adjacent_neighbors(&mut world.rng, &world.tiles, monster.xy);
                 
             let mut filtered = neighbors.iter()
                 .filter(|t| t.is_passable());
 
             if let Some(new_tile) = filtered.next() {
                 try_move(
-                    state,
+                    world,
                     monster,
                     dxy!(
                         new_tile.xy.x as DeltaX - monster.xy.x as DeltaX,
@@ -456,15 +475,15 @@ fn update_monster(state: &mut State, mut monster: Monster) {
             }
         },
         _ => {
-            do_stuff(state, monster);
+            do_stuff(world, monster);
         }
     }
 }
 
-fn do_stuff(state: &mut State, monster: Monster) -> Option<Monster> {
+fn do_stuff(world: &mut World, monster: Monster) -> Option<Monster> {
     let neighbors = get_adjacent_neighbors(
-        &mut state.rng,
-        &state.tiles,
+        &mut world.rng,
+        &world.tiles,
         monster.xy
     );
 
@@ -479,12 +498,12 @@ fn do_stuff(state: &mut State, monster: Monster) -> Option<Monster> {
     
     if let Some(Some(new_tile)) = neighbors.iter().min_by_key(|t|
         match t {
-            Some(t) => dist(t.xy, state.xy),
+            Some(t) => dist(t.xy, world.xy),
             None => TileCount::MAX,
         }
     ) {
         try_move(
-            state,
+            world,
             monster,
             dxy!(
                 new_tile.xy.x as DeltaX - monster.xy.x as DeltaX,
@@ -761,24 +780,75 @@ pub enum Input {
     Right,
 }
 
-pub fn update(state: &mut State, input: Input) -> Res<()> {
+pub fn update(state: &mut State, input: Input) {
+    use State::*;
     use Input::*;
 
-    match input {
-        Empty => {
-            Ok(())
+    let mut was_dead = false;
+
+    match *state {
+        TitleFirst(seed) => {
+            *state = State::from_seed(seed);
         },
-        Up => {
-            move_player(state, dxy!(0, -1))
+        TitleReturn(ref mut world) => {
+            let s0 = xorshift(&mut world.rng).to_le_bytes();
+            let s1 = xorshift(&mut world.rng).to_le_bytes();
+            let s2 = xorshift(&mut world.rng).to_le_bytes();
+            let s3 = xorshift(&mut world.rng).to_le_bytes();
+
+            let seed = [
+                s0[0], s0[1], s0[2], s0[3],
+                s1[0], s1[1], s1[2], s1[3],
+                s2[0], s2[1], s2[2], s2[3],
+                s3[0], s3[1], s3[2], s3[3],
+            ];
+            *state = State::from_seed(seed);
         },
-        Down => {
-            move_player(state, dxy!(0, 1))
+        Running(ref mut world) => {
+            let unit_res = match input {
+                Empty => {
+                    Ok(())
+                },
+                Up => {
+                    move_player(world, dxy!(0, -1))
+                },
+                Down => {
+                    move_player(world, dxy!(0, 1))
+                },
+                Left => {
+                    move_player(world, dxy!(-1, 0))
+                },
+                Right => {
+                    move_player(world, dxy!(1, 0))
+                },
+            };
+
+            match unit_res {
+                Ok(()) => return,
+                Err(e) => {
+                    *state = Error(e);
+                }
+            }
         },
-        Left => {
-            move_player(state, dxy!(-1, 0))
+        Dead(_) => {
+            was_dead = true;
         },
-        Right => {
-            move_player(state, dxy!(1, 0))
-        },
+        Error(_) => {},
+    }
+
+    if was_dead {
+        let dummy_value = TitleFirst(<_>::default());
+        let dead = core::mem::replace(state, dummy_value);
+        match dead {
+            Dead(world) => {
+                *state = TitleReturn(world);
+            }
+            _ => {
+                // This case should not happen but I guess this is better than 
+                // `unsafe`?
+                *state = Error(crate::Error::ZombieState);
+            }
+        }
+            
     }
 }

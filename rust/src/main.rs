@@ -35,11 +35,9 @@ async fn main() {
         duration.as_nanos()
     };
 
-
     println!("{}", seed);
-let seed = 1612155043484889785u128;
-    let state: &mut State = &mut State::from_seed(seed.to_le_bytes())
-        .expect("state to be generated");
+
+    let state: &mut State = &mut State::TitleFirst(seed.to_le_bytes());
 
     type Size = f32;
 
@@ -101,10 +99,7 @@ let seed = 1612155043484889785u128;
         take_input!(Up);
         take_input!(Up, W);
 
-        if let Err(err) = state::update(state, input) {
-            println!("{:?}", err);
-            panic!("post state::update {:#?}", state);
-        }
+        state::update(state, input);
 
         // the -1 and +2 business makes the border lie just outside the actual
         // play area
@@ -146,47 +141,66 @@ let seed = 1612155043484889785u128;
             )
         };
 
-        for t in state.tiles.iter() {
-            draw_sprite(match t.kind {
-                state::TileKind::Floor => 2,
-                state::TileKind::Wall => 3,
-            }, t.xy);
+        match state {
+            state::State::TitleFirst(_) => {
 
-            if let Some(monster) = t.monster {
-                let monster_sprite = match monster.kind {
-                    state::MonsterKind::Player => if monster.is_dead() {
-                        1
-                    } else {
-                        0
-                    },
-                    state::MonsterKind::Bird => 4,
-                    state::MonsterKind::Snake => 5,
-                    state::MonsterKind::Tank => 6,
-                    state::MonsterKind::Eater => 7,
-                    state::MonsterKind::Jester => 8,
-                };
-
-                draw_sprite(monster_sprite, monster.xy);
-
-                // drawing the HP {
-                let pips = state::hp!(get pips monster.hp);
-                for i in 0..pips {
-                    draw_sprite_float(
-                        9,
-                        (
-                            sizes.tile * (
-                                monster.xy.x as Size 
-                                + (i % 3) as Size * (5./16.)
-                            ),
-                            sizes.tile * (
-                                monster.xy.y as Size 
-                                - (i / 3) as Size * (5./16.)
-                            )
-                        )
-                    );
+            },
+            state::State::TitleReturn(world)
+            | state::State::Running(world)
+            | state::State::Dead(world) => {
+                for t in world.tiles.iter() {
+                    draw_sprite(match t.kind {
+                        state::TileKind::Floor => 2,
+                        state::TileKind::Wall => 3,
+                    }, t.xy);
+        
+                    if let Some(monster) = t.monster {
+                        let monster_sprite = match monster.kind {
+                            state::MonsterKind::Player => if monster.is_dead() {
+                                1
+                            } else {
+                                0
+                            },
+                            state::MonsterKind::Bird => 4,
+                            state::MonsterKind::Snake => 5,
+                            state::MonsterKind::Tank => 6,
+                            state::MonsterKind::Eater => 7,
+                            state::MonsterKind::Jester => 8,
+                        };
+        
+                        draw_sprite(monster_sprite, monster.xy);
+        
+                        // drawing the HP {
+                        let pips = state::hp!(get pips monster.hp);
+                        for i in 0..pips {
+                            draw_sprite_float(
+                                9,
+                                (
+                                    sizes.tile * (
+                                        monster.xy.x as Size 
+                                        + (i % 3) as Size * (5./16.)
+                                    ),
+                                    sizes.tile * (
+                                        monster.xy.y as Size 
+                                        - (i / 3) as Size * (5./16.)
+                                    )
+                                )
+                            );
+                        }
+                        // }
+                    }
                 }
-
-                // }
+            },
+            state::State::Error(e) => {
+                macroquad::draw_text(
+                    &format!(
+                        "Error: {:#?}", e
+                    ),
+                    sizes.play_area_x,
+                    sizes.play_area_y,
+                    40.0,
+                    macroquad::RED,
+                );
             }
         }
 
