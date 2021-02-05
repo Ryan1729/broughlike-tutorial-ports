@@ -9,6 +9,7 @@ pub enum Error {
     CouldNotFindPlayer(TileXY),
     OneIsZero,
     ZombieState,
+    ZombiePlayer,
 }
 
 pub type Res<A> = Result<A, Error>;
@@ -345,17 +346,17 @@ fn replace(tiles: &mut Tiles, xy: TileXY, maker: fn(xy: TileXY) -> Tile) {
     tiles.0[xy_to_i(xy)] = maker(xy);
 }
 
-fn move_player(world: &mut World, dxy: DeltaXY) -> Res<()> {
+fn move_player(world: &mut World, dxy: DeltaXY) -> Res<AfterTick> {
     let tile = world.tiles.get_tile(world.xy);
     if let Some(monster) = tile.monster {
         if monster.kind == MonsterKind::Player {
             if let Some(moved) = try_move(world, monster, dxy) {
                 world.xy = moved.xy;
 
-                tick(world);
+                Ok(tick(world))
+            } else {
+                Ok(AfterTick::NoChange)
             }
-
-            Ok(())
         } else {
             Err(Error::ExpectedNonPlayerToBePlayer(world.xy, monster.kind))
         }
@@ -364,7 +365,12 @@ fn move_player(world: &mut World, dxy: DeltaXY) -> Res<()> {
     }
 }
 
-fn tick(world: &mut World) {
+enum AfterTick {
+    NoChange,
+    PlayerDied,
+}
+
+fn tick(world: &mut World) -> AfterTick {
     let monsters = world.get_monsters();
 
     for monster in monsters.iter() {
@@ -378,6 +384,16 @@ fn tick(world: &mut World) {
             update_monster(world, *monster);
         }
     }
+
+    let t: Tile = world.tiles.get_tile(world.xy);
+    if let Some(monster) = t.monster {
+        if monster.is_dead() {
+            return AfterTick::PlayerDied;
+        }
+    }
+
+
+    AfterTick::NoChange
 }
 
 fn try_move(world: &mut World, mut monster: Monster, dxy: DeltaXY) -> Option<Monster> {
@@ -784,30 +800,40 @@ pub fn update(state: &mut State, input: Input) {
     use State::*;
     use Input::*;
 
-    let mut was_dead = false;
+    enum SwitchVariant {
+        NoChange,
+        ToDead,  // From Running
+        ToTitle, // From Dead
+    }
+
+    let mut switch_variant = SwitchVariant::NoChange;
 
     match *state {
         TitleFirst(seed) => {
-            *state = State::from_seed(seed);
+            if !matches!(input, Input::Empty) {
+                *state = State::from_seed(seed);
+            }
         },
         TitleReturn(ref mut world) => {
-            let s0 = xorshift(&mut world.rng).to_le_bytes();
-            let s1 = xorshift(&mut world.rng).to_le_bytes();
-            let s2 = xorshift(&mut world.rng).to_le_bytes();
-            let s3 = xorshift(&mut world.rng).to_le_bytes();
-
-            let seed = [
-                s0[0], s0[1], s0[2], s0[3],
-                s1[0], s1[1], s1[2], s1[3],
-                s2[0], s2[1], s2[2], s2[3],
-                s3[0], s3[1], s3[2], s3[3],
-            ];
-            *state = State::from_seed(seed);
+            if !matches!(input, Input::Empty) {
+                let s0 = xorshift(&mut world.rng).to_le_bytes();
+                let s1 = xorshift(&mut world.rng).to_le_bytes();
+                let s2 = xorshift(&mut world.rng).to_le_bytes();
+                let s3 = xorshift(&mut world.rng).to_le_bytes();
+    
+                let seed = [
+                    s0[0], s0[1], s0[2], s0[3],
+                    s1[0], s1[1], s1[2], s1[3],
+                    s2[0], s2[1], s2[2], s2[3],
+                    s3[0], s3[1], s3[2], s3[3],
+                ];
+                *state = State::from_seed(seed);
+            }
         },
         Running(ref mut world) => {
-            let unit_res = match input {
+            let after_tick_res = match input {
                 Empty => {
-                    Ok(())
+                    Ok(AfterTick::NoChange)
                 },
                 Up => {
                     move_player(world, dxy!(0, -1))
@@ -823,32 +849,55 @@ pub fn update(state: &mut State, input: Input) {
                 },
             };
 
-            match unit_res {
-                Ok(()) => return,
+            match after_tick_res {
+                Ok(AfterTick::NoChange) => {
+                    return
+                },
+                Ok(AfterTick::PlayerDied) => {
+                    switch_variant = SwitchVariant::ToDead;
+                },
                 Err(e) => {
                     *state = Error(e);
                 }
             }
         },
         Dead(_) => {
-            was_dead = true;
+            if !matches!(input, Input::Empty) {
+                switch_variant = SwitchVariant::ToTitle;
+            }
         },
         Error(_) => {},
     }
 
-    if was_dead {
-        let dummy_value = TitleFirst(<_>::default());
-        let dead = core::mem::replace(state, dummy_value);
-        match dead {
-            Dead(world) => {
-                *state = TitleReturn(world);
-            }
-            _ => {
-                // This case should not happen but I guess this is better than 
-                // `unsafe`?
-                *state = Error(crate::Error::ZombieState);
-            }
+    match switch_variant {
+        SwitchVariant::NoChange => {}
+        SwitchVariant::ToDead => {
+            let dummy_value = TitleFirst(<_>::default());
+            let running = core::mem::replace(state, dummy_value);
+            *state = match running {
+                Running(world) => {
+                    Dead(world)
+                }
+                _ => {
+                    // This case should not happen but I guess this is better than 
+                    // `unsafe`?
+                    Error(crate::Error::ZombiePlayer)
+                }
+            };
         }
-            
+        SwitchVariant::ToTitle => {
+            let dummy_value = TitleFirst(<_>::default());
+            let dead = core::mem::replace(state, dummy_value);
+            *state = match dead {
+                Dead(world) => {
+                    TitleReturn(world)
+                }
+                _ => {
+                    // This case should not happen but I guess this is better than 
+                    // `unsafe`?
+                    Error(crate::Error::ZombieState)
+                }
+            };
+        }    
     }
 }
