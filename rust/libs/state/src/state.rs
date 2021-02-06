@@ -36,12 +36,22 @@ impl State {
     }
 }
 
+type Counter = u8;
+type SpawnRate = u8;
+
+#[derive(Debug)]
+pub struct Spawn {
+    counter: Counter,
+    rate: SpawnRate,
+}
+
 #[derive(Debug)]
 pub struct World {
     pub xy: TileXY,
     rng: Xs,
     pub tiles: Tiles,
     pub level: Level,
+    pub spawn: Spawn,
 }
 
 impl World {
@@ -85,11 +95,17 @@ impl World {
 
             set_monster(&mut tiles, player);
 
+            let rate = 15;
+
             Self {
                 xy: t.xy,
                 rng,
                 tiles,
                 level,
+                spawn: Spawn {
+                    counter: rate,
+                    rate,
+                }
             }   
         })
     }
@@ -383,6 +399,14 @@ fn tick(world: &mut World) -> AfterTick {
         } else {
             update_monster(world, *monster);
         }
+    }
+
+    world.spawn.counter = world.spawn.counter.saturating_sub(1);
+
+    if world.spawn.counter == 0 {
+        spawn_monster(&mut world.rng, &mut world.tiles);
+        world.spawn.counter = world.spawn.rate;
+        world.spawn.rate = world.spawn.rate.saturating_sub(1);
     }
 
     let t: Tile = world.tiles.get_tile(world.xy);
