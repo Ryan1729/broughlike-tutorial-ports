@@ -292,14 +292,18 @@ pub struct Monster {
     pub kind: MonsterKind,
     pub hp: HP,
     pub attacked_this_turn: bool,
-    pub stunned: bool
+    pub stunned: bool,
+    pub teleport_counter: Counter
 }
+
+const MONSTER_COUNTER_START: Counter = 2;
 
 fn make_bird(xy: TileXY) -> Monster {
     Monster {
         xy,
         kind: MonsterKind::Bird,
         hp: hp!(3),
+        teleport_counter: MONSTER_COUNTER_START,
         ..Monster::default()
     }
 }
@@ -309,6 +313,7 @@ fn make_snake(xy: TileXY) -> Monster {
         xy,
         kind: MonsterKind::Snake,
         hp: hp!(1),
+        teleport_counter: MONSTER_COUNTER_START,
         ..Monster::default()
     }
 }
@@ -318,6 +323,7 @@ fn make_tank(xy: TileXY) -> Monster {
         xy,
         kind: MonsterKind::Tank,
         hp: hp!(2),
+        teleport_counter: MONSTER_COUNTER_START,
         ..Monster::default()
     }
 }
@@ -327,6 +333,7 @@ fn make_eater(xy: TileXY) -> Monster {
         xy,
         kind: MonsterKind::Eater,
         hp: hp!(1),
+        teleport_counter: MONSTER_COUNTER_START,
         ..Monster::default()
     }
 }
@@ -336,6 +343,7 @@ fn make_jester(xy: TileXY) -> Monster {
         xy,
         kind: MonsterKind::Jester,
         hp: hp!(2),
+        teleport_counter: MONSTER_COUNTER_START,
         ..Monster::default()
     }
 }
@@ -457,7 +465,9 @@ fn r#move(tiles: &mut Tiles, monster: Monster, xy: TileXY) -> Monster {
 }
 
 fn update_monster(world: &mut World, mut monster: Monster) {
-    if monster.stunned {
+    monster.teleport_counter = monster.teleport_counter.saturating_sub(1);
+
+    if monster.stunned || monster.teleport_counter > 0 {
         monster.stunned = false;
 
         set_monster(&mut world.tiles, monster);

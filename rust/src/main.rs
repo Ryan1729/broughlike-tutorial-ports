@@ -160,6 +160,11 @@ async fn main() {
                 }, t.xy);
     
                 if let Some(monster) = t.monster {
+                    if monster.teleport_counter > 0 {
+                        draw_sprite(10, monster.xy);
+                        continue;
+                    }
+
                     let monster_sprite = match monster.kind {
                         state::MonsterKind::Player => if monster.is_dead() {
                             1
