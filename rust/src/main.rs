@@ -157,6 +157,7 @@ async fn main() {
                 draw_sprite(match t.kind {
                     state::TileKind::Floor => 2,
                     state::TileKind::Wall => 3,
+                    state::TileKind::Exit => 11,
                 }, t.xy);
     
                 if let Some(monster) = t.monster {

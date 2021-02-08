@@ -7,14 +7,14 @@ pub enum Error {
     TimeoutWhileTryingTo(&'static str),
     ExpectedNonPlayerToBePlayer(TileXY, MonsterKind),
     CouldNotFindPlayer(TileXY),
-    OneIsZero,
-    ZombieState,
+    AlreadyAtTitle,
     ZombiePlayer,
 }
 
 pub type Res<A> = Result<A, Error>;
 
-pub type Level = core::num::NonZeroU8;
+pub type Level = u8;
+const NUM_LEVELS: Level = 6;
 
 #[derive(Debug)]
 pub enum State {
@@ -29,7 +29,7 @@ pub type Seed = [u8; 16];
 
 impl State {
     fn from_seed(seed: Seed) -> Self {
-        match World::from_seed(seed) {
+        match World::from_seed(seed, 1, None) {
             Ok(w) => Self::Running(w),
             Err(e) => Self::Error(e),
         }
@@ -55,7 +55,7 @@ pub struct World {
 }
 
 impl World {
-    fn from_seed(mut seed: Seed) -> Res<Self> {
+    fn from_seed(mut seed: Seed, level: Level, starting_hp: Option<HP>) -> Res<Self> {
         // 0 doesn't work as a seed, so use this one instead.
         if seed == [0; 16] {
             seed = 0xBAD_5EED_u128.to_le_bytes();
@@ -81,32 +81,38 @@ impl World {
             wrap!(12, 13, 14, 15),
         ];
 
-        // I guess this is better than using unsafe?
-        let level = Level::new(1).ok_or(Error::OneIsZero)?;
-
         let mut tiles = generate_level(&mut rng, level)?;
 
-        random_passable_tile(&mut rng, &tiles).map(|t| {
-            let player = Monster{
-                xy: t.xy,
-                hp: hp!(3),
-                ..Monster::default()
-            };
-
-            set_monster(&mut tiles, player);
-
-            let rate = 15;
-
-            Self {
-                xy: t.xy,
-                rng,
-                tiles,
-                level,
-                spawn: Spawn {
-                    counter: rate,
-                    rate,
+        random_passable_tile(&mut rng, &tiles).and_then(|exit_tile| {
+            random_passable_tile(&mut rng, &tiles).map(|player_tile| {
+                // Do the exit first so we don't remove the player!
+                replace(&mut tiles, exit_tile.xy, make_exit);
+    
+                let mut player = Monster{
+                    xy: player_tile.xy,
+                    hp: hp!(3),
+                    ..Monster::default()
+                };
+    
+                if let Some(hp) = starting_hp {
+                    player.hp = hp;
                 }
-            }   
+    
+                set_monster(&mut tiles, player);
+    
+                let rate = 15;
+    
+                Self {
+                    xy: player_tile.xy,
+                    rng,
+                    tiles,
+                    level,
+                    spawn: Spawn {
+                        counter: rate,
+                        rate,
+                    }
+                }   
+            })
         })
     }
 
@@ -149,6 +155,20 @@ fn xorshift(xs: &mut Xs) -> u32 {
 
 fn xs_u32(xs: &mut Xs, min: u32, one_past_max: u32) -> u32 {
     (xorshift(xs) % (one_past_max - min)) + min
+}
+
+fn new_seed(rng: &mut Xs) -> Seed {
+    let s0 = xorshift(rng).to_le_bytes();
+    let s1 = xorshift(rng).to_le_bytes();
+    let s2 = xorshift(rng).to_le_bytes();
+    let s3 = xorshift(rng).to_le_bytes();
+
+    [
+        s0[0], s0[1], s0[2], s0[3],
+        s1[0], s1[1], s1[2], s1[3],
+        s2[0], s2[1], s2[2], s2[3],
+        s3[0], s3[1], s3[2], s3[3],
+    ]
 }
 
 pub type TileCount = u8;
@@ -225,6 +245,7 @@ pub type SpriteIndex = u8;
 pub enum TileKind {
     Wall,
     Floor,
+    Exit,
 }
 
 impl Default for TileKind {
@@ -251,7 +272,7 @@ impl Default for MonsterKind {
 
 type HPRaw = u8;
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct HP {
     pub use_the_macro_instead: HPRaw
 }
@@ -392,6 +413,7 @@ fn move_player(world: &mut World, dxy: DeltaXY) -> Res<AfterTick> {
 enum AfterTick {
     NoChange,
     PlayerDied,
+    CompletedRoom(HP),
 }
 
 fn tick(world: &mut World) -> AfterTick {
@@ -418,9 +440,16 @@ fn tick(world: &mut World) -> AfterTick {
     }
 
     let t: Tile = world.tiles.get_tile(world.xy);
-    if let Some(monster) = t.monster {
-        if monster.is_dead() {
+    if let Some(player) = t.monster {
+        if player.is_dead() {
             return AfterTick::PlayerDied;
+        }
+
+        match t.kind {
+            TileKind::Exit => {
+                return AfterTick::CompletedRoom(player.hp);
+            },
+            _ => {}
         }
     }
 
@@ -446,20 +475,20 @@ fn try_move(world: &mut World, mut monster: Monster, dxy: DeltaXY) -> Option<Mon
 
             Some(monster)
         } else {
-            Some(r#move(&mut world.tiles, monster, new_tile.xy))
+            Some(r#move(world, monster, new_tile.xy))
         }
     } else {
         None
     }
 }
 
-fn r#move(tiles: &mut Tiles, monster: Monster, xy: TileXY) -> Monster {
-    remove_monster(tiles, monster.xy);
+fn r#move(world: &mut World, monster: Monster, xy: TileXY) -> Monster {
+    remove_monster(&mut world.tiles, monster.xy);
 
     let mut moved = monster;
     moved.xy = xy;
 
-    set_monster(tiles, moved);
+    set_monster(&mut world.tiles, moved);
 
     moved
 }
@@ -574,7 +603,7 @@ pub struct Tile {
 
 impl Tile {
     fn is_passable(&self) -> bool {
-        matches!(self.kind, TileKind::Floor)
+        matches!(self.kind, TileKind::Exit | TileKind::Floor)
     }
 }
 
@@ -595,6 +624,14 @@ fn make_floor(xy: TileXY) -> Tile {
     Tile {
         xy,
         kind: TileKind::Floor,
+        ..<_>::default()
+    }
+}
+
+fn make_exit(xy: TileXY) -> Tile {
+    Tile {
+        xy,
+        kind: TileKind::Exit,
         ..<_>::default()
     }
 }
@@ -669,7 +706,7 @@ fn generate_tiles(rng: &mut Xs) -> (Tiles, TileCount) {
 }
 
 fn generate_monsters(rng: &mut Xs, tiles: &mut Tiles, level: Level) {
-    for _ in 0..level.get() + 1 {
+    for _ in 0..level + 1 {
         spawn_monster(rng, tiles);
     }
 }
@@ -850,18 +887,7 @@ pub fn update(state: &mut State, input: Input) {
         },
         TitleReturn(ref mut world) => {
             if !matches!(input, Input::Empty) {
-                let s0 = xorshift(&mut world.rng).to_le_bytes();
-                let s1 = xorshift(&mut world.rng).to_le_bytes();
-                let s2 = xorshift(&mut world.rng).to_le_bytes();
-                let s3 = xorshift(&mut world.rng).to_le_bytes();
-    
-                let seed = [
-                    s0[0], s0[1], s0[2], s0[3],
-                    s1[0], s1[1], s1[2], s1[3],
-                    s2[0], s2[1], s2[2], s2[3],
-                    s3[0], s3[1], s3[2], s3[3],
-                ];
-                *state = State::from_seed(seed);
+                *state = State::from_seed(new_seed(&mut world.rng));
             }
         },
         Running(ref mut world) => {
@@ -886,6 +912,24 @@ pub fn update(state: &mut State, input: Input) {
             match after_tick_res {
                 Ok(AfterTick::NoChange) => {
                     return
+                },
+                Ok(AfterTick::CompletedRoom(player_hp)) => {
+                    if world.level == NUM_LEVELS {
+                        switch_variant = SwitchVariant::ToTitle;
+                    } else {
+                        match World::from_seed(
+                            new_seed(&mut world.rng),
+                            world.level.saturating_add(1),
+                            Some(player_hp.saturating_add(hp!(1))),
+                        ) {
+                            Ok(w) => { 
+                                *world = w;
+                            },
+                            Err(e) => {
+                                *state = Error(e);
+                            }
+                        }
+                    }
                 },
                 Ok(AfterTick::PlayerDied) => {
                     switch_variant = SwitchVariant::ToDead;
@@ -921,15 +965,15 @@ pub fn update(state: &mut State, input: Input) {
         }
         SwitchVariant::ToTitle => {
             let dummy_value = TitleFirst(<_>::default());
-            let dead = core::mem::replace(state, dummy_value);
-            *state = match dead {
-                Dead(world) => {
+            let previous = core::mem::replace(state, dummy_value);
+            *state = match previous {
+                Running(world) | Dead(world) => {
                     TitleReturn(world)
                 }
                 _ => {
                     // This case should not happen but I guess this is better than 
                     // `unsafe`?
-                    Error(crate::Error::ZombieState)
+                    Error(crate::Error::AlreadyAtTitle)
                 }
             };
         }    
