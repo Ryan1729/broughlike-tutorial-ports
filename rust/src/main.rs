@@ -142,6 +142,34 @@ async fn main() {
             )
         };
 
+        enum TextMode {
+            Title
+        }
+
+        struct TextSpec<'text> {
+            pub text: &'text str,
+            pub mode: TextMode,
+            pub y: Size,
+            pub colour: macroquad::Color,
+        }
+
+        let draw_text = |TextSpec { text, mode, y, colour, }: TextSpec| {
+            let size = 40.0;
+            let x = sizes.play_area_x + match mode {
+                TextMode::Title => {
+                    (sizes.play_area_w - macroquad::measure_text(text, size).0)/2.
+                },
+            };
+
+            macroquad::draw_text(
+                text,
+                x,
+                y,
+                size,
+                colour,
+            );
+        };
+
         let draw_title = || {
             macroquad::draw_rectangle(
                 sizes.play_area_x,
@@ -150,6 +178,20 @@ async fn main() {
                 sizes.play_area_h,
                 OVERLAY
             );
+
+            draw_text(TextSpec {
+                text: "Rust-some",
+                mode: TextMode::Title,
+                y: sizes.play_area_y + (sizes.play_area_h * 0.375),
+                colour: macroquad::WHITE,
+            });
+
+            draw_text(TextSpec {
+                text: "Broughlike",
+                mode: TextMode::Title,
+                y: sizes.play_area_y + (sizes.play_area_h * 0.5),
+                colour: macroquad::WHITE,
+            });
         };
 
         let draw_world = |world: &state::World| {
