@@ -143,7 +143,8 @@ async fn main() {
         };
 
         enum TextMode {
-            Title
+            TitleTop,
+            TitleBottom,
         }
 
         struct TextSpec<'text> {
@@ -154,10 +155,20 @@ async fn main() {
         }
 
         let draw_text = |TextSpec { text, mode, y, colour, }: TextSpec| {
-            let size = 40.0;
-            let x = sizes.play_area_x + match mode {
-                TextMode::Title => {
-                    (sizes.play_area_w - macroquad::measure_text(text, size).0)/2.
+            let (size, x)  = match mode {
+                TextMode::TitleTop => {
+                    let size = 40.0;
+                    (
+                        size,
+                        sizes.play_area_x + (sizes.play_area_w - macroquad::measure_text(text, size).0)/2.
+                    )
+                },
+                TextMode::TitleBottom => {
+                    let size = 70.0;
+                    (
+                        size,
+                        sizes.play_area_x + (sizes.play_area_w - macroquad::measure_text(text, size).0)/2.
+                    )
                 },
             };
 
@@ -181,15 +192,15 @@ async fn main() {
 
             draw_text(TextSpec {
                 text: "Rust-some",
-                mode: TextMode::Title,
-                y: sizes.play_area_y + (sizes.play_area_h * 0.375),
+                mode: TextMode::TitleTop,
+                y: sizes.play_area_y + (sizes.play_area_h * 3./8.),
                 colour: macroquad::WHITE,
             });
 
             draw_text(TextSpec {
                 text: "Broughlike",
-                mode: TextMode::Title,
-                y: sizes.play_area_y + (sizes.play_area_h * 0.5),
+                mode: TextMode::TitleBottom,
+                y: sizes.play_area_y + (sizes.play_area_h * 13./32.),
                 colour: macroquad::WHITE,
             });
         };
