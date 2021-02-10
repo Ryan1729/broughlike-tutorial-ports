@@ -101,7 +101,7 @@ impl World {
                 set_monster(&mut tiles, player);
     
                 let rate = 15;
-    
+
                 for _ in 0..3 {
                     // The player presumably wouldn't mind missing treasure as much
                     // as say, a missing exit.

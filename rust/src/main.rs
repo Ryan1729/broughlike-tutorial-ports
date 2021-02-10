@@ -123,7 +123,7 @@ async fn main() {
                 macroquad::DrawTextureParams {
                     dest_size: Some(macroquad::Vec2::new(sizes.tile, sizes.tile)),
                     source: Some(macroquad::Rect {
-                        x: 16. * sprite as f32,
+                        x: 16. * sprite as f32 + sprite as f32,
                         y: 0.,
                         w: 16.,
                         h: 16.,
