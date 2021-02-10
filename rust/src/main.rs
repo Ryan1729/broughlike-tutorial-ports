@@ -222,6 +222,10 @@ async fn main() {
                     state::TileKind::Wall => 3,
                     state::TileKind::Exit => 11,
                 }, t.xy);
+
+                if t.treasure {
+                    draw_sprite(12, t.xy);
+                }
     
                 if let Some(monster) = t.monster {
                     if monster.teleport_counter > 0 {

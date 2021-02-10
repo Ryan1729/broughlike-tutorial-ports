@@ -102,6 +102,14 @@ impl World {
     
                 let rate = 15;
     
+                for _ in 0..3 {
+                    // The player presumably wouldn't mind missing treasure as much
+                    // as say, a missing exit.
+                    if let Ok(Tile{xy, ..}) = random_passable_tile(&mut rng, &tiles) {
+                        set_treasure(&mut tiles, xy, true);
+                    }
+                }
+
                 Self {
                     xy: player_tile.xy,
                     rng,
@@ -391,6 +399,10 @@ fn replace(tiles: &mut Tiles, xy: TileXY, maker: fn(xy: TileXY) -> Tile) {
     tiles.0[xy_to_i(xy)] = maker(xy);
 }
 
+fn set_treasure(tiles: &mut Tiles, xy: TileXY, treasure: bool) {
+    tiles.0[xy_to_i(xy)].treasure = treasure;
+}
+
 fn move_player(world: &mut World, dxy: DeltaXY) -> Res<AfterTick> {
     let tile = world.tiles.get_tile(world.xy);
     if let Some(monster) = tile.monster {
@@ -598,7 +610,8 @@ fn do_stuff(world: &mut World, monster: Monster) -> Option<Monster> {
 pub struct Tile {
     pub xy: TileXY,
     pub kind: TileKind,
-    pub monster: Option<Monster>
+    pub monster: Option<Monster>,
+    pub treasure: bool,
 }
 
 impl Tile {
