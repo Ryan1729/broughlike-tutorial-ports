@@ -4,6 +4,7 @@ use state::{State, Input};
 
 const INDIGO: macroquad::Color = macroquad::Color([0x4b, 0, 0x82, 0xff]);
 const OVERLAY: macroquad::Color = macroquad::Color([0, 0, 0, 0xcc]);
+const VIOLET: macroquad::Color = macroquad::Color([0xee, 0x82, 0xee, 0xff]);
 
 const SPRITESHEET_BYTES: &[u8] = include_bytes!("../assets/spritesheet.png");
 
@@ -145,6 +146,7 @@ async fn main() {
         enum TextMode {
             TitleTop,
             TitleBottom,
+            UI,
         }
 
         struct TextSpec<'text> {
@@ -168,6 +170,14 @@ async fn main() {
                     (
                         size,
                         sizes.play_area_x + (sizes.play_area_w - macroquad::measure_text(text, size).0)/2.
+                    )
+                },
+                TextMode::UI => {
+                    let size = 30.;
+                    let em = macroquad::measure_text("m", size).0;
+                    (
+                        size,
+                        sizes.play_area_x + (state::NUM_TILES as Size) * sizes.tile + em,
                     )
                 },
             };
@@ -254,6 +264,13 @@ async fn main() {
                     // }
                 }
             }
+
+            draw_text(TextSpec {
+                text: &format!("Level {}", world.level),
+                mode: TextMode::UI,
+                y: sizes.play_area_y,
+                colour: VIOLET,
+            });
         };
 
         match state {
