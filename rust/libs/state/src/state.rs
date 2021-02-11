@@ -29,7 +29,7 @@ pub type Seed = [u8; 16];
 
 impl State {
     fn from_seed(seed: Seed) -> Self {
-        match World::from_seed(seed, 1, None) {
+        match World::from_seed(seed, 1, None, None) {
             Ok(w) => Self::Running(w),
             Err(e) => Self::Error(e),
         }
@@ -45,17 +45,21 @@ pub struct Spawn {
     rate: SpawnRate,
 }
 
+// 64k points ought to be enough for anybody.
+type Score = u16;
+
 #[derive(Debug)]
 pub struct World {
     pub xy: TileXY,
     rng: Xs,
     pub tiles: Tiles,
-    pub level: Level,
     pub spawn: Spawn,
+    pub score: Score,
+    pub level: Level,
 }
 
 impl World {
-    fn from_seed(mut seed: Seed, level: Level, starting_hp: Option<HP>) -> Res<Self> {
+    fn from_seed(mut seed: Seed, level: Level, starting_hp: Option<HP>, starting_score: Option<Score>) -> Res<Self> {
         // 0 doesn't work as a seed, so use this one instead.
         if seed == [0; 16] {
             seed = 0xBAD_5EED_u128.to_le_bytes();
@@ -118,7 +122,8 @@ impl World {
                     spawn: Spawn {
                         counter: rate,
                         rate,
-                    }
+                    },
+                    score: starting_score.unwrap_or_default(),
                 }   
             })
         })
@@ -460,6 +465,13 @@ fn tick(world: &mut World) -> AfterTick {
         match t.kind {
             TileKind::Exit => {
                 return AfterTick::CompletedRoom(player.hp);
+            },
+            TileKind::Floor => if t.treasure {
+                world.score = world.score.saturating_add(1);
+
+                set_treasure(&mut world.tiles, t.xy, false);
+
+                spawn_monster(&mut world.rng, &mut world.tiles);
             },
             _ => {}
         }
@@ -934,6 +946,7 @@ pub fn update(state: &mut State, input: Input) {
                             new_seed(&mut world.rng),
                             world.level.saturating_add(1),
                             Some(player_hp.saturating_add(hp!(1))),
+                            Some(world.score),
                         ) {
                             Ok(w) => { 
                                 *world = w;

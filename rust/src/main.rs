@@ -43,6 +43,8 @@ async fn main() {
 
     type Size = f32;
 
+    const UI_FONT_SIZE: Size = 36.;
+
     struct Sizes {
         play_area_x: Size,
         play_area_y: Size,
@@ -173,10 +175,9 @@ async fn main() {
                     )
                 },
                 TextMode::UI => {
-                    let size = 30.;
-                    let em = macroquad::measure_text("m", size).0;
+                    let em = macroquad::measure_text("m", UI_FONT_SIZE).0;
                     (
-                        size,
+                        UI_FONT_SIZE,
                         sizes.play_area_x + (state::NUM_TILES as Size) * sizes.tile + em,
                     )
                 },
@@ -270,9 +271,16 @@ async fn main() {
             }
 
             draw_text(TextSpec {
-                text: &format!("Level {}", world.level),
+                text: &format!("Level: {}", world.level),
                 mode: TextMode::UI,
                 y: sizes.play_area_y,
+                colour: VIOLET,
+            });
+
+            draw_text(TextSpec {
+                text: &format!("Score: {}", world.score),
+                mode: TextMode::UI,
+                y: sizes.play_area_y + UI_FONT_SIZE,
                 colour: VIOLET,
             });
         };
