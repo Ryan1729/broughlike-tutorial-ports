@@ -79,6 +79,8 @@ async fn main() {
         }
     }
 
+    let mut scores = Scores(None);
+
     loop {
         let sizes = fresh_sizes();
 
@@ -103,7 +105,9 @@ async fn main() {
         take_input!(Up);
         take_input!(Up, W);
 
-        state::update(state, input);
+        let event = state::update(state, input);
+
+        scores.add(event);
 
         // the -1 and +2 business makes the border lie just outside the actual
         // play area
@@ -311,5 +315,66 @@ async fn main() {
         }
 
         macroquad::next_frame().await
+    }
+}
+
+// 64k runs ought to be enough for anybody.
+type Runs = u16;
+
+#[derive(Clone)]
+struct ScoreRow {
+    score: state::Score,
+    total_score: state::Score,
+    run: Runs,
+    active: bool,
+}
+
+struct Scores(Option<Vec<ScoreRow>>);
+
+impl Scores {
+    fn get(&self) -> Vec<ScoreRow> {
+        if let Some(ref scores) = self.0 {
+            scores.clone()
+        } else {
+            // TODO load scores from disk
+            vec![]
+        }
+    }
+    
+    fn add(&mut self, event: state::UpdateEvent) {
+        let (score, won) = match event {
+            state::UpdateEvent::PlayerDied(s) => (s, false),
+            state::UpdateEvent::CompletedRun(s) => (s, true),
+            state::UpdateEvent::NothingNoteworthy => return,
+        };
+    
+        let mut scores = self.get();
+        let mut score_row = ScoreRow {score, run: 1, total_score: score, active: won};
+    
+        if let Some(last_score) = scores.pop() {
+            if last_score.active {
+                score_row.run = last_score.run + 1;
+                score_row.total_score += last_score.total_score;
+            } else {
+                scores.push(last_score);
+            }
+        }
+    
+        scores.push(score_row);
+    
+        // TODO write out scores to disk.
+        let result: Result<_, u8> = Ok(());
+
+        match result {
+            Ok(_) => {
+                self.0 = None;
+            }
+            Err(e) => {
+                // Presumably, the player thinks getting to play with no high
+                // scores saved is better than not being able to play.
+                eprintln!("{}", e);
+            }
+        }
+        
     }
 }

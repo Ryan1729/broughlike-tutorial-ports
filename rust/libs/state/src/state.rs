@@ -46,7 +46,7 @@ pub struct Spawn {
 }
 
 // 64k points ought to be enough for anybody.
-type Score = u16;
+pub type Score = u16;
 
 #[derive(Debug)]
 pub struct World {
@@ -892,9 +892,17 @@ pub enum Input {
     Right,
 }
 
-pub fn update(state: &mut State, input: Input) {
+pub enum UpdateEvent {
+    NothingNoteworthy,
+    PlayerDied(Score),
+    CompletedRun(Score),
+}
+
+pub fn update(state: &mut State, input: Input) -> UpdateEvent {
     use State::*;
     use Input::*;
+
+    let mut event = UpdateEvent::NothingNoteworthy;
 
     enum SwitchVariant {
         NoChange,
@@ -936,10 +944,11 @@ pub fn update(state: &mut State, input: Input) {
 
             match after_tick_res {
                 Ok(AfterTick::NoChange) => {
-                    return
+                    return event;
                 },
                 Ok(AfterTick::CompletedRoom(player_hp)) => {
                     if world.level == NUM_LEVELS {
+                        event = UpdateEvent::CompletedRun(world.score);
                         switch_variant = SwitchVariant::ToTitle;
                     } else {
                         match World::from_seed(
@@ -958,6 +967,7 @@ pub fn update(state: &mut State, input: Input) {
                     }
                 },
                 Ok(AfterTick::PlayerDied) => {
+                    event = UpdateEvent::PlayerDied(world.score);
                     switch_variant = SwitchVariant::ToDead;
                 },
                 Err(e) => {
@@ -1004,4 +1014,6 @@ pub fn update(state: &mut State, input: Input) {
             };
         }    
     }
+
+    event
 }
