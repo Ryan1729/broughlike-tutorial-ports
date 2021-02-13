@@ -79,7 +79,11 @@ async fn main() {
         }
     }
 
-    let mut scores = Scores(None);
+    let mut scores = Scores::new();
+    match scores.save_path {
+        Ok(ref p) => println!("Will save to {}", p.to_string_lossy()),
+        Err(ref e) => eprintln!("{}", e),
+    };
 
     loop {
         let sizes = fresh_sizes();
@@ -329,15 +333,73 @@ struct ScoreRow {
     active: bool,
 }
 
-struct Scores(Option<Vec<ScoreRow>>);
+struct Scores {
+    save_path: std::io::Result<std::path::PathBuf>,
+    cache: Option<Vec<ScoreRow>>,
+}
 
 impl Scores {
-    fn get(&self) -> Vec<ScoreRow> {
-        if let Some(ref scores) = self.0 {
+    fn new() -> Self {
+        let save_path = std::env::current_exe()
+            .map(|p| 
+                p
+                    .parent()
+                    .map(std::path::PathBuf::from)
+                    .unwrap_or(p)
+                    .join("broughlike.sav")
+            );
+
+        Self {
+            save_path,
+            cache: None,
+        }
+    }
+
+    fn get(&mut self) -> Vec<ScoreRow> {
+        if let Some(ref scores) = self.cache {
             scores.clone()
         } else {
-            // TODO load scores from disk
-            vec![]
+            let mut output = Vec::with_capacity(16);
+
+            if let Ok(ref path) = self.save_path {
+                if let Ok(s) = std::fs::read_to_string(path) {
+                    for line in s.lines() {
+                        let mut columns = line.split('\t');
+
+                        let mut row = ScoreRow {
+                            score: 0,
+                            total_score: 0,
+                            run: 0,
+                            active: false,
+                        };
+
+                        macro_rules! parse_or_continue {
+                            ($field: ident as $type: ty) => {
+                                parse_or_continue!($field as $type, { $field });
+                            };
+                            ($field: ident as $type: ty, $transform: block) => {
+                                if let Some($field) = columns.next()
+                                    .and_then(|s| s.trim().parse::<$type>().ok()) {
+                                    row.$field = $transform;
+                                } else {
+                                    continue;
+                                }
+                            }
+                        }
+
+                        parse_or_continue!(score as state::Score);
+                        parse_or_continue!(total_score as state::Score);
+                        parse_or_continue!(run as Runs);
+                        parse_or_continue!(active as u8, { active > 0 });
+
+                        output.push(row);
+                    }
+                }
+            }
+
+            self.cache = Some(output.clone());
+
+            output
         }
     }
     
@@ -362,19 +424,31 @@ impl Scores {
     
         scores.push(score_row);
     
-        // TODO write out scores to disk.
-        let result: Result<_, u8> = Ok(());
-
-        match result {
-            Ok(_) => {
-                self.0 = None;
+        if let Ok(ref path) = self.save_path {
+            let mut save_data = String::with_capacity(1024);
+            
+            for row in scores {
+                save_data += &format!(
+                    "{}\t{}\t{}\t{}\n",
+                    row.score,
+                    row.total_score,
+                    row.run,
+                    if row.active { 1 } else { 0 },
+                );
             }
-            Err(e) => {
-                // Presumably, the player thinks getting to play with no high
-                // scores saved is better than not being able to play.
-                eprintln!("{}", e);
+
+            let result: std::io::Result<_> = std::fs::write(path, save_data);
+    
+            match result {
+                Ok(_) => {
+                    self.cache = None;
+                }
+                Err(e) => {
+                    // Presumably, the player thinks getting to play with no high
+                    // scores saved is better than not being able to play.
+                    eprintln!("{}", e);
+                }
             }
         }
-        
     }
 }
