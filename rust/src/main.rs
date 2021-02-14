@@ -2,6 +2,7 @@
 
 use state::{State, Input};
 
+const AQUA: macroquad::Color = macroquad::Color([0, 0xff, 0xff, 0xff]);
 const INDIGO: macroquad::Color = macroquad::Color([0x4b, 0, 0x82, 0xff]);
 const OVERLAY: macroquad::Color = macroquad::Color([0, 0, 0, 0xcc]);
 const VIOLET: macroquad::Color = macroquad::Color([0xee, 0x82, 0xee, 0xff]);
@@ -157,6 +158,7 @@ async fn main() {
             TitleTop,
             TitleBottom,
             UI,
+            Score,
         }
 
         struct TextSpec<'text> {
@@ -182,6 +184,13 @@ async fn main() {
                         sizes.play_area_x + (sizes.play_area_w - macroquad::measure_text(text, size).0)/2.
                     )
                 },
+                TextMode::Score => {
+                    let size = UI_FONT_SIZE;
+                    (
+                        size,
+                        sizes.play_area_x + (sizes.play_area_w - macroquad::measure_text(text, size).0)/2.
+                    )
+                },
                 TextMode::UI => {
                     let em = macroquad::measure_text("m", UI_FONT_SIZE).0;
                     (
@@ -200,7 +209,7 @@ async fn main() {
             );
         };
 
-        let draw_title = || {
+        let mut draw_title = || {
             macroquad::draw_rectangle(
                 sizes.play_area_x,
                 sizes.play_area_y,
@@ -222,6 +231,42 @@ async fn main() {
                 y: sizes.play_area_y + (sizes.play_area_h * 13./32.),
                 colour: macroquad::WHITE,
             });
+
+            //
+            // Draw the scores
+            //
+
+            let mut rows: Vec<ScoreRow> = scores.get();
+            if let Some(newest_row) = rows.pop() {
+                draw_text(TextSpec {
+                    text: &right_pad(&["RUN","SCORE","TOTAL"]),
+                    mode: TextMode::Score,
+                    y: sizes.play_area_y + (sizes.play_area_h * 0.5),
+                    colour: macroquad::WHITE,
+                });
+
+                rows.sort_by_key(|a| a.total_score);
+        
+                rows.insert(0, newest_row);
+        
+                for i in 0u8..(10.min(rows.len())) as u8 {
+                    let row: &ScoreRow = &rows[i as usize];
+
+                    let row_h = sizes.play_area_h * 1./24.;
+
+                    draw_text(TextSpec {
+                        text: &right_pad(&[
+                            &format!("{}", row.run),
+                            &format!("{}", row.score),
+                            &format!("{}", row.total_score)
+                        ]),
+                        mode: TextMode::Score,
+                        y: sizes.play_area_y + (sizes.play_area_h * 0.5)
+                            + row_h + i as Size * row_h,
+                        colour: if i == 0 { AQUA } else { VIOLET },
+                    });
+                }
+            }
         };
 
         let draw_world = |world: &state::World| {
@@ -451,4 +496,17 @@ impl Scores {
             }
         }
     }
+}
+
+fn right_pad(strs: &[&str]) -> String {
+    let mut result = String::with_capacity(10 * strs.len());
+
+    for text in strs {
+        result += text;
+        for _ in text.len()..10 {
+            result += " ";
+        }
+    }
+
+    result
 }
