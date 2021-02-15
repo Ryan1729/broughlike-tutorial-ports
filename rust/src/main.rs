@@ -86,6 +86,14 @@ async fn main() {
         Err(ref e) => eprintln!("{}", e),
     };
 
+    let score_header = &right_pad(&["RUN","SCORE","TOTAL"]);
+    let score_header_first_column = &right_pad(&["RUN"]);
+    let score_header_first_two_columns = &right_pad(&["RUN","SCORE"]);
+    // This is to account for the fact that the last column has 5 extra spaces 
+    // after it, so the centering seems off, bacuase it's based on the full text 
+    // width.
+    const SCORE_NUDGE_IN_EMS: Size = 5.;
+
     loop {
         let sizes = fresh_sizes();
 
@@ -158,7 +166,10 @@ async fn main() {
             TitleTop,
             TitleBottom,
             UI,
-            Score,
+            ScoreHeader,
+            ScoreCol1,
+            ScoreCol2,
+            ScoreCol3,
         }
 
         struct TextSpec<'text> {
@@ -169,36 +180,77 @@ async fn main() {
         }
 
         let draw_text = |TextSpec { text, mode, y, colour, }: TextSpec| {
-            let (size, x)  = match mode {
+            let em = macroquad::measure_text("m", UI_FONT_SIZE).0;
+
+            let (size, mut x)  = match mode {
                 TextMode::TitleTop => {
                     let size = 40.0;
                     (
                         size,
-                        sizes.play_area_x + (sizes.play_area_w - macroquad::measure_text(text, size).0)/2.
+                        (sizes.play_area_w - macroquad::measure_text(text, size).0)/2.
                     )
                 },
                 TextMode::TitleBottom => {
                     let size = 70.0;
                     (
                         size,
-                        sizes.play_area_x + (sizes.play_area_w - macroquad::measure_text(text, size).0)/2.
+                        (sizes.play_area_w - macroquad::measure_text(text, size).0)/2.
                     )
                 },
-                TextMode::Score => {
+                TextMode::ScoreHeader => {
                     let size = UI_FONT_SIZE;
                     (
                         size,
-                        sizes.play_area_x + (sizes.play_area_w - macroquad::measure_text(text, size).0)/2.
+                        (
+                            sizes.play_area_w 
+                            - macroquad::measure_text(text, size).0
+                            + SCORE_NUDGE_IN_EMS * em
+                        )/2.
+                    )
+                },
+                TextMode::ScoreCol1 => {
+                    let size = UI_FONT_SIZE;
+                    (
+                        size,
+                        (
+                            sizes.play_area_w
+                            - macroquad::measure_text(score_header, size).0
+                            + SCORE_NUDGE_IN_EMS * em
+                        )/2.
+                    )
+                },
+                TextMode::ScoreCol2 => {
+                    let size = UI_FONT_SIZE;
+                    (
+                        size,
+                        (
+                            sizes.play_area_w
+                            - macroquad::measure_text(score_header, size).0
+                            + SCORE_NUDGE_IN_EMS * em
+                        )/2.
+                        + macroquad::measure_text(score_header_first_column, size).0
+                    )
+                },
+                TextMode::ScoreCol3 => {
+                    let size = UI_FONT_SIZE;
+                    (
+                        size,
+                        (
+                            sizes.play_area_w
+                            - macroquad::measure_text(score_header, size).0
+                            + SCORE_NUDGE_IN_EMS * em
+                        )/2.
+                        + macroquad::measure_text(score_header_first_two_columns, size).0
                     )
                 },
                 TextMode::UI => {
-                    let em = macroquad::measure_text("m", UI_FONT_SIZE).0;
                     (
                         UI_FONT_SIZE,
-                        sizes.play_area_x + (state::NUM_TILES as Size) * sizes.tile + em,
+                        (state::NUM_TILES as Size) * sizes.tile + em,
                     )
                 },
             };
+            x += sizes.play_area_x;
 
             macroquad::draw_text(
                 text,
@@ -239,8 +291,8 @@ async fn main() {
             let mut rows: Vec<ScoreRow> = scores.get();
             if let Some(newest_row) = rows.pop() {
                 draw_text(TextSpec {
-                    text: &right_pad(&["RUN","SCORE","TOTAL"]),
-                    mode: TextMode::Score,
+                    text: score_header,
+                    mode: TextMode::ScoreHeader,
                     y: sizes.play_area_y + (sizes.play_area_h * 0.5),
                     colour: macroquad::WHITE,
                 });
@@ -254,17 +306,25 @@ async fn main() {
 
                     let row_h = sizes.play_area_h * 1./24.;
 
-                    draw_text(TextSpec {
-                        text: &right_pad(&[
-                            &format!("{}", row.run),
-                            &format!("{}", row.score),
-                            &format!("{}", row.total_score)
-                        ]),
-                        mode: TextMode::Score,
+                    let spec = TextSpec {
+                        text: &format!("{}", row.total_score),
+                        mode: TextMode::ScoreCol1,
                         y: sizes.play_area_y + (sizes.play_area_h * 0.5)
                             + row_h + i as Size * row_h,
                         colour: if i == 0 { AQUA } else { VIOLET },
+                    }; 
+
+                    draw_text(TextSpec {
+                        text: &format!("{}", row.run),
+                        mode: TextMode::ScoreCol3,
+                        ..spec
                     });
+                    draw_text(TextSpec {
+                        text: &format!("{}", row.score),
+                        mode: TextMode::ScoreCol2,
+                        ..spec
+                    });
+                    draw_text(spec);
                 }
             }
         };
