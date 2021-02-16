@@ -320,6 +320,17 @@ impl HP {
     }
 }
 
+pub type OffsetX = i16;
+pub type OffsetY = i16;
+
+pub const OFFSET_MULTIPLE: i16 = 8;
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct OffsetXY {
+    pub x: OffsetX,
+    pub y: OffsetY,
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Monster {
     pub xy: TileXY,
@@ -327,7 +338,8 @@ pub struct Monster {
     pub hp: HP,
     pub attacked_this_turn: bool,
     pub stunned: bool,
-    pub teleport_counter: Counter
+    pub teleport_counter: Counter,
+    pub offset_xy: OffsetXY,
 }
 
 const MONSTER_COUNTER_START: Counter = 2;
@@ -389,6 +401,19 @@ impl Monster {
 
     fn is_player(&self) -> bool {
         self.kind == MonsterKind::Player
+    }
+}
+
+pub type DisplayX = i16;
+pub type DisplayY = i16;
+
+impl Monster {
+    pub fn display_x(&self) -> DisplayX {
+        self.xy.x as DisplayX * OFFSET_MULTIPLE + self.offset_xy.x
+    }
+
+    pub fn display_y(&self) -> DisplayY {
+        self.xy.y as DisplayY * OFFSET_MULTIPLE + self.offset_xy.y
     }
 }
 
@@ -510,6 +535,8 @@ fn r#move(world: &mut World, monster: Monster, xy: TileXY) -> Monster {
     remove_monster(&mut world.tiles, monster.xy);
 
     let mut moved = monster;
+    moved.offset_xy.x = (moved.xy.x as OffsetX - xy.x as OffsetX) * OFFSET_MULTIPLE;
+    moved.offset_xy.y = (moved.xy.y as OffsetX - xy.y as OffsetX) * OFFSET_MULTIPLE;
     moved.xy = xy;
 
     set_monster(&mut world.tiles, moved);
@@ -924,6 +951,13 @@ pub fn update(state: &mut State, input: Input) -> UpdateEvent {
             }
         },
         Running(ref mut world) => {
+            for t in world.tiles.0.iter_mut() {
+                if let Some(monster) = t.monster.as_mut() {
+                    monster.offset_xy.x -= monster.offset_xy.x.signum();
+                    monster.offset_xy.y -= monster.offset_xy.y.signum();
+                }
+            }
+
             let after_tick_res = match input {
                 Empty => {
                     Ok(AfterTick::NoChange)

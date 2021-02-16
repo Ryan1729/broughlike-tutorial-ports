@@ -35,7 +35,8 @@ async fn main() {
             Err(err) => err.duration(),
         };
 
-        duration.as_nanos()
+        duration.as_nanos();
+        1613245917843851603
     };
 
     println!("{}", seed);
@@ -93,6 +94,8 @@ async fn main() {
     // after it, so the centering seems off, bacuase it's based on the full text 
     // width.
     const SCORE_NUDGE_IN_EMS: Size = 5.;
+
+    let mut last_printed = String::new();
 
     loop {
         let sizes = fresh_sizes();
@@ -158,6 +161,16 @@ async fn main() {
                 (
                     sizes.tile * (xy.x as Size),
                     sizes.tile * (xy.y as Size)
+                )
+            )
+        };
+
+        let draw_sprite_float_scaled = |sprite: state::SpriteIndex, (x, y): (Size, Size)| {
+            draw_sprite_float(
+                sprite,
+                (
+                    sizes.tile * x,
+                    sizes.tile * y
                 )
             )
         };
@@ -329,7 +342,9 @@ async fn main() {
             }
         };
 
-        let draw_world = |world: &state::World| {
+        let mut draw_world = |world: &state::World| {
+            // We draw all the stationary sprites first so they don't cover the
+            // moving sprites
             for t in world.tiles.iter() {
                 draw_sprite(match t.kind {
                     state::TileKind::Floor => 2,
@@ -340,10 +355,19 @@ async fn main() {
                 if t.treasure {
                     draw_sprite(12, t.xy);
                 }
-    
+            }
+
+            for t in world.tiles.iter() {
                 if let Some(monster) = t.monster {
+                    let display_xy = (
+                        (monster.display_x() as Size
+                        / state::OFFSET_MULTIPLE as Size),
+                        (monster.display_y() as Size
+                        / state::OFFSET_MULTIPLE as Size),
+                    );
+
                     if monster.teleport_counter > 0 {
-                        draw_sprite(10, monster.xy);
+                        draw_sprite_float_scaled(10, display_xy);
                         continue;
                     }
 
@@ -351,6 +375,11 @@ async fn main() {
                         state::MonsterKind::Player => if monster.is_dead() {
                             1
                         } else {
+                            let to_print = format!("{:?}, x = {} * {} + {}", display_xy, monster.xy.x, state::OFFSET_MULTIPLE, monster.offset_xy.x);
+                            if last_printed != to_print {
+                                println!("{}", to_print);
+                                last_printed = to_print;
+                            }
                             0
                         },
                         state::MonsterKind::Bird => 4,
@@ -359,23 +388,19 @@ async fn main() {
                         state::MonsterKind::Eater => 7,
                         state::MonsterKind::Jester => 8,
                     };
-    
-                    draw_sprite(monster_sprite, monster.xy);
+
+                    draw_sprite_float_scaled(monster_sprite, display_xy);
     
                     // drawing the HP {
                     let pips = state::hp!(get pips monster.hp);
                     for i in 0..pips {
-                        draw_sprite_float(
+                        draw_sprite_float_scaled(
                             9,
                             (
-                                sizes.tile * (
-                                    monster.xy.x as Size 
-                                    + (i % 3) as Size * (5./16.)
-                                ),
-                                sizes.tile * (
-                                    monster.xy.y as Size 
-                                    - (i / 3) as Size * (5./16.)
-                                )
+                                display_xy.0 
+                                + (i % 3) as Size * (5./16.),
+                                display_xy.1
+                                - (i / 3) as Size * (5./16.)
                             )
                         );
                     }
