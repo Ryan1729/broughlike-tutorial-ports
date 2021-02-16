@@ -35,8 +35,7 @@ async fn main() {
             Err(err) => err.duration(),
         };
 
-        duration.as_nanos();
-        1613245917843851603
+        duration.as_nanos()
     };
 
     println!("{}", seed);
@@ -94,8 +93,6 @@ async fn main() {
     // after it, so the centering seems off, bacuase it's based on the full text 
     // width.
     const SCORE_NUDGE_IN_EMS: Size = 5.;
-
-    let mut last_printed = String::new();
 
     loop {
         let sizes = fresh_sizes();
@@ -342,7 +339,7 @@ async fn main() {
             }
         };
 
-        let mut draw_world = |world: &state::World| {
+        let draw_world = |world: &state::World| {
             // We draw all the stationary sprites first so they don't cover the
             // moving sprites
             for t in world.tiles.iter() {
@@ -375,11 +372,6 @@ async fn main() {
                         state::MonsterKind::Player => if monster.is_dead() {
                             1
                         } else {
-                            let to_print = format!("{:?}, x = {} * {} + {}", display_xy, monster.xy.x, state::OFFSET_MULTIPLE, monster.offset_xy.x);
-                            if last_printed != to_print {
-                                println!("{}", to_print);
-                                last_printed = to_print;
-                            }
                             0
                         },
                         state::MonsterKind::Bird => 4,

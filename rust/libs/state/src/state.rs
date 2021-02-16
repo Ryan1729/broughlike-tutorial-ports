@@ -919,6 +919,15 @@ pub enum Input {
     Right,
 }
 
+fn advance_offsets(world: &mut World) {
+    for t in world.tiles.0.iter_mut() {
+        if let Some(monster) = t.monster.as_mut() {
+            monster.offset_xy.x -= monster.offset_xy.x.signum();
+            monster.offset_xy.y -= monster.offset_xy.y.signum();
+        }
+    }
+}
+
 pub enum UpdateEvent {
     NothingNoteworthy,
     PlayerDied(Score),
@@ -951,12 +960,7 @@ pub fn update(state: &mut State, input: Input) -> UpdateEvent {
             }
         },
         Running(ref mut world) => {
-            for t in world.tiles.0.iter_mut() {
-                if let Some(monster) = t.monster.as_mut() {
-                    monster.offset_xy.x -= monster.offset_xy.x.signum();
-                    monster.offset_xy.y -= monster.offset_xy.y.signum();
-                }
-            }
+            advance_offsets(world);
 
             let after_tick_res = match input {
                 Empty => {
@@ -1009,7 +1013,9 @@ pub fn update(state: &mut State, input: Input) -> UpdateEvent {
                 }
             }
         },
-        Dead(_) => {
+        Dead(ref mut world) => {
+            advance_offsets(world);
+
             if !matches!(input, Input::Empty) {
                 switch_variant = SwitchVariant::ToTitle;
             }
