@@ -513,6 +513,8 @@ fn try_move(world: &mut World, mut monster: Monster, dxy: DeltaXY) -> Option<Mon
         if let Some(mut target) = new_tile.monster {
             if monster.is_player() != target.is_player() {
                 monster.attacked_this_turn = true;
+                monster.offset_xy.x = (new_tile.xy.x as OffsetX - monster.xy.x as OffsetX) * OFFSET_MULTIPLE / 2;
+                monster.offset_xy.y = (new_tile.xy.y as OffsetX - monster.xy.y as OffsetX) * OFFSET_MULTIPLE / 2;
 
                 set_monster(&mut world.tiles, monster);
 
