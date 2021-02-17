@@ -133,11 +133,21 @@ async fn main() {
             macroquad::WHITE
         );
 
-        let draw_sprite_float = |sprite: state::SpriteIndex, (x, y): (Size, Size)| {
+        macro_rules! offset_to_size {
+            ($offset: expr) => {
+                $offset as Size / state::OFFSET_MULTIPLE as Size
+            }
+        }
+
+        let draw_sprite_float = |
+            sprite: state::SpriteIndex,
+            (x, y): (Size, Size),
+            shake_xy: state::OffsetXY
+        | {
             macroquad::draw_texture_ex(
                 spritesheet,
-                sizes.play_area_x + x,
-                sizes.play_area_y + y,
+                sizes.play_area_x + sizes.tile * x + offset_to_size!(shake_xy.x),
+                sizes.play_area_y + sizes.tile * y + offset_to_size!(shake_xy.y),
                 macroquad::WHITE,
                 macroquad::DrawTextureParams {
                     dest_size: Some(macroquad::Vec2::new(sizes.tile, sizes.tile)),
@@ -152,23 +162,18 @@ async fn main() {
             );
         };
 
-        let draw_sprite = |sprite: state::SpriteIndex, xy: state::TileXY| {
+        let draw_sprite = |
+            sprite: state::SpriteIndex,
+            xy: state::TileXY,
+            shake_xy: state::OffsetXY
+        | {
             draw_sprite_float(
                 sprite,
                 (
-                    sizes.tile * (xy.x as Size),
-                    sizes.tile * (xy.y as Size)
-                )
-            )
-        };
-
-        let draw_sprite_float_scaled = |sprite: state::SpriteIndex, (x, y): (Size, Size)| {
-            draw_sprite_float(
-                sprite,
-                (
-                    sizes.tile * x,
-                    sizes.tile * y
-                )
+                    xy.x as Size,
+                    xy.y as Size
+                ),
+                shake_xy
             )
         };
 
@@ -343,28 +348,30 @@ async fn main() {
             // We draw all the stationary sprites first so they don't cover the
             // moving sprites
             for t in world.tiles.iter() {
-                draw_sprite(match t.kind {
-                    state::TileKind::Floor => 2,
-                    state::TileKind::Wall => 3,
-                    state::TileKind::Exit => 11,
-                }, t.xy);
+                draw_sprite(
+                    match t.kind {
+                        state::TileKind::Floor => 2,
+                        state::TileKind::Wall => 3,
+                        state::TileKind::Exit => 11,
+                    }, 
+                    t.xy,
+                    world.shake.xy,
+                );
 
                 if t.treasure {
-                    draw_sprite(12, t.xy);
+                    draw_sprite(12, t.xy, world.shake.xy);
                 }
             }
 
             for t in world.tiles.iter() {
                 if let Some(monster) = t.monster {
                     let display_xy = (
-                        (monster.display_x() as Size
-                        / state::OFFSET_MULTIPLE as Size),
-                        (monster.display_y() as Size
-                        / state::OFFSET_MULTIPLE as Size),
+                        offset_to_size!(monster.display_x()),
+                        offset_to_size!(monster.display_y()),
                     );
 
                     if monster.teleport_counter > 0 {
-                        draw_sprite_float_scaled(10, display_xy);
+                        draw_sprite_float(10, display_xy, world.shake.xy);
                         continue;
                     }
 
@@ -381,19 +388,20 @@ async fn main() {
                         state::MonsterKind::Jester => 8,
                     };
 
-                    draw_sprite_float_scaled(monster_sprite, display_xy);
+                    draw_sprite_float(monster_sprite, display_xy, world.shake.xy);
     
                     // drawing the HP {
                     let pips = state::hp!(get pips monster.hp);
                     for i in 0..pips {
-                        draw_sprite_float_scaled(
+                        draw_sprite_float(
                             9,
                             (
                                 display_xy.0 
                                 + (i % 3) as Size * (5./16.),
                                 display_xy.1
                                 - (i / 3) as Size * (5./16.)
-                            )
+                            ),
+                            world.shake.xy
                         );
                     }
                     // }

@@ -48,6 +48,17 @@ pub struct Spawn {
 // 64k points ought to be enough for anybody.
 pub type Score = u16;
 
+pub type Amount = u8;
+
+#[derive(Debug)]
+pub struct Shake {
+    pub amount: Amount,
+    pub xy: OffsetXY,
+    // We keep a separate shake RNG so that how fast the user inputs things
+    // does not affect the world generation
+    rng: Xs,
+}
+
 #[derive(Debug)]
 pub struct World {
     pub xy: TileXY,
@@ -56,6 +67,7 @@ pub struct World {
     pub spawn: Spawn,
     pub score: Score,
     pub level: Level,
+    pub shake: Shake,
 }
 
 impl World {
@@ -124,6 +136,13 @@ impl World {
                         rate,
                     },
                     score: starting_score.unwrap_or_default(),
+                    shake: Shake {
+                        amount: 0,
+                        xy: OffsetXY::default(),
+                        // We keep a separate shake RNG so that how fast the user inputs things
+                        // does not affect the world generation
+                        rng,
+                    }
                 }   
             })
         })
@@ -522,6 +541,8 @@ fn try_move(world: &mut World, mut monster: Monster, dxy: DeltaXY) -> Option<Mon
                 target.hp = target.hp.saturating_sub(hp!(1));
                 
                 set_monster(&mut world.tiles, target);
+
+                world.shake.amount = 5;
             };
 
             Some(monster)
@@ -922,10 +943,41 @@ pub enum Input {
 }
 
 fn advance_offsets(world: &mut World) {
+    // Monster offsets
     for t in world.tiles.0.iter_mut() {
         if let Some(monster) = t.monster.as_mut() {
             monster.offset_xy.x -= monster.offset_xy.x.signum();
             monster.offset_xy.y -= monster.offset_xy.y.signum();
+        }
+    }
+
+    // Screenshake offsets
+    let shake = &mut world.shake;
+    if shake.amount > 0 {
+        shake.amount -= 1;
+
+        // An extremely approximate version of picking a random angle, taking
+        // cos/sin of the angle, multiplying that by shake.amount.
+        
+        // We ask for 2 more random bits to determine the quadrant.
+        let max_offset = (shake.amount as OffsetX) * OFFSET_MULTIPLE;
+        let shake_spec = xs_u32(&mut shake.rng, 0, (max_offset as u32 + 1) << 2);
+        
+        // Here we pull those bits out.
+        let quadrant = shake_spec & ((1 << 2) - 1);
+        // Here we slide those bits off to get random number from 0 to max_offset.
+        shake.xy.x = (shake_spec >> 2) as OffsetX;
+        // On a unit square diamond, (our extreme appoximation to a unit circle)
+        // |x| + |y| == 1
+        // We skip the absolute value part by staying in the positive quadrant for now.
+        shake.xy.y = max_offset - shake.xy.x;
+    
+        // check each quadrant bit in turn to decide whether to flip across each axis.
+        if quadrant & 1 == 0 {
+            shake.xy.x *= -1;
+        }
+        if quadrant & 2 == 0 {
+            shake.xy.y *= -1;
         }
     }
 }
