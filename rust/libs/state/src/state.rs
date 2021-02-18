@@ -29,7 +29,7 @@ pub type Seed = [u8; 16];
 
 impl State {
     fn from_seed(seed: Seed) -> Self {
-        match World::from_seed(seed, 1, None, None) {
+        match World::from_seed(seed, 1, None, None, [SoundSpec::NoSound; 16]) {
             Ok(w) => Self::Running(w),
             Err(e) => Self::Error(e),
         }
@@ -59,8 +59,19 @@ pub struct Shake {
     rng: Xs,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub enum SoundSpec {
+    NoSound,
+    PlayerWasHit,
+    NonPlayerWasHit,
+    Treasure,
+    NewLevel,
+    Spell,
+}
+
 #[derive(Debug)]
 pub struct World {
+    pub sound_specs: [SoundSpec; 16],
     pub xy: TileXY,
     rng: Xs,
     pub tiles: Tiles,
@@ -71,7 +82,7 @@ pub struct World {
 }
 
 impl World {
-    fn from_seed(mut seed: Seed, level: Level, starting_hp: Option<HP>, starting_score: Option<Score>) -> Res<Self> {
+    fn from_seed(mut seed: Seed, level: Level, starting_hp: Option<HP>, starting_score: Option<Score>, sound_specs: [SoundSpec; 16]) -> Res<Self> {
         // 0 doesn't work as a seed, so use this one instead.
         if seed == [0; 16] {
             seed = 0xBAD_5EED_u128.to_le_bytes();
@@ -127,6 +138,7 @@ impl World {
                 }
 
                 Self {
+                    sound_specs,
                     xy: player_tile.xy,
                     rng,
                     tiles,
@@ -166,6 +178,20 @@ impl World {
         }
     
         monsters
+    }
+
+    fn clear_sounds(&mut self) {
+        self.sound_specs = [SoundSpec::NoSound; 16];
+    }
+
+    fn push_sound(&mut self, spec: SoundSpec) {
+        for i in 0..self.sound_specs.len() {
+            if let SoundSpec::NoSound = self.sound_specs[i] {
+               self.sound_specs[i] = spec;
+                break;
+            }
+            // Note that if we run out of sounds, we just don't push it on.
+        }
     }
 }
 
@@ -508,12 +534,15 @@ fn tick(world: &mut World) -> AfterTick {
 
         match t.kind {
             TileKind::Exit => {
+                world.push_sound(SoundSpec::NewLevel);
+
                 return AfterTick::CompletedRoom(player.hp);
             },
             TileKind::Floor => if t.treasure {
                 world.score = world.score.saturating_add(1);
 
                 set_treasure(&mut world.tiles, t.xy, false);
+                world.push_sound(SoundSpec::Treasure);
 
                 spawn_monster(&mut world.rng, &mut world.tiles);
             },
@@ -543,6 +572,12 @@ fn try_move(world: &mut World, mut monster: Monster, dxy: DeltaXY) -> Option<Mon
                 set_monster(&mut world.tiles, target);
 
                 world.shake.amount = 5;
+
+                if target.is_player() {
+                    world.push_sound(SoundSpec::PlayerWasHit);
+                } else {
+                    world.push_sound(SoundSpec::NonPlayerWasHit);
+                }
             };
 
             Some(monster)
@@ -769,7 +804,7 @@ fn generate_tiles(rng: &mut Xs) -> (Tiles, TileCount) {
 
             if !in_bounds(xy) || xs_u32(rng, 0, 10) < 3 {
                 tiles[i] = make_wall(xy);
-            }else{
+            } else {
                 tiles[i] = make_floor(xy);
 
                 passable_tiles += 1;
@@ -1014,6 +1049,7 @@ pub fn update(state: &mut State, input: Input) -> UpdateEvent {
             }
         },
         Running(ref mut world) => {
+            world.clear_sounds();
             advance_offsets(world);
 
             let after_tick_res = match input {
@@ -1048,6 +1084,7 @@ pub fn update(state: &mut State, input: Input) -> UpdateEvent {
                             world.level.saturating_add(1),
                             Some(player_hp.saturating_add(hp!(1))),
                             Some(world.score),
+                            world.sound_specs,
                         ) {
                             Ok(w) => { 
                                 *world = w;
@@ -1068,6 +1105,7 @@ pub fn update(state: &mut State, input: Input) -> UpdateEvent {
             }
         },
         Dead(ref mut world) => {
+            world.clear_sounds();
             advance_offsets(world);
 
             if !matches!(input, Input::Empty) {

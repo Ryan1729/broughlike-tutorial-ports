@@ -10,4 +10,5 @@ edition = "2018"
 macroquad = "0.2.9"
 # This is the version linked in the macroquad "0.2.9" docs.
 miniquad = "0.3.0-alpha.11"
+quad-snd = "0.1.0-alpha.1"
 state = { path = "libs/state" }

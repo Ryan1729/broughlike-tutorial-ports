@@ -2,12 +2,20 @@
 
 use state::{State, Input};
 
+use quad_snd::{decoder, mixer};
+
 const AQUA: macroquad::Color = macroquad::Color([0, 0xff, 0xff, 0xff]);
 const INDIGO: macroquad::Color = macroquad::Color([0x4b, 0, 0x82, 0xff]);
 const OVERLAY: macroquad::Color = macroquad::Color([0, 0, 0, 0xcc]);
 const VIOLET: macroquad::Color = macroquad::Color([0xee, 0x82, 0xee, 0xff]);
 
 const SPRITESHEET_BYTES: &[u8] = include_bytes!("../assets/spritesheet.png");
+
+const S0: &[u8] = include_bytes!("../assets/hit1.wav");
+const S1: &[u8] = include_bytes!("../assets/hit2.wav");
+const S2: &[u8] = include_bytes!("../assets/treasure.wav");
+const S3: &[u8] = include_bytes!("../assets/newLevel.wav");
+const S4: &[u8] = include_bytes!("../assets/spell.wav");
 
 #[macroquad::main("AWESOME BROUGHLIKE")]
 async fn main() {
@@ -23,6 +31,16 @@ async fn main() {
 
         texture
     };
+
+    let sounds = [
+        decoder::read_wav_ext(S0, mixer::PlaybackStyle::Once).unwrap(),
+        decoder::read_wav_ext(S1, mixer::PlaybackStyle::Once).unwrap(),
+        decoder::read_wav_ext(S2, mixer::PlaybackStyle::Once).unwrap(),
+        decoder::read_wav_ext(S3, mixer::PlaybackStyle::Once).unwrap(),
+        decoder::read_wav_ext(S4, mixer::PlaybackStyle::Once).unwrap(),
+    ];
+
+    let mut mixer = mixer::SoundMixer::new();
 
     let seed: u128 = {
         use std::time::SystemTime;
@@ -434,6 +452,19 @@ async fn main() {
             state::State::Running(ref world)
             | state::State::Dead(ref world) => {
                 draw_world(world);
+
+                for spec in &world.sound_specs {
+                    let index = match spec {
+                        state::SoundSpec::NoSound => continue,
+                        state::SoundSpec::PlayerWasHit => 0,
+                        state::SoundSpec::NonPlayerWasHit => 1,
+                        state::SoundSpec::Treasure => 2,
+                        state::SoundSpec::NewLevel => 3,
+                        state::SoundSpec::Spell => 4,
+                    };
+
+                    mixer.play_ext(sounds[index].clone(), mixer::Volume(0.8));
+                }
             },
             state::State::Error(e) => {
                 macroquad::draw_text(
@@ -447,6 +478,8 @@ async fn main() {
                 );
             }
         }
+
+        mixer.frame();
 
         macroquad::next_frame().await
     }
