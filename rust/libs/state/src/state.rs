@@ -75,6 +75,8 @@ pub struct World {
     pub xy: TileXY,
     rng: Xs,
     pub tiles: Tiles,
+    pub spells: SpellBook,
+    pub num_spells: SpellCount,
     pub spawn: Spawn,
     pub score: Score,
     pub level: Level,
@@ -154,7 +156,9 @@ impl World {
                         // We keep a separate shake RNG so that how fast the user inputs things
                         // does not affect the world generation
                         rng,
-                    }
+                    },
+                    num_spells: 1,
+                    spells: [None; MAX_NUM_SPELLS as usize]
                 }   
             })
         })
@@ -497,12 +501,14 @@ fn move_player(world: &mut World, dxy: DeltaXY) -> Res<AfterTick> {
     }
 }
 
+#[must_use]
 enum AfterTick {
     NoChange,
     PlayerDied,
     CompletedRoom(HP),
 }
 
+#[must_use]
 fn tick(world: &mut World) -> AfterTick {
     let monsters = world.get_monsters();
 
@@ -969,12 +975,70 @@ where
 }
 
 #[derive(Copy, Clone)]
+pub enum SpellPage {
+    _1,
+    _2,
+    _3,
+    _4,
+    _5,
+    _6,
+    _7,
+    _8,
+    _9,
+}
+
+/// Must be the same as the number of SpellPage variants.
+pub const MAX_NUM_SPELLS: SpellCount = 9;
+
+#[derive(Copy, Clone, Debug)]
+pub enum SpellName {
+    WOOP
+}
+
+type SpellCount = u8;
+
+pub type SpellBook = [Option<SpellName>; MAX_NUM_SPELLS as usize];
+
+// Might be an enum later
+type AfterSpell = ();
+
+type Spell = fn (world: &mut World) -> Res<AfterSpell>;
+
+fn cast_spell(world: &mut World, page: SpellPage) -> Res<AfterTick> {
+    let mut after_tick = AfterTick::NoChange;
+    let mut after_spell = Ok(());
+
+    if let Some(spell_name) = world.spells[page as usize].take() {
+        use SpellName::*;
+        let spell = match spell_name {
+            WOOP => woop,
+        };
+
+        after_spell = spell(world);
+
+        world.push_sound(SoundSpec::Spell);
+
+        after_tick = tick(world);
+    }
+
+    after_spell.map(|spell| {
+        after_tick
+    })
+}
+
+fn woop(world: &mut World) -> Res<AfterSpell> {
+    // TODO
+    Ok(())
+}
+
+#[derive(Copy, Clone)]
 pub enum Input {
     Empty,
     Up,
     Down,
     Left,
     Right,
+    Cast(SpellPage),
 }
 
 fn advance_offsets(world: &mut World) {
@@ -1067,6 +1131,9 @@ pub fn update(state: &mut State, input: Input) -> UpdateEvent {
                 },
                 Right => {
                     move_player(world, dxy!(1, 0))
+                },
+                Cast(page) => {
+                    cast_spell(world, page)
                 },
             };
 
