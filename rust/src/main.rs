@@ -119,11 +119,14 @@ async fn main() {
         let mut input = Input::Empty;
         macro_rules! take_input {
             ($input: ident) => {
-                take_input!($input, $input)
+                take_input!(Input::$input, $input)
             };
             ($input: ident, $key_code: ident) => {
+                take_input!(Input::$input, $key_code)
+            };
+            ($input: expr, $key_code: ident) => {
                 if macroquad::is_key_pressed(macroquad::KeyCode::$key_code) {
-                    input = Input::$input;
+                    input = $input;
                 }
             }
         }
@@ -135,6 +138,16 @@ async fn main() {
         take_input!(Down, S);
         take_input!(Up);
         take_input!(Up, W);
+
+        take_input!(Input::Cast(state::SpellPage::_1), Key1);
+        take_input!(Input::Cast(state::SpellPage::_2), Key2);
+        take_input!(Input::Cast(state::SpellPage::_3), Key3);
+        take_input!(Input::Cast(state::SpellPage::_4), Key4);
+        take_input!(Input::Cast(state::SpellPage::_5), Key5);
+        take_input!(Input::Cast(state::SpellPage::_6), Key6);
+        take_input!(Input::Cast(state::SpellPage::_7), Key7);
+        take_input!(Input::Cast(state::SpellPage::_8), Key8);
+        take_input!(Input::Cast(state::SpellPage::_9), Key9);
 
         let event = state::update(state, input);
 
@@ -426,19 +439,44 @@ async fn main() {
                 }
             }
 
-            draw_text(TextSpec {
-                text: &format!("Level: {}", world.level),
-                mode: TextMode::UI,
-                y: sizes.play_area_y,
-                colour: VIOLET,
-            });
+            {
+                let mut y = sizes.play_area_y;
 
-            draw_text(TextSpec {
-                text: &format!("Score: {}", world.score),
-                mode: TextMode::UI,
-                y: sizes.play_area_y + UI_FONT_SIZE,
-                colour: VIOLET,
-            });
+                draw_text(TextSpec {
+                    text: &format!("Level: {}", world.level),
+                    mode: TextMode::UI,
+                    y,
+                    colour: VIOLET,
+                });
+
+                y += UI_FONT_SIZE;
+                draw_text(TextSpec {
+                    text: &format!("Score: {}", world.score),
+                    mode: TextMode::UI,
+                    y: sizes.play_area_y + UI_FONT_SIZE,
+                    colour: VIOLET,
+                });
+
+                y += UI_FONT_SIZE * 2.;
+
+                for i in 0..world.spells.len() {
+                    y += UI_FONT_SIZE;
+
+                    draw_text(TextSpec {
+                        text: &format!(
+                            "{}) {}",
+                            i + 1,
+                            match world.spells[i] {
+                                None => "".to_string(),
+                                Some(s) => format!("{}", s)
+                            }
+                        ),
+                        mode: TextMode::UI,
+                        y,
+                        colour: AQUA,
+                    });
+                }
+            }
         };
 
         match state {

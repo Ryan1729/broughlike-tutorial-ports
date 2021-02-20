@@ -29,7 +29,7 @@ pub type Seed = [u8; 16];
 
 impl State {
     fn from_seed(seed: Seed) -> Self {
-        match World::from_seed(seed, 1, None, None, [SoundSpec::NoSound; 16]) {
+        match World::from_seed(seed, 1, None, None, None, [SoundSpec::NoSound; 16]) {
             Ok(w) => Self::Running(w),
             Err(e) => Self::Error(e),
         }
@@ -84,7 +84,14 @@ pub struct World {
 }
 
 impl World {
-    fn from_seed(mut seed: Seed, level: Level, starting_hp: Option<HP>, starting_score: Option<Score>, sound_specs: [SoundSpec; 16]) -> Res<Self> {
+    fn from_seed(
+        mut seed: Seed,
+        level: Level,
+        starting_hp: Option<HP>,
+        starting_score: Option<Score>,
+        num_spells: Option<SpellCount>,
+        sound_specs: [SoundSpec; 16]
+    ) -> Res<Self> {
         // 0 doesn't work as a seed, so use this one instead.
         if seed == [0; 16] {
             seed = 0xBAD_5EED_u128.to_le_bytes();
@@ -128,7 +135,7 @@ impl World {
                 }
     
                 set_monster(&mut tiles, player);
-    
+
                 let rate = 15;
 
                 for _ in 0..3 {
@@ -137,6 +144,16 @@ impl World {
                     if let Ok(Tile{xy, ..}) = random_passable_tile(&mut rng, &tiles) {
                         set_treasure(&mut tiles, xy, true);
                     }
+                }
+
+                let num_spells = num_spells.unwrap_or(1);
+
+                let mut all_spells = ALL_SPELL_NAMES.clone();
+                shuffle(&mut rng, &mut all_spells);
+
+                let mut spells = [None; MAX_NUM_SPELLS as usize];
+                for i in 0..num_spells as usize {
+                    spells[i] = Some(all_spells[i]);
                 }
 
                 Self {
@@ -157,8 +174,8 @@ impl World {
                         // does not affect the world generation
                         rng,
                     },
-                    num_spells: 1,
-                    spells: [None; MAX_NUM_SPELLS as usize]
+                    num_spells,
+                    spells,
                 }   
             })
         })
@@ -990,8 +1007,32 @@ pub enum SpellPage {
 /// Must be the same as the number of SpellPage variants.
 pub const MAX_NUM_SPELLS: SpellCount = 9;
 
-#[derive(Copy, Clone, Debug)]
-pub enum SpellName {
+macro_rules! def_spell_names {
+    ($($variants: ident),*) => {
+        #[derive(Copy, Clone, Debug)]
+        pub enum SpellName {
+            $($variants),*
+        }
+        
+        const SPELL_NAME_COUNT: usize = 1;
+
+        const ALL_SPELL_NAMES: [SpellName; SPELL_NAME_COUNT] = [
+            $(SpellName::$variants),*
+        ];
+
+        const ALL_SPELL_NAME_STRS: [&str; SPELL_NAME_COUNT] = [
+            $(stringify!($variants)),*
+        ];
+
+        impl core::fmt::Display for SpellName {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                write!(f, "{}", ALL_SPELL_NAME_STRS[*self as usize])
+            }
+        }
+    }
+}
+
+def_spell_names!{
     WOOP
 }
 
@@ -1151,6 +1192,7 @@ pub fn update(state: &mut State, input: Input) -> UpdateEvent {
                             world.level.saturating_add(1),
                             Some(player_hp.saturating_add(hp!(1))),
                             Some(world.score),
+                            Some(world.num_spells),
                             world.sound_specs,
                         ) {
                             Ok(w) => { 
