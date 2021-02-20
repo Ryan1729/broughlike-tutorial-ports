@@ -63,6 +63,7 @@ async fn main() {
     type Size = f32;
 
     const UI_FONT_SIZE: Size = 36.;
+    const SPELLS_FONT_SIZE: Size = 60.;
 
     struct Sizes {
         play_area_x: Size,
@@ -216,6 +217,7 @@ async fn main() {
             ScoreCol1,
             ScoreCol2,
             ScoreCol3,
+            Spells,
         }
 
         struct TextSpec<'text> {
@@ -292,6 +294,12 @@ async fn main() {
                 TextMode::UI => {
                     (
                         UI_FONT_SIZE,
+                        (state::NUM_TILES as Size) * sizes.tile + em,
+                    )
+                },
+                TextMode::Spells => {
+                    (
+                        SPELLS_FONT_SIZE,
                         (state::NUM_TILES as Size) * sizes.tile + em,
                     )
                 },
@@ -460,7 +468,7 @@ async fn main() {
                 y += UI_FONT_SIZE * 2.;
 
                 for i in 0..world.spells.len() {
-                    y += UI_FONT_SIZE;
+                    y += SPELLS_FONT_SIZE;
 
                     draw_text(TextSpec {
                         text: &format!(
@@ -471,7 +479,7 @@ async fn main() {
                                 Some(s) => format!("{}", s)
                             }
                         ),
-                        mode: TextMode::UI,
+                        mode: TextMode::Spells,
                         y,
                         colour: AQUA,
                     });
