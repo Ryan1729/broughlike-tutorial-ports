@@ -148,7 +148,7 @@ impl World {
 
                 let num_spells = num_spells.unwrap_or(1);
 
-                let mut all_spells = ALL_SPELL_NAMES.clone();
+                let mut all_spells = ALL_SPELL_NAMES;
                 shuffle(&mut rng, &mut all_spells);
 
                 let mut spells = [None; MAX_NUM_SPELLS as usize];
@@ -531,7 +531,6 @@ enum AfterTick {
     CompletedRoom(HP),
 }
 
-#[must_use]
 fn tick(world: &mut World) -> AfterTick {
     let monsters = world.get_monsters();
 
@@ -1054,7 +1053,7 @@ fn cast_spell(world: &mut World, page: SpellPage) -> Res<AfterTick> {
 
     if let Some(spell_name) = world.spells[page as usize].take() {
         use SpellName::*;
-        let spell = match spell_name {
+        let spell: Spell = match spell_name {
             WOOP => woop,
         };
 
@@ -1065,9 +1064,7 @@ fn cast_spell(world: &mut World, page: SpellPage) -> Res<AfterTick> {
         after_tick = tick(world);
     }
 
-    after_spell.map(|spell| {
-        after_tick
-    })
+    after_spell.map(|_| after_tick)
 }
 
 fn woop(world: &mut World) -> Res<()> {
@@ -1078,7 +1075,6 @@ fn woop(world: &mut World) -> Res<()> {
             // If the player tries to teleport when there is no free space
             // I'm not sure what else they would expect to happen. But I
             // know that they wouldn't want the game to freeze with an error.
-            ()
         }
     })
 }
