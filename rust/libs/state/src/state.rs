@@ -153,7 +153,7 @@ impl World {
 
                 let mut spells = [None; MAX_NUM_SPELLS as usize];
                 for i in 0..num_spells as usize {
-                    spells[i] = Some(all_spells[i]);
+                    spells[i] = Some(all_spells[i % all_spells.len()]);
                 }
 
                 Self {
@@ -568,6 +568,24 @@ fn tick(world: &mut World) -> AfterTick {
             },
             TileKind::Floor => if t.treasure {
                 world.score = world.score.saturating_add(1);
+
+                if world.score % 3 == 0 && world.num_spells < 9 {
+                    world.num_spells += 1;
+
+                    // Add spell
+                    let mut spells = ALL_SPELL_NAMES;
+                    shuffle(&mut world.rng, &mut spells);
+
+                    let len = world.spells.len();
+                    for index in (0..len).rev() {
+                        if world.spells[index].is_some() {
+                            let i = index + 1;
+                            if i < len {
+                                world.spells[i] = Some(spells[0]);
+                            }
+                        }
+                    }
+                }
 
                 set_treasure(&mut world.tiles, t.xy, false);
                 world.push_sound(SoundSpec::Treasure);
