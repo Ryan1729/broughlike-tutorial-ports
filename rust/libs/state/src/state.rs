@@ -499,23 +499,29 @@ fn set_treasure(tiles: &mut Tiles, xy: TileXY, treasure: bool) {
     tiles.0[xy_to_i(xy)].treasure = treasure;
 }
 
-fn move_player(world: &mut World, dxy: DeltaXY) -> Res<AfterTick> {
+fn get_player(world: &World) -> Res<Monster> {
     let tile = world.tiles.get_tile(world.xy);
     if let Some(monster) = tile.monster {
         if monster.kind == MonsterKind::Player {
-            if let Some(moved) = try_move(world, monster, dxy) {
-                world.xy = moved.xy;
-
-                Ok(tick(world))
-            } else {
-                Ok(AfterTick::NoChange)
-            }
+            Ok(monster)
         } else {
             Err(Error::ExpectedNonPlayerToBePlayer(world.xy, monster.kind))
         }
     } else {
         Err(Error::CouldNotFindPlayer(world.xy))
     }
+}
+
+fn move_player(world: &mut World, dxy: DeltaXY) -> Res<AfterTick> {
+    get_player(world).map(move |player| {
+        if let Some(moved) = try_move(world, player, dxy) {
+            world.xy = moved.xy;
+
+            tick(world)
+        } else {
+            AfterTick::NoChange
+        }
+    })
 }
 
 #[must_use]
@@ -1040,10 +1046,7 @@ type SpellCount = u8;
 
 pub type SpellBook = [Option<SpellName>; MAX_NUM_SPELLS as usize];
 
-// Might be an enum later
-type AfterSpell = ();
-
-type Spell = fn (world: &mut World) -> Res<AfterSpell>;
+type Spell = fn (world: &mut World) -> Res<()>;
 
 fn cast_spell(world: &mut World, page: SpellPage) -> Res<AfterTick> {
     let mut after_tick = AfterTick::NoChange;
@@ -1067,9 +1070,17 @@ fn cast_spell(world: &mut World, page: SpellPage) -> Res<AfterTick> {
     })
 }
 
-fn woop(world: &mut World) -> Res<AfterSpell> {
-    // TODO
-    Ok(())
+fn woop(world: &mut World) -> Res<()> {
+    get_player(world).map(|player| {
+        if let Ok(new_tile) = random_passable_tile(&mut world.rng, &world.tiles) {
+            world.xy = r#move(world, player, new_tile.xy).xy;
+        } else {
+            // If the player tries to teleport when there is no free space
+            // I'm not sure what else they would expect to happen. But I
+            // know that they wouldn't want the game to freeze with an error.
+            ()
+        }
+    })
 }
 
 #[derive(Copy, Clone)]
