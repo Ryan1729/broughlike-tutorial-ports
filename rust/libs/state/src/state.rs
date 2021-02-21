@@ -365,6 +365,7 @@ macro_rules! hp {
     (1) => { hp!(raw 2) };
     (2) => { hp!(raw 4) };
     (3) => { hp!(raw 6) };
+    (expr $hp: expr) => { hp!(raw ($hp * 2)) };
     (raw $hp: expr) => { $crate::HP { use_the_macro_instead: $hp } };
 }
 
@@ -1037,7 +1038,7 @@ macro_rules! def_spell_names {
             $($variants),*
         }
         
-        const SPELL_NAME_COUNT: usize = 1;
+        const SPELL_NAME_COUNT: usize = 2;
 
         const ALL_SPELL_NAMES: [SpellName; SPELL_NAME_COUNT] = [
             $(SpellName::$variants),*
@@ -1056,7 +1057,8 @@ macro_rules! def_spell_names {
 }
 
 def_spell_names!{
-    WOOP
+    WOOP,
+    QUAKE
 }
 
 type SpellCount = u8;
@@ -1073,6 +1075,7 @@ fn cast_spell(world: &mut World, page: SpellPage) -> Res<AfterTick> {
         use SpellName::*;
         let spell: Spell = match spell_name {
             WOOP => woop,
+            QUAKE => quake,
         };
 
         after_spell = spell(world);
@@ -1095,6 +1098,33 @@ fn woop(world: &mut World) -> Res<()> {
             // know that they wouldn't want the game to freeze with an error.
         }
     })
+}
+
+fn quake(world: &mut World) -> Res<()> {
+    let monsters = world.get_monsters();
+
+    for monster in monsters.iter() {
+        let neighbors = get_adjacent_neighbors(
+            &mut world.rng,
+            &world.tiles,
+            monster.xy
+        );
+    
+        let filtered = neighbors.iter()
+                            .filter(|t| t.is_passable());
+
+        let num_walls = 4 - filtered.count() as u8;
+
+        set_monster(
+            &mut world.tiles, 
+            Monster{ 
+                hp: monster.hp.saturating_sub(hp!(expr num_walls * 2)),
+                ..*monster
+            }
+        )
+    }
+
+    Ok(())
 }
 
 #[derive(Copy, Clone)]
