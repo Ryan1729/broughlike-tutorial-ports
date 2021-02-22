@@ -29,7 +29,16 @@ pub type Seed = [u8; 16];
 
 impl State {
     fn from_seed(seed: Seed) -> Self {
-        match World::from_seed(seed, 1, None, None, None, [SoundSpec::NoSound; 16]) {
+        match World::from_seed(
+            seed,
+            WorldSpec {
+                level: 1,
+                starting_hp: None,
+                starting_score: None,
+                num_spells: None,
+                sound_specs: [SoundSpec::NoSound; 16]
+            }
+        ) {
             Ok(w) => Self::Running(w),
             Err(e) => Self::Error(e),
         }
@@ -83,14 +92,24 @@ pub struct World {
     pub shake: Shake,
 }
 
+struct WorldSpec {
+    level: Level,
+    starting_hp: Option<HP>,
+    starting_score: Option<Score>,
+    num_spells: Option<SpellCount>,
+    sound_specs: [SoundSpec; 16]
+}
+
 impl World {
     fn from_seed(
         mut seed: Seed,
-        level: Level,
-        starting_hp: Option<HP>,
-        starting_score: Option<Score>,
-        num_spells: Option<SpellCount>,
-        sound_specs: [SoundSpec; 16]
+        WorldSpec {
+            level,
+            starting_hp,
+            starting_score,
+            num_spells,
+            sound_specs
+        }: WorldSpec
     ) -> Res<Self> {
         // 0 doesn't work as a seed, so use this one instead.
         if seed == [0; 16] {
@@ -1032,13 +1051,13 @@ pub enum SpellPage {
 pub const MAX_NUM_SPELLS: SpellCount = 9;
 
 macro_rules! def_spell_names {
-    ($($variants: ident),*) => {
+    ($($variants: ident),* $(,)?) => {
         #[derive(Copy, Clone, Debug)]
         pub enum SpellName {
             $($variants),*
         }
         
-        const SPELL_NAME_COUNT: usize = 3;
+        const SPELL_NAME_COUNT: usize = 4;
 
         const ALL_SPELL_NAMES: [SpellName; SPELL_NAME_COUNT] = [
             $(SpellName::$variants),*
@@ -1059,7 +1078,8 @@ macro_rules! def_spell_names {
 def_spell_names!{
     WOOP,
     QUAKE,
-    MAELSTROM
+    MAELSTROM,
+    MULLIGAN,
 }
 
 type SpellCount = u8;
@@ -1078,6 +1098,7 @@ fn cast_spell(world: &mut World, page: SpellPage) -> Res<AfterTick> {
             WOOP => woop,
             QUAKE => quake,
             MAELSTROM => maelstrom,
+            MULLIGAN => mulligan,
         };
 
         after_spell = spell(world);
@@ -1151,6 +1172,21 @@ fn maelstrom(world: &mut World) -> Res<()> {
     }
 
     Ok(())
+}
+
+fn mulligan(world: &mut World) -> Res<()> {
+    World::from_seed(
+        new_seed(&mut world.rng),
+        WorldSpec {
+            level: world.level,
+            starting_hp: Some(hp!(1)),
+            starting_score: Some(world.score),
+            num_spells: Some(world.num_spells),
+            sound_specs: world.sound_specs,
+        }
+    ).map(|w| {
+        *world = w;
+    })
 }
 
 #[derive(Copy, Clone)]
@@ -1270,11 +1306,13 @@ pub fn update(state: &mut State, input: Input) -> UpdateEvent {
                     } else {
                         match World::from_seed(
                             new_seed(&mut world.rng),
-                            world.level.saturating_add(1),
-                            Some(player_hp.saturating_add(hp!(1))),
-                            Some(world.score),
-                            Some(world.num_spells),
-                            world.sound_specs,
+                            WorldSpec {
+                                level: world.level.saturating_add(1),
+                                starting_hp: Some(player_hp.saturating_add(hp!(1))),
+                                starting_score: Some(world.score),
+                                num_spells: Some(world.num_spells),
+                                sound_specs: world.sound_specs
+                            }
                         ) {
                             Ok(w) => { 
                                 *world = w;
