@@ -1038,7 +1038,7 @@ macro_rules! def_spell_names {
             $($variants),*
         }
         
-        const SPELL_NAME_COUNT: usize = 2;
+        const SPELL_NAME_COUNT: usize = 3;
 
         const ALL_SPELL_NAMES: [SpellName; SPELL_NAME_COUNT] = [
             $(SpellName::$variants),*
@@ -1058,7 +1058,8 @@ macro_rules! def_spell_names {
 
 def_spell_names!{
     WOOP,
-    QUAKE
+    QUAKE,
+    MAELSTROM
 }
 
 type SpellCount = u8;
@@ -1076,6 +1077,7 @@ fn cast_spell(world: &mut World, page: SpellPage) -> Res<AfterTick> {
         let spell: Spell = match spell_name {
             WOOP => woop,
             QUAKE => quake,
+            MAELSTROM => maelstrom,
         };
 
         after_spell = spell(world);
@@ -1122,6 +1124,30 @@ fn quake(world: &mut World) -> Res<()> {
                 ..*monster
             }
         )
+    }
+
+    Ok(())
+}
+
+fn maelstrom(world: &mut World) -> Res<()> {
+    let monsters = world.get_monsters();
+
+    for monster in monsters.iter() {
+        if monster.is_player() {
+            continue
+        }
+
+        let mut monster = *monster;
+        monster.teleport_counter = 2;
+
+        if let Ok(new_tile) = random_passable_tile(&mut world.rng, &world.tiles) {
+            r#move(world, monster, new_tile.xy);
+        } else {
+            // If there is no free space, the player would likely prefer that we
+            // just set the teleport counter and move one, instead of causing the
+            // game to freeze with an error.
+            set_monster(&mut world.tiles, monster);
+        }
     }
 
     Ok(())
