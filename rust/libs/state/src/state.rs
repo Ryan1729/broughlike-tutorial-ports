@@ -36,6 +36,7 @@ impl State {
                 starting_hp: None,
                 starting_score: None,
                 num_spells: None,
+                starting_spells: None,
                 sound_specs: [SoundSpec::NoSound; 16]
             }
         ) {
@@ -97,6 +98,7 @@ struct WorldSpec {
     starting_hp: Option<HP>,
     starting_score: Option<Score>,
     num_spells: Option<SpellCount>,
+    starting_spells: Option<SpellBook>,
     sound_specs: [SoundSpec; 16]
 }
 
@@ -108,6 +110,7 @@ impl World {
             starting_hp,
             starting_score,
             num_spells,
+            starting_spells,
             sound_specs
         }: WorldSpec
     ) -> Res<Self> {
@@ -170,10 +173,15 @@ impl World {
                 let mut all_spells = ALL_SPELL_NAMES;
                 shuffle(&mut rng, &mut all_spells);
 
-                let mut spells = [None; MAX_NUM_SPELLS as usize];
-                for i in 0..num_spells as usize {
-                    spells[i] = Some(all_spells[i % all_spells.len()]);
-                }
+                let spells = if let Some(spells) = starting_spells {
+                    spells
+                } else {
+                    let mut spells = [None; MAX_NUM_SPELLS as usize];
+                    for i in 0..num_spells as usize {
+                        spells[i] = Some(all_spells[i % all_spells.len()]);
+                    }
+                    spells
+                };
 
                 Self {
                     sound_specs,
@@ -1182,6 +1190,7 @@ fn mulligan(world: &mut World) -> Res<()> {
             starting_hp: Some(hp!(1)),
             starting_score: Some(world.score),
             num_spells: Some(world.num_spells),
+            starting_spells: Some(world.spells),
             sound_specs: world.sound_specs,
         }
     ).map(|w| {
@@ -1311,6 +1320,7 @@ pub fn update(state: &mut State, input: Input) -> UpdateEvent {
                                 starting_hp: Some(player_hp.saturating_add(hp!(1))),
                                 starting_score: Some(world.score),
                                 num_spells: Some(world.num_spells),
+                                starting_spells: None,
                                 sound_specs: world.sound_specs
                             }
                         ) {
