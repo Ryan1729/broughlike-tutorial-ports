@@ -783,6 +783,8 @@ pub struct Tile {
     pub kind: TileKind,
     pub monster: Option<Monster>,
     pub treasure: bool,
+    pub effect: SpriteIndex,
+    pub effect_counter: u8,
 }
 
 impl Tile {
@@ -820,6 +822,8 @@ fn make_exit(xy: TileXY) -> Tile {
     }
 }
 
+pub const EFFECT_MAX: u8 = 30;
+
 impl Tiles {
     pub fn iter(&self) -> impl Iterator<Item = &Tile> {
         self.0.iter()
@@ -830,6 +834,13 @@ impl Tiles {
             self.0[xy_to_i(xy)]
         } else {
             make_wall(xy)
+        }
+    }
+
+    fn set_effect(&mut self, xy: TileXY, effect: SpriteIndex) {
+        if let Some(t) = self.0.get_mut(xy_to_i(xy)) {
+            t.effect = effect;
+            t.effect_counter = EFFECT_MAX;
         }
     }
 }
@@ -1065,7 +1076,7 @@ macro_rules! def_spell_names {
             $($variants),*
         }
         
-        const SPELL_NAME_COUNT: usize = 4;
+        const SPELL_NAME_COUNT: usize = 5;
 
         const ALL_SPELL_NAMES: [SpellName; SPELL_NAME_COUNT] = [
             $(SpellName::$variants),*
@@ -1088,6 +1099,7 @@ def_spell_names!{
     QUAKE,
     MAELSTROM,
     MULLIGAN,
+    AURA
 }
 
 type SpellCount = u8;
@@ -1107,6 +1119,7 @@ fn cast_spell(world: &mut World, page: SpellPage) -> Res<AfterTick> {
             QUAKE => quake,
             MAELSTROM => maelstrom,
             MULLIGAN => mulligan,
+            AURA => aura,
         };
 
         after_spell = spell(world);
@@ -1198,6 +1211,27 @@ fn mulligan(world: &mut World) -> Res<()> {
     })
 }
 
+fn aura(world: &mut World) -> Res<()> {
+    get_player(world).map(|mut player| {
+        for t in get_adjacent_neighbors(
+            &mut world.rng,
+            &world.tiles,
+            player.xy
+        ).iter() {
+            world.tiles.set_effect(t.xy, 13);
+            if let Some(mut monster) = t.monster {
+                monster.hp = monster.hp.saturating_add(hp!(1));
+                set_monster(&mut world.tiles, monster);
+            }
+        };
+
+        world.tiles.set_effect(player.xy, 13);
+
+        player.hp = player.hp.saturating_add(hp!(1));
+        set_monster(&mut world.tiles, player);
+    })
+}
+
 #[derive(Copy, Clone)]
 pub enum Input {
     Empty,
@@ -1208,13 +1242,18 @@ pub enum Input {
     Cast(SpellPage),
 }
 
-fn advance_offsets(world: &mut World) {
-    // Monster offsets
+fn begin_game_frame(world: &mut World) {
+    world.clear_sounds();
+
     for t in world.tiles.0.iter_mut() {
+        // Monster offsets
         if let Some(monster) = t.monster.as_mut() {
             monster.offset_xy.x -= monster.offset_xy.x.signum();
             monster.offset_xy.y -= monster.offset_xy.y.signum();
         }
+
+        // Tile Effects
+        t.effect_counter = t.effect_counter.saturating_sub(1);
     }
 
     // Screenshake offsets
@@ -1280,8 +1319,7 @@ pub fn update(state: &mut State, input: Input) -> UpdateEvent {
             }
         },
         Running(ref mut world) => {
-            world.clear_sounds();
-            advance_offsets(world);
+            begin_game_frame(world);
 
             let after_tick_res = match input {
                 Empty => {
@@ -1343,8 +1381,7 @@ pub fn update(state: &mut State, input: Input) -> UpdateEvent {
             }
         },
         Dead(ref mut world) => {
-            world.clear_sounds();
-            advance_offsets(world);
+            begin_game_frame(world);
 
             if !matches!(input, Input::Empty) {
                 switch_variant = SwitchVariant::ToTitle;

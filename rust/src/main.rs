@@ -171,16 +171,20 @@ async fn main() {
             }
         }
 
+        type Alpha = u8;
+        const FULL_ALPHA: Alpha = 0xff;
+
         let draw_sprite_float = |
             sprite: state::SpriteIndex,
             (x, y): (Size, Size),
-            shake_xy: state::OffsetXY
+            shake_xy: state::OffsetXY,
+            alpha: Alpha
         | {
             macroquad::draw_texture_ex(
                 spritesheet,
                 sizes.play_area_x + sizes.tile * x + offset_to_size!(shake_xy.x),
                 sizes.play_area_y + sizes.tile * y + offset_to_size!(shake_xy.y),
-                macroquad::WHITE,
+                macroquad::Color([0xff, 0xff, 0xff, alpha]),
                 macroquad::DrawTextureParams {
                     dest_size: Some(macroquad::Vec2::new(sizes.tile, sizes.tile)),
                     source: Some(macroquad::Rect {
@@ -205,7 +209,25 @@ async fn main() {
                     xy.x as Size,
                     xy.y as Size
                 ),
-                shake_xy
+                shake_xy,
+                FULL_ALPHA
+            )
+        };
+
+        let draw_sprite_alpha = |
+            sprite: state::SpriteIndex,
+            xy: state::TileXY,
+            shake_xy: state::OffsetXY,
+            alpha: Alpha
+        | {
+            draw_sprite_float(
+                sprite,
+                (
+                    xy.x as Size,
+                    xy.y as Size
+                ),
+                shake_xy,
+                alpha
             )
         };
 
@@ -400,6 +422,16 @@ async fn main() {
                 if t.treasure {
                     draw_sprite(12, t.xy, world.shake.xy);
                 }
+
+                draw_sprite_alpha(
+                    t.effect,
+                    t.xy,
+                    world.shake.xy,
+                    (
+                        (t.effect_counter as f32 / state::EFFECT_MAX as f32)
+                        * Alpha::MAX as f32
+                    ) as Alpha
+                );
             }
 
             for t in world.tiles.iter() {
@@ -410,7 +442,7 @@ async fn main() {
                     );
 
                     if monster.teleport_counter > 0 {
-                        draw_sprite_float(10, display_xy, world.shake.xy);
+                        draw_sprite_float(10, display_xy, world.shake.xy, FULL_ALPHA);
                         continue;
                     }
 
@@ -427,7 +459,12 @@ async fn main() {
                         state::MonsterKind::Jester => 8,
                     };
 
-                    draw_sprite_float(monster_sprite, display_xy, world.shake.xy);
+                    draw_sprite_float(
+                        monster_sprite,
+                        display_xy,
+                        world.shake.xy,
+                        FULL_ALPHA
+                    );
     
                     // drawing the HP {
                     let pips = state::hp!(get pips monster.hp);
@@ -440,7 +477,8 @@ async fn main() {
                                 display_xy.1
                                 - (i / 3) as Size * (5./16.)
                             ),
-                            world.shake.xy
+                            world.shake.xy,
+                            FULL_ALPHA
                         );
                     }
                     // }
