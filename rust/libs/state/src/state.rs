@@ -79,6 +79,38 @@ pub enum SoundSpec {
     Spell,
 }
 
+// Should only be in the range [-1, 0, 1]
+pub type DeltaX = i8;
+// Should only be in the range [-1, 0, 1]
+pub type DeltaY = i8;
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct DeltaXY {
+    pub x: DeltaX,
+    pub y: DeltaY,
+}
+
+macro_rules! dxy {
+    ($x: literal, $y: literal) => {
+        DeltaXY {
+            x: $x,
+            y: $y,
+        }
+    };
+    ($x: ident, $y: ident) => {
+        DeltaXY {
+            x: $x,
+            y: $y,
+        }
+    };
+    ($x: expr, $y: expr) => {
+        DeltaXY {
+            x: $x,
+            y: $y,
+        }
+    };
+}
+
 #[derive(Debug)]
 pub struct World {
     pub sound_specs: [SoundSpec; 16],
@@ -91,6 +123,7 @@ pub struct World {
     pub score: Score,
     pub level: Level,
     pub shake: Shake,
+    pub last_move: DeltaXY,
 }
 
 struct WorldSpec {
@@ -203,6 +236,7 @@ impl World {
                     },
                     num_spells,
                     spells,
+                    last_move: dxy!(-1, 0),
                 }   
             })
         })
@@ -311,38 +345,6 @@ macro_rules! txy {
 // Manhattan distance
 fn dist(txy!(x1, y1): TileXY, txy!(x2, y2): TileXY) -> TileCount {
     ((x1 as i8 - x2 as i8).abs() + (y1 as i8 - y2 as i8).abs()) as TileCount
-}
-
-// Should only be in the range [-1, 0, 1]
-pub type DeltaX = i8;
-// Should only be in the range [-1, 0, 1]
-pub type DeltaY = i8;
-
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct DeltaXY {
-    pub x: DeltaX,
-    pub y: DeltaY,
-}
-
-macro_rules! dxy {
-    ($x: literal, $y: literal) => {
-        DeltaXY {
-            x: $x,
-            y: $y,
-        }
-    };
-    ($x: ident, $y: ident) => {
-        DeltaXY {
-            x: $x,
-            y: $y,
-        }
-    };
-    ($x: expr, $y: expr) => {
-        DeltaXY {
-            x: $x,
-            y: $y,
-        }
-    };
 }
 
 pub type SpriteIndex = u8;
@@ -543,6 +545,7 @@ fn get_player(world: &World) -> Res<Monster> {
 fn move_player(world: &mut World, dxy: DeltaXY) -> Res<AfterTick> {
     get_player(world).map(move |player| {
         if let Some(moved) = try_move(world, player, dxy) {
+            world.last_move = dxy;
             world.xy = moved.xy;
 
             tick(world)
@@ -1076,7 +1079,7 @@ macro_rules! def_spell_names {
             $($variants),*
         }
         
-        const SPELL_NAME_COUNT: usize = 5;
+        const SPELL_NAME_COUNT: usize = 6;
 
         const ALL_SPELL_NAMES: [SpellName; SPELL_NAME_COUNT] = [
             $(SpellName::$variants),*
@@ -1099,7 +1102,8 @@ def_spell_names!{
     QUAKE,
     MAELSTROM,
     MULLIGAN,
-    AURA
+    AURA,
+    DASH
 }
 
 type SpellCount = u8;
@@ -1120,6 +1124,7 @@ fn cast_spell(world: &mut World, page: SpellPage) -> Res<AfterTick> {
             MAELSTROM => maelstrom,
             MULLIGAN => mulligan,
             AURA => aura,
+            DASH => dash,
         };
 
         after_spell = spell(world);
@@ -1229,6 +1234,38 @@ fn aura(world: &mut World) -> Res<()> {
 
         player.hp = player.hp.saturating_add(hp!(1));
         set_monster(&mut world.tiles, player);
+    })
+}
+
+fn dash(world: &mut World) -> Res<()> {
+    get_player(world).map(|player| {
+        let mut xy = player.xy;
+        loop {
+            let test_tile = get_neighbor(&world.tiles, xy, world.last_move);
+
+            if test_tile.is_passable() && test_tile.monster.is_none() {
+                xy = test_tile.xy;
+            } else {
+                break;
+            }
+        }
+
+        if world.xy != xy {
+            r#move(world, player, xy);
+            
+            for t in get_adjacent_neighbors(
+                &mut world.rng,
+                &world.tiles,
+                xy
+            ).iter() {
+                if let Some(mut monster) = t.monster {
+                    world.tiles.set_effect(t.xy, 14);
+                    monster.hp = monster.hp.saturating_sub(hp!(1));
+                    monster.stunned = true;
+                    set_monster(&mut world.tiles, monster);
+                }
+            }
+        }
     })
 }
 
