@@ -1079,7 +1079,7 @@ macro_rules! def_spell_names {
             $($variants),*
         }
         
-        const SPELL_NAME_COUNT: usize = 6;
+        const SPELL_NAME_COUNT: usize = 7;
 
         const ALL_SPELL_NAMES: [SpellName; SPELL_NAME_COUNT] = [
             $(SpellName::$variants),*
@@ -1103,7 +1103,8 @@ def_spell_names!{
     MAELSTROM,
     MULLIGAN,
     AURA,
-    DASH
+    DASH,
+    DIG,
 }
 
 type SpellCount = u8;
@@ -1125,6 +1126,7 @@ fn cast_spell(world: &mut World, page: SpellPage) -> Res<AfterTick> {
             MULLIGAN => mulligan,
             AURA => aura,
             DASH => dash,
+            DIG => dig,
         };
 
         after_spell = spell(world);
@@ -1266,6 +1268,26 @@ fn dash(world: &mut World) -> Res<()> {
                 }
             }
         }
+    })
+}
+
+fn dig(world: &mut World) -> Res<()> {
+    get_player(world).map(|mut player| {
+        for x in 1..NUM_TILES-1 {
+            for y in 1..NUM_TILES-1 {
+                let xy = TileXY{x, y};
+                let tile = world.tiles.get_tile(xy);
+
+                if !tile.is_passable() {
+                    replace(&mut world.tiles, xy, make_floor);
+                }
+            }
+        }
+
+        world.tiles.set_effect(player.xy, 13);
+
+        player.hp = player.hp.saturating_add(hp!(2));
+        set_monster(&mut world.tiles, player);
     })
 }
 
