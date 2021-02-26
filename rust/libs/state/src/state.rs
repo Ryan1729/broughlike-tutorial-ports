@@ -612,6 +612,7 @@ fn tick(world: &mut World) -> AfterTick {
                             let i = index + 1;
                             if i < len {
                                 world.spells[i] = Some(spells[0]);
+                                break
                             }
                         }
                     }
