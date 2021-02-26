@@ -544,9 +544,8 @@ fn get_player(world: &World) -> Res<Monster> {
 
 fn move_player(world: &mut World, dxy: DeltaXY) -> Res<AfterTick> {
     get_player(world).map(move |player| {
-        if let Some(moved) = try_move(world, player, dxy) {
+        if try_move(world, player, dxy).is_some() {
             world.last_move = dxy;
-            world.xy = moved.xy;
 
             tick(world)
         } else {
@@ -675,6 +674,10 @@ fn r#move(world: &mut World, monster: Monster, xy: TileXY) -> Monster {
     moved.xy = xy;
 
     set_monster(&mut world.tiles, moved);
+
+    if moved.is_player() {
+        world.xy = moved.xy
+    }
 
     moved
 }
@@ -1142,7 +1145,7 @@ fn cast_spell(world: &mut World, page: SpellPage) -> Res<AfterTick> {
 fn woop(world: &mut World) -> Res<()> {
     get_player(world).map(|player| {
         if let Ok(new_tile) = random_passable_tile(&mut world.rng, &world.tiles) {
-            world.xy = r#move(world, player, new_tile.xy).xy;
+            r#move(world, player, new_tile.xy);
         } else {
             // If the player tries to teleport when there is no free space
             // I'm not sure what else they would expect to happen. But I
@@ -1254,7 +1257,7 @@ fn dash(world: &mut World) -> Res<()> {
 
         if world.xy != xy {
             r#move(world, player, xy);
-            
+
             for t in get_adjacent_neighbors(
                 &mut world.rng,
                 &world.tiles,
