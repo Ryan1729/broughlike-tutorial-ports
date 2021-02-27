@@ -1083,7 +1083,7 @@ macro_rules! def_spell_names {
             $($variants),*
         }
         
-        const SPELL_NAME_COUNT: usize = 7;
+        const SPELL_NAME_COUNT: usize = 8;
 
         const ALL_SPELL_NAMES: [SpellName; SPELL_NAME_COUNT] = [
             $(SpellName::$variants),*
@@ -1109,6 +1109,7 @@ def_spell_names!{
     AURA,
     DASH,
     DIG,
+    KINGMAKER,
 }
 
 type SpellCount = u8;
@@ -1131,6 +1132,7 @@ fn cast_spell(world: &mut World, page: SpellPage) -> Res<AfterTick> {
             AURA => aura,
             DASH => dash,
             DIG => dig,
+            KINGMAKER => kingmaker,
         };
 
         after_spell = spell(world);
@@ -1293,6 +1295,24 @@ fn dig(world: &mut World) -> Res<()> {
         player.hp = player.hp.saturating_add(hp!(2));
         set_monster(&mut world.tiles, player);
     })
+}
+
+fn kingmaker(world: &mut World) -> Res<()> {
+    let monsters = world.get_monsters();
+
+    for monster in monsters.iter() {
+        let mut monster = *monster;
+        if monster.is_player() {
+            continue
+        }
+
+        monster.hp = monster.hp.saturating_add(hp!(1));
+        set_monster(&mut world.tiles, monster);
+
+        set_treasure(&mut world.tiles, monster.xy, true);
+    }
+
+    Ok(())
 }
 
 #[derive(Copy, Clone)]
