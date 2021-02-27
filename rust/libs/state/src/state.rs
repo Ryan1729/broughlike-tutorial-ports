@@ -1083,7 +1083,7 @@ macro_rules! def_spell_names {
             $($variants),*
         }
         
-        const SPELL_NAME_COUNT: usize = 8;
+        const SPELL_NAME_COUNT: usize = 9;
 
         const ALL_SPELL_NAMES: [SpellName; SPELL_NAME_COUNT] = [
             $(SpellName::$variants),*
@@ -1110,6 +1110,7 @@ def_spell_names!{
     DASH,
     DIG,
     KINGMAKER,
+    ALCHEMY,
 }
 
 type SpellCount = u8;
@@ -1133,6 +1134,7 @@ fn cast_spell(world: &mut World, page: SpellPage) -> Res<AfterTick> {
             DASH => dash,
             DIG => dig,
             KINGMAKER => kingmaker,
+            ALCHEMY => alchemy,
         };
 
         after_spell = spell(world);
@@ -1313,6 +1315,21 @@ fn kingmaker(world: &mut World) -> Res<()> {
     }
 
     Ok(())
+}
+
+fn alchemy(world: &mut World) -> Res<()> {
+    get_player(world).map(|player| {
+        for t in get_adjacent_neighbors(
+            &mut world.rng,
+            &world.tiles,
+            player.xy
+        ).iter() {
+            if !t.is_passable() && in_bounds(t.xy) {
+                replace(&mut world.tiles, t.xy, make_floor);
+                set_treasure(&mut world.tiles, t.xy, true);
+            }
+        }
+    })
 }
 
 #[derive(Copy, Clone)]
