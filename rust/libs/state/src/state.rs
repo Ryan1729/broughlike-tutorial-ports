@@ -111,6 +111,8 @@ macro_rules! dxy {
     };
 }
 
+pub type BonusAttack = u8;
+
 #[derive(Debug)]
 pub struct World {
     pub sound_specs: [SoundSpec; 16],
@@ -119,6 +121,7 @@ pub struct World {
     pub tiles: Tiles,
     pub spells: SpellBook,
     pub num_spells: SpellCount,
+    pub bonus_attack: BonusAttack,
     pub spawn: Spawn,
     pub score: Score,
     pub level: Level,
@@ -227,6 +230,7 @@ impl World {
                         rate,
                     },
                     score: starting_score.unwrap_or_default(),
+                    bonus_attack: 0,
                     shake: Shake {
                         amount: 0,
                         xy: OffsetXY::default(),
@@ -644,7 +648,18 @@ fn try_move(world: &mut World, mut monster: Monster, dxy: DeltaXY) -> Option<Mon
                 set_monster(&mut world.tiles, monster);
 
                 target.stunned = true;
-                target.hp = target.hp.saturating_sub(hp!(1));
+
+                let damage = if monster.is_player() {
+                    let damage = hp!(expr 1 + world.bonus_attack);
+
+                    world.bonus_attack = 0;
+
+                    damage
+                } else {
+                    hp!(1)
+                };
+
+                target.hp = target.hp.saturating_sub(damage);
                 
                 set_monster(&mut world.tiles, target);
 
@@ -1083,7 +1098,7 @@ macro_rules! def_spell_names {
             $($variants),*
         }
         
-        const SPELL_NAME_COUNT: usize = 9;
+        const SPELL_NAME_COUNT: usize = 10;
 
         const ALL_SPELL_NAMES: [SpellName; SPELL_NAME_COUNT] = [
             $(SpellName::$variants),*
@@ -1111,6 +1126,7 @@ def_spell_names!{
     DIG,
     KINGMAKER,
     ALCHEMY,
+    POWER,
 }
 
 type SpellCount = u8;
@@ -1135,6 +1151,7 @@ fn cast_spell(world: &mut World, page: SpellPage) -> Res<AfterTick> {
             DIG => dig,
             KINGMAKER => kingmaker,
             ALCHEMY => alchemy,
+            POWER => power,
         };
 
         after_spell = spell(world);
@@ -1330,6 +1347,12 @@ fn alchemy(world: &mut World) -> Res<()> {
             }
         }
     })
+}
+
+fn power(world: &mut World) -> Res<()> {
+    world.bonus_attack = 5;
+
+    Ok(())
 }
 
 #[derive(Copy, Clone)]
