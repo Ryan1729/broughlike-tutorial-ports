@@ -112,6 +112,7 @@ macro_rules! dxy {
 }
 
 pub type BonusAttack = u8;
+pub type Shield = u8;
 
 #[derive(Debug)]
 pub struct World {
@@ -122,6 +123,7 @@ pub struct World {
     pub spells: SpellBook,
     pub num_spells: SpellCount,
     pub bonus_attack: BonusAttack,
+    pub shield: Shield,
     pub spawn: Spawn,
     pub score: Score,
     pub level: Level,
@@ -231,6 +233,7 @@ impl World {
                     },
                     score: starting_score.unwrap_or_default(),
                     bonus_attack: 0,
+                    shield: 0,
                     shake: Shake {
                         amount: 0,
                         xy: OffsetXY::default(),
@@ -580,6 +583,8 @@ fn tick(world: &mut World) -> AfterTick {
         }
     }
 
+    world.shield = world.shield.saturating_sub(1);
+
     world.spawn.counter = world.spawn.counter.saturating_sub(1);
 
     if world.spawn.counter == 0 {
@@ -655,6 +660,8 @@ fn try_move(world: &mut World, mut monster: Monster, dxy: DeltaXY) -> Option<Mon
                     world.bonus_attack = 0;
 
                     damage
+                } else if target.is_player() && world.shield > 0 {
+                    hp!(0)
                 } else {
                     hp!(1)
                 };
@@ -1098,7 +1105,7 @@ macro_rules! def_spell_names {
             $($variants),*
         }
         
-        const SPELL_NAME_COUNT: usize = 11;
+        const SPELL_NAME_COUNT: usize = 12;
 
         const ALL_SPELL_NAMES: [SpellName; SPELL_NAME_COUNT] = [
             $(SpellName::$variants),*
@@ -1128,6 +1135,7 @@ def_spell_names!{
     ALCHEMY,
     POWER,
     BUBBLE,
+    BRAVERY,
 }
 
 type SpellCount = u8;
@@ -1154,6 +1162,7 @@ fn cast_spell(world: &mut World, page: SpellPage) -> Res<AfterTick> {
             ALCHEMY => alchemy,
             POWER => power,
             BUBBLE => bubble,
+            BRAVERY => bravery,
         };
 
         after_spell = spell(world);
@@ -1192,6 +1201,13 @@ fn quake(world: &mut World) -> Res<()> {
                             .filter(|t| t.is_passable());
 
         let num_walls = 4 - filtered.count() as u8;
+
+        // Huh. Some other ports had a sublte bug here in that this damage should
+        // be shieldable. An argument for having the shield be on the monster I
+        // suppose.
+        if monster.is_player() && world.shield > 0 {
+            continue
+        }
 
         set_monster(
             &mut world.tiles, 
@@ -1322,10 +1338,10 @@ fn kingmaker(world: &mut World) -> Res<()> {
     let monsters = world.get_monsters();
 
     for monster in monsters.iter() {
-        let mut monster = *monster;
         if monster.is_player() {
             continue
         }
+        let mut monster = *monster;
 
         monster.hp = monster.hp.saturating_add(hp!(1));
         set_monster(&mut world.tiles, monster);
@@ -1362,6 +1378,22 @@ fn bubble(world: &mut World) -> Res<()> {
         if world.spells[i].is_none() {
             world.spells[i] = world.spells[i-1];
         }
+    }
+
+    Ok(())
+}
+
+fn bravery(world: &mut World) -> Res<()> {
+    world.shield = 2;
+
+    for monster in world.get_monsters().iter() {
+        if monster.is_player() {
+            continue
+        }
+        let mut monster = *monster;
+
+        monster.stunned = true;
+        set_monster(&mut world.tiles, monster);
     }
 
     Ok(())
