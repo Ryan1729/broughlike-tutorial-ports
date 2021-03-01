@@ -1098,7 +1098,7 @@ macro_rules! def_spell_names {
             $($variants),*
         }
         
-        const SPELL_NAME_COUNT: usize = 10;
+        const SPELL_NAME_COUNT: usize = 11;
 
         const ALL_SPELL_NAMES: [SpellName; SPELL_NAME_COUNT] = [
             $(SpellName::$variants),*
@@ -1127,6 +1127,7 @@ def_spell_names!{
     KINGMAKER,
     ALCHEMY,
     POWER,
+    BUBBLE,
 }
 
 type SpellCount = u8;
@@ -1152,6 +1153,7 @@ fn cast_spell(world: &mut World, page: SpellPage) -> Res<AfterTick> {
             KINGMAKER => kingmaker,
             ALCHEMY => alchemy,
             POWER => power,
+            BUBBLE => bubble,
         };
 
         after_spell = spell(world);
@@ -1351,6 +1353,16 @@ fn alchemy(world: &mut World) -> Res<()> {
 
 fn power(world: &mut World) -> Res<()> {
     world.bonus_attack = 5;
+
+    Ok(())
+}
+
+fn bubble(world: &mut World) -> Res<()> {
+    for i in (1..world.spells.len()).rev() {
+        if world.spells[i].is_none() {
+            world.spells[i] = world.spells[i-1];
+        }
+    }
 
     Ok(())
 }
