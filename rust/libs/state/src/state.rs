@@ -401,6 +401,7 @@ macro_rules! hp {
     (1) => { hp!(raw 2) };
     (2) => { hp!(raw 4) };
     (3) => { hp!(raw 6) };
+    (4) => { hp!(raw 8) };
     (expr $hp: expr) => { hp!(raw ($hp * 2)) };
     (raw $hp: expr) => { $crate::HP { use_the_macro_instead: $hp } };
 }
@@ -1105,7 +1106,7 @@ macro_rules! def_spell_names {
             $($variants),*
         }
         
-        const SPELL_NAME_COUNT: usize = 12;
+        const SPELL_NAME_COUNT: usize = 13;
 
         const ALL_SPELL_NAMES: [SpellName; SPELL_NAME_COUNT] = [
             $(SpellName::$variants),*
@@ -1136,6 +1137,7 @@ def_spell_names!{
     POWER,
     BUBBLE,
     BRAVERY,
+    BOLT,
 }
 
 type SpellCount = u8;
@@ -1163,6 +1165,7 @@ fn cast_spell(world: &mut World, page: SpellPage) -> Res<AfterTick> {
             POWER => power,
             BUBBLE => bubble,
             BRAVERY => bravery,
+            BOLT => bolt,
         };
 
         after_spell = spell(world);
@@ -1397,6 +1400,38 @@ fn bravery(world: &mut World) -> Res<()> {
     }
 
     Ok(())
+}
+
+fn bolt(world: &mut World) -> Res<()> {
+    bolt_travel(
+        world,
+        world.last_move,
+        (15 + world.last_move.y.abs()) as SpriteIndex,
+        hp!(4)
+    )
+
+    Ok(())
+}
+
+fn bolt_travel(world: &mut World, dxy: DeltaXY, effect: SpriteIndex, damage: HP) {
+    let mut xy: TileXY = world.xy;
+
+    loop {
+        let test_tile = get_neighbor(&world.tiles, xy, dxy);
+
+        if test_tile.is_passable() {
+            xy = test_tile.xy;
+
+            if let Some(mut monster) = test_tile.monster {
+                monster.hp = monster.hp.saturating_sub(damage);
+                set_monster(&mut world.tiles, monster);
+            }
+
+            world.tiles.set_effect(xy, effect);
+        } else {
+            break
+        }
+    }
 }
 
 #[derive(Copy, Clone)]
