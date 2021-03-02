@@ -1106,7 +1106,7 @@ macro_rules! def_spell_names {
             $($variants),*
         }
         
-        const SPELL_NAME_COUNT: usize = 14;
+        const SPELL_NAME_COUNT: usize = 15;
 
         const ALL_SPELL_NAMES: [SpellName; SPELL_NAME_COUNT] = [
             $(SpellName::$variants),*
@@ -1139,6 +1139,7 @@ def_spell_names!{
     BRAVERY,
     BOLT,
     CROSS,
+    EX,
 }
 
 type SpellCount = u8;
@@ -1168,6 +1169,7 @@ fn cast_spell(world: &mut World, page: SpellPage) -> Res<AfterTick> {
             BRAVERY => bravery,
             BOLT => bolt,
             CROSS => cross,
+            EX => ex,
         };
 
         after_spell = spell(world);
@@ -1429,6 +1431,26 @@ fn cross(world: &mut World) -> Res<()> {
             dxy,
             (15 + dxy.y.abs()) as SpriteIndex,
             hp!(2)
+        )
+    }
+
+    Ok(())
+}
+
+fn ex(world: &mut World) -> Res<()> {
+    let directions = [
+        dxy!(-1, -1),
+        dxy!(-1, 1),
+        dxy!(1, -1),
+        dxy!(1, 1)
+    ];
+
+    for &dxy in directions.iter() {
+        bolt_travel(
+            world,
+            dxy,
+            14,
+            hp!(3)
         )
     }
 
