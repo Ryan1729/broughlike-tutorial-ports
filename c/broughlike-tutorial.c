@@ -1,4 +1,17 @@
+
+
+
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpadded"
+#endif
+
 #include "include/raylib.h"
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 int main(void)
 {
