@@ -2,20 +2,34 @@
 
 int main(void)
 {
-    const int screenWidth = 1024;
-    const int screenHeight = 768;
+    InitWindow(0, 0, "AWESOME BROUGHLIKE");
 
-    InitWindow(screenWidth, screenHeight, "AWESOME BROUGHLIKE");
+    int screen_width = GetScreenWidth();
+    int screen_height = GetScreenHeight();
 
     SetTargetFPS(60);
 
     while (!WindowShouldClose())
     {
+        if (IsKeyPressed(KEY_F11)) {
+            ToggleFullscreen();
+            screen_width = GetScreenWidth();
+            screen_height = GetScreenHeight();
+        }
+
         BeginDrawing();
 
         ClearBackground(DARKGRAY);
 
-        DrawText("Hello World!", 0, 0, 42, RAYWHITE);
+        const int font_size = 42;
+        const char* text = "Hello World!";
+        DrawText(
+            text,
+            (screen_width - MeasureText(text, font_size)) / 2,
+            (screen_height - font_size) / 2,
+            font_size,
+            RAYWHITE
+        );
 
         EndDrawing();
     }
