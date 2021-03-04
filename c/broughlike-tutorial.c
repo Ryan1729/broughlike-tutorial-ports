@@ -13,6 +13,14 @@
 #pragma clang diagnostic pop
 #endif
 
+#define local static
+
+local void draw(void) {
+    ClearBackground(DARKGRAY);
+
+    DrawRectangle(0, 0, 20, 20, BLACK);
+}
+
 int main(void)
 {
     InitWindow(0, 0, "AWESOME BROUGHLIKE");
@@ -32,9 +40,7 @@ int main(void)
 
         BeginDrawing();
 
-        ClearBackground(DARKGRAY);
-
-        DrawRectangle(0, 0, 20, 20, BLACK);
+        draw();
 
         EndDrawing();
     }
