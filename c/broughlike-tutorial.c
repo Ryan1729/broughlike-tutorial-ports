@@ -12,11 +12,18 @@
 #endif
 
 #define local static
+#define u8 unsigned char
+
+typedef u8 tile_x;
+typedef u8 tile_y;
+
+local tile_x x = 0;
+local tile_y y = 0;
 
 local void draw(void) {
     ClearBackground(DARKGRAY);
 
-    DrawRectangle(0, 0, 20, 20, BLACK);
+    DrawRectangle(x * 20, y * 20, 20, 20, BLACK);
 }
 
 int main(void) {
@@ -32,6 +39,19 @@ int main(void) {
             ToggleFullscreen();
             screen_width = GetScreenWidth();
             screen_height = GetScreenHeight();
+        }
+
+        if (IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP)) {
+            y -= 1;
+        }
+        if (IsKeyPressed(KEY_S) || IsKeyPressed(KEY_DOWN)) {
+            y += 1;
+        }
+        if (IsKeyPressed(KEY_A) || IsKeyPressed(KEY_LEFT)) {
+            x -= 1;
+        }
+        if (IsKeyPressed(KEY_D) || IsKeyPressed(KEY_RIGHT)) {
+            x += 1;
         }
 
         BeginDrawing();
