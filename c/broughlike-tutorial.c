@@ -1,7 +1,5 @@
 
 
-
-
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wpadded"
@@ -21,8 +19,7 @@ local void draw(void) {
     DrawRectangle(0, 0, 20, 20, BLACK);
 }
 
-int main(void)
-{
+int main(void) {
     InitWindow(0, 0, "AWESOME BROUGHLIKE");
 
     int screen_width = GetScreenWidth();
@@ -30,8 +27,7 @@ int main(void)
 
     SetTargetFPS(60);
 
-    while (!WindowShouldClose())
-    {
+    while (!WindowShouldClose()) {
         if (IsKeyPressed(KEY_F11)) {
             ToggleFullscreen();
             screen_width = GetScreenWidth();
