@@ -34,15 +34,7 @@ int main(void)
 
         ClearBackground(DARKGRAY);
 
-        const int font_size = 42;
-        const char* text = "Hello World!";
-        DrawText(
-            text,
-            (screen_width - MeasureText(text, font_size)) / 2,
-            (screen_height - font_size) / 2,
-            font_size,
-            RAYWHITE
-        );
+        DrawRectangle(0, 0, 20, 20, BLACK);
 
         EndDrawing();
     }
