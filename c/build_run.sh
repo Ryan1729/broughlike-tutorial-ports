@@ -16,7 +16,7 @@ echo "$everything $asan $ubsan"
 
 name='broughlike-tutorial'
 
-clang $name.c -fcolor-diagnostics -g -std=c18 -I include/ -Wall -Wextra $everything -Werror $asan $ubsan $libs $ignored -o $name
+clang $name.c -fcolor-diagnostics -ferror-limit=0 -g -std=c18 -I include/ -Wall -Wextra $everything -Werror $asan $ubsan $libs $ignored -o $name
 
 compile_error_code=$?
 
