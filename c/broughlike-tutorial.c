@@ -12,6 +12,7 @@
 #define local static
 #define u8 unsigned char
 
+#include "assets.c"
 #include "game.c"
 
 local const Color INDIGO = { 0x4b, 0, 0x82, 0xff };
@@ -57,13 +58,30 @@ local struct sizes fresh_sizes(void) {
     return output;
 }
 
-typedef u8 tile_x;
-typedef u8 tile_y;
+local Texture2D spritesheet = {0};
 
-local tile_x x = 0;
-local tile_y y = 0;
+local void draw_sprite(sprite_index sprite, tile_xy xy) {
+    Rectangle rect = {
+        .x = (float) sprite * 16,
+        .y = 0,
+        .width = 16,
+        .height = 16,
+    };
 
-local void draw(void) {
+    Vector2 vec2 = {
+        .x = (float)xy.x,
+        .y = (float)xy.y,
+    };
+
+    DrawTextureRec(
+        spritesheet,
+        rect,
+        vec2,
+        WHITE
+    );
+}
+
+local void draw_world(struct world* world) {
     ClearBackground(INDIGO);
 
     // the -1 and +2 business makes the border lie just outside the actual
@@ -76,13 +94,7 @@ local void draw(void) {
         WHITE
     );
 
-    DrawRectangle(
-        sizes.play_area_x + x * sizes.tile,
-        sizes.play_area_y + y * sizes.tile,
-        sizes.tile,
-        sizes.tile,
-        BLACK
-    );
+    draw_sprite(0, world->xy);
 }
 
 int main(void) {
@@ -90,7 +102,12 @@ int main(void) {
 
     SetTargetFPS(60);
 
+    spritesheet_image = LoadImage("assets/spritesheet.png");
+    spritesheet = LoadTextureFromImage(spritesheet_image);
+
     sizes = fresh_sizes();
+
+    struct world world = {0};
 
     while (!WindowShouldClose()) {
         if (IsKeyPressed(KEY_F11)) {
@@ -99,21 +116,21 @@ int main(void) {
         }
 
         if (IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP)) {
-            y -= 1;
+            world.xy.y -= 1;
         }
         if (IsKeyPressed(KEY_S) || IsKeyPressed(KEY_DOWN)) {
-            y += 1;
+            world.xy.y += 1;
         }
         if (IsKeyPressed(KEY_A) || IsKeyPressed(KEY_LEFT)) {
-            x -= 1;
+            world.xy.x -= 1;
         }
         if (IsKeyPressed(KEY_D) || IsKeyPressed(KEY_RIGHT)) {
-            x += 1;
+            world.xy.x += 1;
         }
 
         BeginDrawing();
 
-        draw();
+        draw_world(&world);
 
         EndDrawing();
     }
