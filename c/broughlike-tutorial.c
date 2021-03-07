@@ -102,8 +102,8 @@ int main(void) {
 
     SetTargetFPS(60);
 
-    spritesheet_image = LoadImage("assets/spritesheet.png");
-    spritesheet = LoadTextureFromImage(spritesheet_image);
+    Image spritesheet_img = spritesheet_image();
+    spritesheet = LoadTextureFromImage(spritesheet_img);
 
     sizes = fresh_sizes();
 
