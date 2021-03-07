@@ -136,6 +136,8 @@ int main(void) {
     }
 
     CloseWindow();
+    UnloadTexture(spritesheet);
+    UnloadImage(spritesheet_img);
 
     return 0;
 }
