@@ -61,11 +61,18 @@ local struct sizes fresh_sizes(void) {
 local Texture2D spritesheet = {0};
 
 local void draw_sprite(sprite_index sprite, tile_xy xy) {
-    Rectangle rect = {
+    Rectangle spritesheet_rect = {
         .x = (float) sprite * 16,
         .y = 0,
         .width = 16,
         .height = 16,
+    };
+
+    Rectangle render_rect = {
+        .x = (float) (sizes.play_area_x + (screen_size)xy.x * sizes.tile),
+        .y = (float) (sizes.play_area_y + (screen_size)xy.y * sizes.tile),
+        .width = (float) (sizes.tile),
+        .height = (float) (sizes.tile),
     };
 
     Vector2 vec2 = {
@@ -73,10 +80,12 @@ local void draw_sprite(sprite_index sprite, tile_xy xy) {
         .y = (float)xy.y,
     };
 
-    DrawTextureRec(
+    DrawTexturePro(
         spritesheet,
-        rect,
+        spritesheet_rect,
+        render_rect,
         vec2,
+        0.0,
         WHITE
     );
 }
