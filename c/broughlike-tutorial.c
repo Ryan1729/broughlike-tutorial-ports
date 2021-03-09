@@ -11,6 +11,8 @@
 
 #define local static
 #define u8 unsigned char
+#define u32 unsigned long
+#define u64 unsigned long long
 
 #include "assets.c"
 #include "game.c"
@@ -106,10 +108,35 @@ local void draw_world(struct world* world) {
     draw_sprite(0, world->xy);
 }
 
+#include "stdio.h"
+#include "time.h"
+
 int main(void) {
     InitWindow(0, 0, "AWESOME BROUGHLIKE");
 
     SetTargetFPS(60);
+
+    u64 seed = (u64) time(0);
+
+    // 0 doesn't work as a seed, so use this one instead.
+    if (seed == 0) {
+        seed = 0xBAD5EED;
+    }
+
+    printf("%lld\n", seed);
+
+    xs rng = {
+        seed & 0xffffffff,
+        (seed >> 32) & 0xffffffff,
+        seed & 0xffffffff,
+        (seed >> 32) & 0xffffffff
+    };
+
+    printf("{%ld %ld %ld %ld}\n", rng[0], rng[1], rng[2], rng[3]);
+    printf("%ld %ld %ld\n", xs_u32(rng, 0, 16), xs_u32(rng, 0, 16), xs_u32(rng, 0, 16));
+    printf("{%ld %ld %ld %ld}\n", rng[0], rng[1], rng[2], rng[3]);
+    printf("%ld %ld %ld\n", xs_u32(rng, 0, 16), xs_u32(rng, 0, 16), xs_u32(rng, 0, 16));
+    printf("{%ld %ld %ld %ld}\n", rng[0], rng[1], rng[2], rng[3]);
 
     Image spritesheet_img = spritesheet_image();
     spritesheet = LoadTextureFromImage(spritesheet_img);
