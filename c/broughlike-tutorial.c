@@ -109,15 +109,8 @@ local void draw_world(struct world* world) {
 }
 
 #include "stdio.h"
-#include "time.h"
 
-int main(void) {
-    InitWindow(0, 0, "AWESOME BROUGHLIKE");
-
-    SetTargetFPS(60);
-
-    u64 seed = (u64) time(0);
-
+local xs rng_from_seed(u64 seed) {
     // 0 doesn't work as a seed, so use this one instead.
     if (seed == 0) {
         seed = 0xBAD5EED;
@@ -132,18 +125,34 @@ int main(void) {
         (seed >> 32) & 0xffffffff
     };
 
-    printf("{%ld %ld %ld %ld}\n", rng[0], rng[1], rng[2], rng[3]);
-    printf("%ld %ld %ld\n", xs_u32(rng, 0, 16), xs_u32(rng, 0, 16), xs_u32(rng, 0, 16));
-    printf("{%ld %ld %ld %ld}\n", rng[0], rng[1], rng[2], rng[3]);
-    printf("%ld %ld %ld\n", xs_u32(rng, 0, 16), xs_u32(rng, 0, 16), xs_u32(rng, 0, 16));
-    printf("{%ld %ld %ld %ld}\n", rng[0], rng[1], rng[2], rng[3]);
+    return rng;
+}
+
+#include "time.h"
+
+int main(void) {
+    InitWindow(0, 0, "AWESOME BROUGHLIKE");
+
+    SetTargetFPS(60);
 
     Image spritesheet_img = spritesheet_image();
     spritesheet = LoadTextureFromImage(spritesheet_img);
 
     sizes = fresh_sizes();
 
-    struct world world = {0};
+    u64 seed = (u64) time(0);
+
+    xs rng = rng_from_seed(seed);
+
+    struct world world = world_from_rng(rng);
+
+    printf("{%ld %ld %ld %ld}\n", rng.xs[0], rng.xs[1], rng.xs[2], rng.xs[3]);
+    printf("{%ld %ld %ld %ld}\n", world.rng.xs[0], world.rng.xs[1], world.rng.xs[2], world.rng.xs[3]);
+
+    printf("%ld %ld %ld\n", xs_u32(&world.rng, 0, 16), xs_u32(&world.rng, 0, 16), xs_u32(&world.rng, 0, 16));
+
+    printf("{%ld %ld %ld %ld}\n", rng.xs[0], rng.xs[1], rng.xs[2], rng.xs[3]);
+    printf("{%ld %ld %ld %ld}\n", world.rng.xs[0], world.rng.xs[1], world.rng.xs[2], world.rng.xs[3]);
 
     while (!WindowShouldClose()) {
         if (IsKeyPressed(KEY_F11)) {
