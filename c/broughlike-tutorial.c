@@ -105,6 +105,22 @@ local void draw_world(struct world* world) {
         WHITE
     );
 
+    for (u8 i = 0; i < TILE_COUNT; i++) {
+        tile t = world->tiles[i];
+
+        sprite_index sprite = 0;
+        switch (t.kind) {
+            case WALL:
+                sprite = 3;
+            break;
+            case FLOOR:
+                sprite = 2;
+            break;
+        }
+
+        draw_sprite(sprite, t.xy);
+    }
+
     draw_sprite(0, world->xy);
 }
 
@@ -145,14 +161,6 @@ int main(void) {
     xs rng = rng_from_seed(seed);
 
     struct world world = world_from_rng(rng);
-
-    printf("{%ld %ld %ld %ld}\n", rng.xs[0], rng.xs[1], rng.xs[2], rng.xs[3]);
-    printf("{%ld %ld %ld %ld}\n", world.rng.xs[0], world.rng.xs[1], world.rng.xs[2], world.rng.xs[3]);
-
-    printf("%ld %ld %ld\n", xs_u32(&world.rng, 0, 16), xs_u32(&world.rng, 0, 16), xs_u32(&world.rng, 0, 16));
-
-    printf("{%ld %ld %ld %ld}\n", rng.xs[0], rng.xs[1], rng.xs[2], rng.xs[3]);
-    printf("{%ld %ld %ld %ld}\n", world.rng.xs[0], world.rng.xs[1], world.rng.xs[2], world.rng.xs[3]);
 
     while (!WindowShouldClose()) {
         if (IsKeyPressed(KEY_F11)) {
