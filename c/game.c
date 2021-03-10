@@ -69,6 +69,10 @@ local tile make_floor(tile_xy xy) {
     return t;
 }
 
+local bool in_bounds(tile_xy xy) {
+    return xy.x > 0 && xy.y > 0 && xy.x < NUM_TILES-1 && xy.y < NUM_TILES-1;
+}
+
 local u8 xy_to_i(tile_xy xy) {
     return xy.y * NUM_TILES + xy.x;
 }
@@ -79,7 +83,7 @@ local void generate_tiles(xs* rng, tiles* tiles) {
             tile_xy xy = {x, y};
             u8 i = xy_to_i(xy);
 
-            if (xs_u32(rng, 0, 10) < 3) {
+            if (xs_u32(rng, 0, 10) < 3 || !in_bounds(xy)) {
                 (*tiles)[i] = make_wall(xy);
             } else {
                 (*tiles)[i] = make_floor(xy);
