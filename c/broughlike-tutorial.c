@@ -11,6 +11,7 @@
 
 #define local static
 #define u8 unsigned char
+#define u16 unsigned short
 #define u32 unsigned long
 #define u64 unsigned long long
 
@@ -160,7 +161,25 @@ int main(void) {
 
     xs rng = rng_from_seed(seed);
 
-    struct world world = world_from_rng(rng);
+    world_result result = world_from_rng(rng);
+
+    if (result.kind == ERR) {
+        switch (result.error) {
+            case ERROR_ZERO:
+                printf("Incorrectly initialized result type!?\n");
+                // We don't want to return 0 in this case.
+                // I guess we might as well not collide with sysexits.h,
+                // since we won't need that many error types.
+            return 63;
+            case ERROR_NO_PASSABLE_TILE:
+                printf("No passable tile could be found.\n");
+            break;
+        }
+
+        return (int) result.error;
+    }
+
+    struct world world = result.result;
 
     while (!WindowShouldClose()) {
         if (IsKeyPressed(KEY_F11)) {
