@@ -174,6 +174,12 @@ int main(void) {
             case ERROR_NO_PASSABLE_TILE:
                 printf("No passable tile could be found.\n");
             break;
+            case ERROR_GENERATE_TILES_NEEDS_TO_BE_PASSED_A_BUFFER:
+                printf("Internal error: GENERATE_TILES_NEEDS_TO_BE_PASSED_A_BUFFER\n");
+            break;
+            case ERROR_MAP_GENERATION_TIMEOUT:
+                printf("Map generation timed out.\n");
+            break;
         }
 
         return (int) result.error;

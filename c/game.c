@@ -12,6 +12,8 @@ typedef enum {
 typedef enum { 
     ERROR_ZERO,
     ERROR_NO_PASSABLE_TILE,
+    ERROR_GENERATE_TILES_NEEDS_TO_BE_PASSED_A_BUFFER,
+    ERROR_MAP_GENERATION_TIMEOUT,
 } error_kind;
 
 #define XS_COUNT 4
@@ -131,19 +133,75 @@ local tile get_tile(tiles tiles, tile_xy xy){
     }
 }
 
-local void generate_tiles(xs* rng, tiles* tiles) {
-    for (u8 y = 0; y < NUM_TILES; y++) {
-        for (u8 x = 0; x < NUM_TILES; x++) {
-            tile_xy xy = {x, y};
-            u8 i = xy_to_i(xy);
+// result def {
+typedef struct {
+    result_kind kind;
+    u8 padding[4];
+    union {
+        error_kind error;
+        tiles* result;
+    };
+} tiles_result;
 
-            if (xs_u32(rng, 0, 10) < 3 || !in_bounds(xy)) {
-                (*tiles)[i] = make_wall(xy);
-            } else {
-                (*tiles)[i] = make_floor(xy);
+local tiles_result tiles_err(error_kind error) {
+    tiles_result result = {
+        .kind = ERR,
+        .error = error,
+    };
+    return result;
+}
+
+local tiles_result tiles_ok(tiles* payload) {
+    tiles_result result = {
+        .kind = OK,
+        .result = payload,
+    };
+    return result;
+}
+//}
+
+local tile_result random_passable_tile(xs* rng, tiles tiles);
+
+local void generate_tiles(xs* rng, tiles_result* output) {
+    if (output->kind == ERR) {
+        output->error = ERROR_GENERATE_TILES_NEEDS_TO_BE_PASSED_A_BUFFER;
+        return;
+    }
+
+    u16 timeout = 1000;
+
+    tiles* tiles = output->result;
+
+    while (timeout--) {
+        u8 passable_tiles = 0;
+
+        for (u8 y = 0; y < NUM_TILES; y++) {
+            for (u8 x = 0; x < NUM_TILES; x++) {
+                tile_xy xy = {x, y};
+                u8 i = xy_to_i(xy);
+
+                if (xs_u32(rng, 0, 10) < 3 || !in_bounds(xy)) {
+                    (*tiles)[i] = make_wall(xy);
+                } else {
+                    (*tiles)[i] = make_floor(xy);
+                    passable_tiles += 1;
+                }
             }
         }
+
+        tile_result t_r = random_passable_tile(rng, *tiles);
+
+        if (t_r.kind == ERR) {
+            continue;
+        }
+
+        // TODO check if all tiles are reachable from the random tile.
+        if (false) {
+            return;
+        }
     }
+
+    *output = tiles_err(ERROR_MAP_GENERATION_TIMEOUT);
 }
 
 struct world {
@@ -180,16 +238,16 @@ local world_result world_ok(struct world payload) {
 }
 //}
 
-local tile_result random_passable_tile(struct world* world){
+local tile_result random_passable_tile(xs* rng, tiles tiles){
     u16 timeout = 1000;
 
     while (timeout--) {
         tile_xy xy = {
-            .x = (u8) xs_u32(&world->rng, 0, NUM_TILES),
-            .y = (u8) xs_u32(&world->rng, 0, NUM_TILES)
+            .x = (u8) xs_u32(rng, 0, NUM_TILES),
+            .y = (u8) xs_u32(rng, 0, NUM_TILES)
         };
 
-        tile tile = get_tile(world->tiles, xy);
+        tile tile = get_tile(tiles, xy);
 
         if (is_passable(tile) && !has_monster(tile)) {
             return tile_ok(tile);
@@ -203,9 +261,15 @@ local world_result world_from_rng(xs rng) {
     struct world world = {0};
     world.rng = rng;
 
-    generate_tiles(&world.rng, &world.tiles);
+    tiles_result tiles_r = tiles_ok(&world.tiles);
 
-    tile_result t_r = random_passable_tile(&world);
+    generate_tiles(&world.rng, &tiles_r);
+
+    if (tiles_r.kind == ERR) {
+        return world_err(tiles_r.error);
+    }
+
+    tile_result t_r = random_passable_tile(&world.rng, world.tiles);
 
     if (t_r.kind == ERR) {
         return world_err(t_r.error);
