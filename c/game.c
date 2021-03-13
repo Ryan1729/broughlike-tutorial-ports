@@ -160,6 +160,76 @@ local tiles_result tiles_ok(tiles* payload) {
 }
 //}
 
+typedef struct {
+    tile pool[TILE_COUNT];
+    u8 length;
+    u8 padding[3];
+} tile_list;
+
+local void push_saturating(tile_list* list, tile tile) {
+    if (list->length < TILE_COUNT) {
+        list->pool[list->length] = tile;
+        list->length += 1;
+    }
+}
+
+local void concat_saturating(tile_list* dest, tile_list* src) {
+    for (u8 i = 0; i < src->length; i += 1) {
+        push_saturating(dest, src->pool[i]);
+    }
+}
+
+local bool contains(tile_list* list, tile_xy xy) {
+    for (u8 i = 0; i < list->length; i += 1) {
+        tile t = list->pool[i];
+        
+        if (t.xy.x == xy.x && t.xy.y == xy.y) {
+            return true;
+        }
+    }
+    return false;
+}
+
+local tile_list get_adjacent_neighbors(xs* rng, tiles tiles, tile_xy xy) {
+    tile_list adjacent_neighbors = {0};
+
+    // TODO
+    (void)rng;
+    (void)tiles;
+    (void)xy;
+
+    return adjacent_neighbors;
+}
+
+local tile_list get_connected_tiles(xs* rng, tiles tiles, tile start_tile) {
+    tile_list connected_tiles = {0};
+    push_saturating(&connected_tiles, start_tile);
+
+    tile_list frontier = {0};
+    push_saturating(&frontier, start_tile);
+
+    while (frontier.length) {
+        // We currently know frontier.length > 0
+        tile popped = frontier.pool[frontier.length - 1];
+        frontier.length -= 1;
+
+        tile_list unfiltered_neighbors = get_adjacent_neighbors(rng, tiles, popped.xy);
+
+        tile_list neighbors = {0};
+        for (u8 i = 0; i < unfiltered_neighbors.length; i += 1) {
+            tile t = unfiltered_neighbors.pool[i];
+            if (contains(&connected_tiles, t.xy)) {
+                push_saturating(&neighbors, t);
+            }
+        }         
+
+        concat_saturating(&connected_tiles, &neighbors);
+        concat_saturating(&frontier, &neighbors);
+    }
+
+    return connected_tiles;
+}
+
 local tile_result random_passable_tile(xs* rng, tiles tiles);
 
 local void generate_tiles(xs* rng, tiles_result* output) {
@@ -195,8 +265,9 @@ local void generate_tiles(xs* rng, tiles_result* output) {
             continue;
         }
 
-        // TODO check if all tiles are reachable from the random tile.
-        if (false) {
+        tile_list connected_tiles = get_connected_tiles(rng, *tiles, t_r.result);
+        
+        if (connected_tiles.length == passable_tiles) {
             return;
         }
     }
