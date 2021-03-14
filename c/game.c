@@ -50,6 +50,14 @@ typedef struct {
     tile_y y;
 } tile_xy;
 
+typedef i8 delta_x;
+typedef i8 delta_y;
+
+typedef struct {
+    delta_x x;
+    delta_y y;
+} delta_xy;
+
 typedef enum {
     WALL,
     FLOOR,
@@ -160,6 +168,15 @@ local tiles_result tiles_ok(tiles* payload) {
 }
 //}
 
+local tile get_neighbor(tiles tiles, tile_xy xy, delta_xy dxy) {
+    // If we underflow here the bounds check in `get_tile` should save us.
+    tile_xy new_xy = {
+        .x = (tile_x)((delta_x)xy.x + dxy.x),
+        .y = (tile_y)((delta_y)xy.y + dxy.y)
+    };
+    return get_tile(tiles, new_xy);
+}
+
 typedef struct {
     tile pool[TILE_COUNT];
     u8 length;
@@ -190,13 +207,55 @@ local bool contains(tile_list* list, tile_xy xy) {
     return false;
 }
 
+local void shuffle(xs* rng, tile_list* list) {
+    for (u8 i = 1; i < list->length; i++) {
+        u32 r = xs_u32(rng, 0, i + 1);
+        tile temp = list->pool[i];
+        list->pool[i] = list->pool[r];
+        list->pool[r] = temp;
+    }
+}
+
 local tile_list get_adjacent_neighbors(xs* rng, tiles tiles, tile_xy xy) {
     tile_list adjacent_neighbors = {0};
 
-    // TODO
-    (void)rng;
-    (void)tiles;
-    (void)xy;
+    push_saturating(
+        &adjacent_neighbors,
+        get_neighbor(
+            tiles,
+            xy,
+            (delta_xy){0, -1}
+        )
+    );
+
+    push_saturating(
+        &adjacent_neighbors,
+        get_neighbor(
+            tiles,
+            xy,
+            (delta_xy){0, 1}
+        )
+    );
+
+    push_saturating(
+        &adjacent_neighbors,
+        get_neighbor(
+            tiles,
+            xy,
+            (delta_xy){-1, 0}
+        )
+    );
+
+    push_saturating(
+        &adjacent_neighbors,
+        get_neighbor(
+            tiles,
+            xy,
+            (delta_xy){1, 0}
+        )
+    );
+
+    shuffle(rng, &adjacent_neighbors);
 
     return adjacent_neighbors;
 }
@@ -213,12 +272,16 @@ local tile_list get_connected_tiles(xs* rng, tiles tiles, tile start_tile) {
         tile popped = frontier.pool[frontier.length - 1];
         frontier.length -= 1;
 
-        tile_list unfiltered_neighbors = get_adjacent_neighbors(rng, tiles, popped.xy);
+        tile_list unfiltered_neighbors = get_adjacent_neighbors(
+            rng,
+            tiles,
+            popped.xy
+        );
 
         tile_list neighbors = {0};
         for (u8 i = 0; i < unfiltered_neighbors.length; i += 1) {
             tile t = unfiltered_neighbors.pool[i];
-            if (contains(&connected_tiles, t.xy)) {
+            if (is_passable(t) && !contains(&connected_tiles, t.xy)) {
                 push_saturating(&neighbors, t);
             }
         }         
