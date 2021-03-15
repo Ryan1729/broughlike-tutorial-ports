@@ -16,6 +16,11 @@ typedef enum {
     ERROR_MAP_GENERATION_TIMEOUT,
 } error_kind;
 
+typedef enum {
+    NONE,
+    SOME
+} maybe_kind;
+
 #define XS_COUNT 4
 // Making this a struct causes some extra copying, but simplifies interfaces.
 typedef struct {
@@ -59,6 +64,41 @@ typedef struct {
 } delta_xy;
 
 typedef enum {
+    PLAYER,
+    BIRD,
+    SNAKE,
+    TANK,
+    EATER,
+    JESTER
+} monster_kind;
+
+typedef struct {
+    monster_kind kind;
+    tile_xy xy;
+    u8 padding[2];
+} monster;
+
+// maybe def {
+typedef struct {
+    maybe_kind kind;
+    monster payload;
+} maybe_monster;
+
+local maybe_monster some_monster(monster monster) {
+    return (maybe_monster) {.kind = SOME, .payload = monster};
+}
+// }
+
+local monster make_player(tile_xy xy) {
+    monster m = {
+        .kind = PLAYER,
+        .xy = xy,
+    };
+
+    return m;
+}
+
+typedef enum {
     WALL,
     FLOOR,
 } tile_kind;
@@ -67,16 +107,11 @@ typedef struct {
     tile_kind kind;
     tile_xy xy;
     u8 padding[2];
+    maybe_monster maybe_monster;
 } tile;
 
 local bool is_passable(tile tile) {
     return tile.kind == FLOOR;
-}
-
-local bool has_monster(tile tile) {
-    (void)tile;
-    // TODO once we have monsters
-    return false;
 }
 
 // result def {
@@ -168,6 +203,61 @@ local tiles_result tiles_ok(tiles* payload) {
 }
 //}
 
+local void remove_monster(tiles tiles, tile_xy xy) {
+    tiles[xy_to_i(xy)].maybe_monster = (maybe_monster){0};
+}
+
+local void set_monster(tiles tiles, monster monster) {
+    tiles[xy_to_i(monster.xy)].maybe_monster = some_monster(monster);
+}
+
+struct world {
+    tile_xy xy;
+    u8 padding[6];
+    xs rng;
+    tiles tiles;
+    u8 padding_[4];
+};
+
+// result def {
+typedef struct { 
+    result_kind kind;
+    u8 padding[4];
+    union {
+        error_kind error;
+        struct world result;
+    };
+} world_result;
+
+local world_result world_err(error_kind error) {
+    world_result result = {
+        .kind = ERR,
+        .error = error,
+    };
+    return result;
+}
+
+local world_result world_ok(struct world payload) {
+    world_result result = {
+        .kind = OK,
+        .result = payload,
+    };
+    return result;
+}
+//}
+
+local void move(struct world* world, monster monster, tile_xy xy) {
+    remove_monster(world->tiles, xy);
+
+    monster.xy = xy;
+
+    set_monster(world->tiles, monster);
+
+    if (monster.kind == PLAYER) {
+        world->xy = monster.xy;
+    }
+}
+
 local tile get_neighbor(tiles tiles, tile_xy xy, delta_xy dxy) {
     // If we underflow here the bounds check in `get_tile` should save us.
     tile_xy new_xy = {
@@ -175,6 +265,16 @@ local tile get_neighbor(tiles tiles, tile_xy xy, delta_xy dxy) {
         .y = (tile_y)((delta_y)xy.y + dxy.y)
     };
     return get_tile(tiles, new_xy);
+}
+
+local void try_move(struct world* world, monster monster, delta_xy dxy) {
+    tile new_tile = get_neighbor(world->tiles, monster.xy, dxy);
+
+    if (is_passable(new_tile)) {
+        if(new_tile.maybe_monster.kind == NONE){
+            move(world, monster, new_tile.xy);
+        }
+    }
 }
 
 typedef struct {
@@ -338,40 +438,6 @@ local void generate_tiles(xs* rng, tiles_result* output) {
     *output = tiles_err(ERROR_MAP_GENERATION_TIMEOUT);
 }
 
-struct world {
-    tile_xy xy;
-    u8 padding[6];
-    xs rng;
-    tiles tiles;
-};
-
-// result def {
-typedef struct { 
-    result_kind kind;
-    u8 padding[4];
-    union {
-        error_kind error;
-        struct world result;
-    };
-} world_result;
-
-local world_result world_err(error_kind error) {
-    world_result result = {
-        .kind = ERR,
-        .error = error,
-    };
-    return result;
-}
-
-local world_result world_ok(struct world payload) {
-    world_result result = {
-        .kind = OK,
-        .result = payload,
-    };
-    return result;
-}
-//}
-
 local tile_result random_passable_tile(xs* rng, tiles tiles){
     u16 timeout = 1000;
 
@@ -383,7 +449,7 @@ local tile_result random_passable_tile(xs* rng, tiles tiles){
 
         tile tile = get_tile(tiles, xy);
 
-        if (is_passable(tile) && !has_monster(tile)) {
+        if (is_passable(tile) && tile.maybe_monster.kind == NONE) {
             return tile_ok(tile);
         }
     }
@@ -411,5 +477,52 @@ local world_result world_from_rng(xs rng) {
 
     world.xy = t_r.result.xy;
 
+    set_monster(world.tiles, make_player(world.xy));
+
     return world_ok(world);
+}
+
+local maybe_monster get_player(struct world* world) {
+    tile tile = get_tile(world->tiles, world->xy);
+    if (tile.maybe_monster.kind == SOME) {
+        if (tile.maybe_monster.payload.kind == PLAYER) {
+            return tile.maybe_monster;
+        }
+    }
+    return (maybe_monster){0};
+}
+
+local void move_player(struct world* world, delta_xy dxy) {
+    maybe_monster maybe_player = get_player(world);
+
+    if (maybe_player.kind == SOME) {
+        try_move(world, maybe_player.payload, dxy);
+    }
+}
+
+typedef enum {
+    INPUT_NONE,
+    INPUT_UP,
+    INPUT_DOWN,
+    INPUT_LEFT,
+    INPUT_RIGHT,
+} input;
+
+local void update(struct world* world, input input) {
+    switch (input) {
+        case INPUT_NONE:
+            return;
+        case INPUT_UP:
+            move_player(world, (delta_xy){0, -1});
+        break;
+        case INPUT_DOWN:
+            move_player(world, (delta_xy){0, 1});
+        break;
+        case INPUT_LEFT:
+            move_player(world, (delta_xy){-1, 0});
+        break;
+        case INPUT_RIGHT:
+            move_player(world, (delta_xy){1, 0});
+        break;
+    }
 }

@@ -194,18 +194,22 @@ int main(void) {
             sizes = fresh_sizes();
         }
 
+        input input = INPUT_NONE;
+
         if (IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP)) {
-            world.xy.y -= 1;
+            input = INPUT_UP;
         }
         if (IsKeyPressed(KEY_S) || IsKeyPressed(KEY_DOWN)) {
-            world.xy.y += 1;
+            input = INPUT_DOWN;
         }
         if (IsKeyPressed(KEY_A) || IsKeyPressed(KEY_LEFT)) {
-            world.xy.x -= 1;
+            input = INPUT_LEFT;
         }
         if (IsKeyPressed(KEY_D) || IsKeyPressed(KEY_RIGHT)) {
-            world.xy.x += 1;
+            input = INPUT_RIGHT;
         }
+
+        update(&world, input);
 
         BeginDrawing();
 
