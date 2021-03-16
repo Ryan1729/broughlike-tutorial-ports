@@ -132,6 +132,26 @@ local void draw_world(struct world* world) {
             monster m = t.maybe_monster.payload;
 
             sprite_index sprite = 0;
+            switch (m.kind) {
+                case PLAYER:
+                    sprite = 0;
+                break;
+                case BIRD:
+                    sprite = 4;
+                break;
+                case SNAKE:
+                    sprite = 5;
+                break;
+                case TANK:
+                    sprite = 6;
+                break;
+                case EATER:
+                    sprite = 7;
+                break;
+                case JESTER:
+                    sprite = 8;
+                break;
+            }
 
             draw_sprite(sprite, m.xy);
         }
@@ -174,7 +194,7 @@ int main(void) {
 
     xs rng = rng_from_seed(seed);
 
-    world_result result = world_from_rng(rng);
+    world_result result = world_from_rng(rng, (world_spec){0});
 
     if (result.kind == ERR) {
         switch (result.error) {

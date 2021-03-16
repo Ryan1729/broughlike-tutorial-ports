@@ -72,10 +72,13 @@ typedef enum {
     JESTER
 } monster_kind;
 
+typedef u8 half_hp;
+
 typedef struct {
     monster_kind kind;
     tile_xy xy;
-    u8 padding[2];
+    half_hp half_hp;
+    u8 padding[1];
 } monster;
 
 // maybe def {
@@ -93,6 +96,57 @@ local monster make_player(tile_xy xy) {
     monster m = {
         .kind = PLAYER,
         .xy = xy,
+        .half_hp = 6,
+    };
+
+    return m;
+}
+
+local monster make_bird(tile_xy xy) {
+    monster m = {
+        .kind = BIRD,
+        .xy = xy,
+        .half_hp = 6,
+    };
+
+    return m;
+}
+
+local monster make_snake(tile_xy xy) {
+    monster m = {
+        .kind = SNAKE,
+        .xy = xy,
+        .half_hp = 2,
+    };
+
+    return m;
+}
+
+local monster make_tank(tile_xy xy) {
+    monster m = {
+        .kind = TANK,
+        .xy = xy,
+        .half_hp = 4,
+    };
+
+    return m;
+}
+
+local monster make_eater(tile_xy xy) {
+    monster m = {
+        .kind = EATER,
+        .xy = xy,
+        .half_hp = 2,
+    };
+
+    return m;
+}
+
+local monster make_jester(tile_xy xy) {
+    monster m = {
+        .kind = JESTER,
+        .xy = xy,
+        .half_hp = 4,
     };
 
     return m;
@@ -211,9 +265,12 @@ local void set_monster(tiles tiles, monster monster) {
     tiles[xy_to_i(monster.xy)].maybe_monster = some_monster(monster);
 }
 
+typedef u8 level;
+
 struct world {
     tile_xy xy;
-    u8 padding[6];
+    level level;
+    u8 padding[5];
     xs rng;
     tiles tiles;
     u8 padding_[4];
@@ -308,7 +365,7 @@ local bool contains(tile_list* list, tile_xy xy) {
 }
 
 local void shuffle(xs* rng, tile_list* list) {
-    for (u8 i = 1; i < list->length; i++) {
+    for (u8 i = 1; i < list->length; i += 1) {
         u32 r = xs_u32(rng, 0, i + 1);
         tile temp = list->pool[i];
         list->pool[i] = list->pool[r];
@@ -395,7 +452,47 @@ local tile_list get_connected_tiles(xs* rng, tiles tiles, tile start_tile) {
 
 local tile_result random_passable_tile(xs* rng, tiles tiles);
 
-local void generate_tiles(xs* rng, tiles_result* output) {
+local void spawn_monster(xs* rng, tiles tiles) {
+    tile_result t_r = random_passable_tile(rng, tiles);
+
+    if (t_r.kind == ERR) {
+        // The player won't mind if a monster doesn't spawn.
+        return;
+    }
+
+    monster (*maker)(tile_xy) = 0;
+    switch (xs_u32(rng, 0, 5)) {
+        case 0:
+            maker = &make_bird;
+        break;
+        case 1:
+            maker = &make_snake;
+        break;
+        case 2:
+            maker = &make_tank;
+        break;
+        case 3:
+            maker = &make_eater;
+        break;
+        case 4:
+            maker = &make_jester;
+        break;
+        default:
+            // We don't expect this case to be hit.
+            return;
+    }
+
+    set_monster(tiles, maker(t_r.result.xy));
+}
+
+local void generate_monsters(xs* rng, tiles tiles, level level) {
+    u8 monster_count = level + 1;
+    for (u8 i = 0; i < monster_count; i += 1) {
+        spawn_monster(rng, tiles);
+    }
+}
+
+local void generate_tiles(xs* rng, tiles_result* output, level level) {
     if (output->kind == ERR) {
         output->error = ERROR_GENERATE_TILES_NEEDS_TO_BE_PASSED_A_BUFFER;
         return;
@@ -408,8 +505,8 @@ local void generate_tiles(xs* rng, tiles_result* output) {
     while (timeout--) {
         u8 passable_tiles = 0;
 
-        for (u8 y = 0; y < NUM_TILES; y++) {
-            for (u8 x = 0; x < NUM_TILES; x++) {
+        for (u8 y = 0; y < NUM_TILES; y += 1) {
+            for (u8 x = 0; x < NUM_TILES; x += 1) {
                 tile_xy xy = {x, y};
                 u8 i = xy_to_i(xy);
 
@@ -431,6 +528,7 @@ local void generate_tiles(xs* rng, tiles_result* output) {
         tile_list connected_tiles = get_connected_tiles(rng, *tiles, t_r.result);
         
         if (connected_tiles.length == passable_tiles) {
+            generate_monsters(rng, *tiles, level);
             return;
         }
     }
@@ -457,13 +555,19 @@ local tile_result random_passable_tile(xs* rng, tiles tiles){
     return tile_err(ERROR_NO_PASSABLE_TILE);
 }
 
-local world_result world_from_rng(xs rng) {
+typedef struct {
+    level level;
+} world_spec;
+
+local world_result world_from_rng(xs rng, world_spec world_spec) {
     struct world world = {0};
+
     world.rng = rng;
+    world.level = world_spec.level ? world_spec.level : 1;
 
     tiles_result tiles_r = tiles_ok(&world.tiles);
 
-    generate_tiles(&world.rng, &tiles_r);
+    generate_tiles(&world.rng, &tiles_r, world.level);
 
     if (tiles_r.kind == ERR) {
         return world_err(tiles_r.error);
