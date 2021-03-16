@@ -247,7 +247,7 @@ local world_result world_ok(struct world payload) {
 //}
 
 local void move(struct world* world, monster monster, tile_xy xy) {
-    remove_monster(world->tiles, xy);
+    remove_monster(world->tiles, monster.xy);
 
     monster.xy = xy;
 
