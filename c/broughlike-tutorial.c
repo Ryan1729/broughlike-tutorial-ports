@@ -107,6 +107,8 @@ local void draw_world(struct world* world) {
         WHITE
     );
 
+    // We draw all the stationary sprites first so they don't cover the
+    // moving sprites
     for (u8 i = 0; i < TILE_COUNT; i++) {
         tile t = world->tiles[i];
 
@@ -123,7 +125,17 @@ local void draw_world(struct world* world) {
         draw_sprite(sprite, t.xy);
     }
 
-    draw_sprite(0, world->xy);
+    for (u8 i = 0; i < TILE_COUNT; i++) {
+        tile t = world->tiles[i];
+
+        if (t.maybe_monster.kind == SOME) {
+            monster m = t.maybe_monster.payload;
+
+            sprite_index sprite = 0;
+
+            draw_sprite(sprite, m.xy);
+        }
+    }
 }
 
 #include "stdio.h"
