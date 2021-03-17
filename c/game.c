@@ -55,6 +55,15 @@ typedef struct {
     tile_y y;
 } tile_xy;
 
+local u8 abs(i8 x){
+    return x & 0x7f;
+}
+
+// manhattan distance
+local u8 tile_xy_dist(tile_xy a, tile_xy b){
+    return abs((i8)a.x-(i8)b.x) + abs((i8)a.y-(i8)b.y);
+}
+
 typedef i8 delta_x;
 typedef i8 delta_y;
 
@@ -80,17 +89,6 @@ typedef struct {
     half_hp half_hp;
     u8 padding[1];
 } monster;
-
-// maybe def {
-typedef struct {
-    maybe_kind kind;
-    monster payload;
-} maybe_monster;
-
-local maybe_monster some_monster(monster monster) {
-    return (maybe_monster) {.kind = SOME, .payload = monster};
-}
-// }
 
 local monster make_player(tile_xy xy) {
     monster m = {
@@ -151,6 +149,37 @@ local monster make_jester(tile_xy xy) {
 
     return m;
 }
+
+local bool is_dead(monster monster) {
+    return monster.half_hp == 0;
+}
+
+// maybe def {
+typedef struct {
+    maybe_kind kind;
+    monster payload;
+} maybe_monster;
+
+local maybe_monster some_monster(monster monster) {
+    return (maybe_monster) {.kind = SOME, .payload = monster};
+}
+// }
+
+// list def {
+typedef struct {
+    // THe maximum umber of monsters is < TILE_COUNT.
+    monster pool[TILE_COUNT];
+    u8 length;
+    u8 padding[3];
+} monster_list;
+
+local void monster_list_push_saturating(monster_list* list, monster monster) {
+    if (list->length < TILE_COUNT) {
+        list->pool[list->length] = monster;
+        list->length += 1;
+    }
+}
+// }
 
 typedef enum {
     WALL,
@@ -303,7 +332,7 @@ local world_result world_ok(struct world payload) {
 }
 //}
 
-local void move(struct world* world, monster monster, tile_xy xy) {
+local monster move(struct world* world, monster monster, tile_xy xy) {
     remove_monster(world->tiles, monster.xy);
 
     monster.xy = xy;
@@ -313,6 +342,8 @@ local void move(struct world* world, monster monster, tile_xy xy) {
     if (monster.kind == PLAYER) {
         world->xy = monster.xy;
     }
+
+    return monster;
 }
 
 local tile get_neighbor(tiles tiles, tile_xy xy, delta_xy dxy) {
@@ -324,16 +355,21 @@ local tile get_neighbor(tiles tiles, tile_xy xy, delta_xy dxy) {
     return get_tile(tiles, new_xy);
 }
 
-local void try_move(struct world* world, monster monster, delta_xy dxy) {
+local maybe_monster try_move(struct world* world, monster monster, delta_xy dxy) {
     tile new_tile = get_neighbor(world->tiles, monster.xy, dxy);
+
+    maybe_monster output = {0};
 
     if (is_passable(new_tile)) {
         if(new_tile.maybe_monster.kind == NONE){
-            move(world, monster, new_tile.xy);
+            output = some_monster(move(world, monster, new_tile.xy));
         }
     }
+
+    return output;
 }
 
+// list def {
 typedef struct {
     tile pool[TILE_COUNT];
     u8 length;
@@ -346,6 +382,7 @@ local void push_saturating(tile_list* list, tile tile) {
         list->length += 1;
     }
 }
+// }
 
 local void concat_saturating(tile_list* dest, tile_list* src) {
     for (u8 i = 0; i < src->length; i += 1) {
@@ -370,6 +407,24 @@ local void shuffle(xs* rng, tile_list* list) {
         tile temp = list->pool[i];
         list->pool[i] = list->pool[r];
         list->pool[r] = temp;
+    }
+}
+
+local void sort_by_dist(tile_list* list, tile_xy xy) {
+    // This is used on lists that have at most TILE_COUNT elements, and in practice 
+    // have way fewer. So we don't really care how this scales, so bubble sort will
+    // do just fine.
+    for (u8 i = 0; i < list->length; i += 1) {
+        for (u8 j = i + 1; j < list->length; j += 1) {
+            int dist_i = tile_xy_dist(list->pool[i].xy, xy);
+            int dist_j = tile_xy_dist(list->pool[j].xy, xy);
+
+            if (dist_j < dist_i) {
+                tile temp = list->pool[i];
+                list->pool[i] = list->pool[j];
+                list->pool[j] = temp;
+            }
+        }
     }
 }
 
@@ -441,7 +496,7 @@ local tile_list get_connected_tiles(xs* rng, tiles tiles, tile start_tile) {
             if (is_passable(t) && !contains(&connected_tiles, t.xy)) {
                 push_saturating(&neighbors, t);
             }
-        }         
+        }
 
         concat_saturating(&connected_tiles, &neighbors);
         concat_saturating(&frontier, &neighbors);
@@ -586,6 +641,48 @@ local world_result world_from_rng(xs rng, world_spec world_spec) {
     return world_ok(world);
 }
 
+local maybe_monster do_stuff(struct world* world, monster monster) {
+    tile_list unfiltered_neighbors = get_adjacent_neighbors(
+        &world->rng,
+        world->tiles,
+        monster.xy
+    );
+
+    tile_list neighbors = {0};
+    for (u8 i = 0; i < unfiltered_neighbors.length; i += 1) {
+        tile t = unfiltered_neighbors.pool[i];
+        if (
+            is_passable(t)
+            && (
+                t.maybe_monster.kind == NONE
+                || t.maybe_monster.payload.kind == PLAYER
+            )) {
+            push_saturating(&neighbors, t);
+        }
+    }
+
+    maybe_monster output = {0};
+
+    if (neighbors.length) {
+        sort_by_dist(&neighbors, world->xy);
+        tile new_tile = neighbors.pool[0];
+        output = try_move(
+            world,
+            monster,
+            (delta_xy) {
+                (delta_x)new_tile.xy.x - (delta_x)monster.xy.x,
+                (delta_y)new_tile.xy.y - (delta_y)monster.xy.y
+            }
+        );
+    }
+
+    return output;
+}
+
+local void update_monster(struct world* world, monster monster) {
+    do_stuff(world, monster);
+}
+
 local maybe_monster get_player(struct world* world) {
     tile tile = get_tile(world->tiles, world->xy);
     if (tile.maybe_monster.kind == SOME) {
@@ -596,11 +693,51 @@ local maybe_monster get_player(struct world* world) {
     return (maybe_monster){0};
 }
 
+// When iterating monsters, We collect the monsters into a list
+// so that we don't hit the same monster twice in the iteration,
+// in case it moves
+local monster_list get_monsters(tiles tiles) {
+    monster_list monsters = {0};
+
+    for (u8 y = 0; y < NUM_TILES; y += 1) {
+        for (u8 x = 0; x < NUM_TILES; x += 1) {
+            tile_xy xy = {x, y};
+            tile t = get_tile(tiles, xy);
+
+            if (
+                t.maybe_monster.kind == SOME
+                && t.maybe_monster.payload.kind != PLAYER
+            ) {
+                monster_list_push_saturating(&monsters, t.maybe_monster.payload);
+            }
+        }
+    }
+
+    return monsters;
+}
+
+local void tick(struct world* world){
+    monster_list monsters = get_monsters(world->tiles);
+
+    for (u8 i = 0; i < monsters.length; i += 1) {
+        monster monster = monsters.pool[i];
+        if (is_dead(monster)) {
+            remove_monster(world->tiles, monster.xy);
+        } else {
+            update_monster(world, monster);
+        }
+    }
+}
+
 local void move_player(struct world* world, delta_xy dxy) {
     maybe_monster maybe_player = get_player(world);
 
     if (maybe_player.kind == SOME) {
-        try_move(world, maybe_player.payload, dxy);
+        maybe_monster maybe_moved = try_move(world, maybe_player.payload, dxy);
+
+        if (maybe_moved.kind == SOME) {
+            tick(world);
+        }
     }
 }
 
