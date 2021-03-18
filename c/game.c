@@ -56,7 +56,7 @@ typedef struct {
 } tile_xy;
 
 local u8 abs(i8 x){
-    return x & 0x7f;
+    return (u8)(x < 0 ? -x : x);
 }
 
 // manhattan distance
@@ -416,8 +416,8 @@ local void sort_by_dist(tile_list* list, tile_xy xy) {
     // do just fine.
     for (u8 i = 0; i < list->length; i += 1) {
         for (u8 j = i + 1; j < list->length; j += 1) {
-            int dist_i = tile_xy_dist(list->pool[i].xy, xy);
-            int dist_j = tile_xy_dist(list->pool[j].xy, xy);
+            int dist_i = tile_xy_dist(xy, list->pool[i].xy);
+            int dist_j = tile_xy_dist(xy, list->pool[j].xy);
 
             if (dist_j < dist_i) {
                 tile temp = list->pool[i];
