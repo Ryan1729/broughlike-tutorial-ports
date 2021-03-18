@@ -64,7 +64,12 @@ local struct sizes fresh_sizes(void) {
 
 local Texture2D spritesheet = {0};
 
-local void draw_sprite(sprite_index sprite, tile_xy xy) {
+typedef struct {
+    float x;
+    float y;
+} screen_xy;
+
+local void draw_sprite(sprite_index sprite, screen_xy xy) {
     Rectangle spritesheet_rect = {
         .x = (float) sprite * 16,
         .y = 0,
@@ -73,26 +78,40 @@ local void draw_sprite(sprite_index sprite, tile_xy xy) {
     };
 
     Rectangle render_rect = {
-        .x = (float) (sizes.play_area_x + (screen_size)xy.x * sizes.tile),
-        .y = (float) (sizes.play_area_y + (screen_size)xy.y * sizes.tile),
+        .x = (float) (sizes.play_area_x) + xy.x,
+        .y = (float) (sizes.play_area_y) + xy.y,
         .width = (float) (sizes.tile),
         .height = (float) (sizes.tile),
-    };
-
-    Vector2 vec2 = {
-        .x = (float)xy.x,
-        .y = (float)xy.y,
     };
 
     DrawTexturePro(
         spritesheet,
         spritesheet_rect,
         render_rect,
-        vec2,
+        (Vector2){0},
         0.0,
         WHITE
     );
 }
+
+local void draw_sprite_tile(sprite_index sprite, tile_xy xy) {
+    draw_sprite(
+        sprite,
+        (screen_xy) {
+            (float)((screen_size)xy.x * sizes.tile),
+            (float)((screen_size)xy.y * sizes.tile)
+        }
+    );
+}
+
+// Just for fun, let's reduce our reliance on the c stdlib
+/*local float float_floor(float f) {
+    // NaNs/Infs not handled
+    long long n = (long long)f;
+    return (float)n;
+}*/
+
+#include <math.h>
 
 local void draw_world(struct world* world) {
     ClearBackground(INDIGO);
@@ -122,7 +141,7 @@ local void draw_world(struct world* world) {
             break;
         }
 
-        draw_sprite(sprite, t.xy);
+        draw_sprite_tile(sprite, t.xy);
     }
 
     for (u8 i = 0; i < TILE_COUNT; i++) {
@@ -153,7 +172,21 @@ local void draw_world(struct world* world) {
                 break;
             }
 
-            draw_sprite(sprite, m.xy);
+            draw_sprite_tile(sprite, m.xy);
+
+            // Drawing HP
+            int hp = m.half_hp / 2;
+            for (int j = 0; j < hp; j += 1) {
+                draw_sprite(
+                    9,
+                    (screen_xy){
+                        ((float)m.xy.x) * (float)sizes.tile
+                        + (j%3) * (5.0f/16.0f),
+                        ((float)m.xy.y) * (float)sizes.tile
+                        - floorf((float)j/3.0f) * (5.0f/16.0f)
+                    }
+                );
+            }
         }
     }
 }
