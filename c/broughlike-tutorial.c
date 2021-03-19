@@ -153,7 +153,7 @@ local void draw_world(struct world* world) {
             sprite_index sprite = 0;
             switch (m.kind) {
                 case PLAYER:
-                    sprite = 0;
+                    sprite = is_dead(m) ? 1 : 0;
                 break;
                 case BIRD:
                     sprite = 4;

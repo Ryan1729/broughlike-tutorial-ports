@@ -154,6 +154,10 @@ local bool is_dead(monster monster) {
     return monster.half_hp == 0;
 }
 
+local bool is_player(monster monster) {
+    return monster.kind == PLAYER;
+}
+
 // maybe def {
 typedef struct {
     maybe_kind kind;
@@ -294,6 +298,15 @@ local void set_monster(tiles tiles, monster monster) {
     tiles[xy_to_i(monster.xy)].maybe_monster = some_monster(monster);
 }
 
+local void hit(tiles tiles, monster monster, half_hp half_hp) {
+    if (monster.half_hp > half_hp) {
+        monster.half_hp -= half_hp;
+    } else {
+        monster.half_hp = 0;
+    }
+    set_monster(tiles, monster);
+}
+
 typedef u8 level;
 
 struct world {
@@ -339,7 +352,7 @@ local monster move(struct world* world, monster monster, tile_xy xy) {
 
     set_monster(world->tiles, monster);
 
-    if (monster.kind == PLAYER) {
+    if (is_player(monster)) {
         world->xy = monster.xy;
     }
 
@@ -355,14 +368,22 @@ local tile get_neighbor(tiles tiles, tile_xy xy, delta_xy dxy) {
     return get_tile(tiles, new_xy);
 }
 
-local maybe_monster try_move(struct world* world, monster monster, delta_xy dxy) {
-    tile new_tile = get_neighbor(world->tiles, monster.xy, dxy);
+local maybe_monster try_move(struct world* world, monster m, delta_xy dxy) {
+    tile new_tile = get_neighbor(world->tiles, m.xy, dxy);
 
     maybe_monster output = {0};
 
     if (is_passable(new_tile)) {
-        if(new_tile.maybe_monster.kind == NONE){
-            output = some_monster(move(world, monster, new_tile.xy));
+        if (new_tile.maybe_monster.kind == SOME) {
+            monster target = new_tile.maybe_monster.payload;
+            //`!=` is an example of why it's important that `true` is a single value.
+            if(is_player(m) != is_player(target)){
+                hit(world->tiles, target, 2);
+            }
+
+            output = some_monster(m);
+        } else {
+            output = some_monster(move(world, m, new_tile.xy));
         }
     }
 
@@ -655,7 +676,7 @@ local maybe_monster do_stuff(struct world* world, monster monster) {
             is_passable(t)
             && (
                 t.maybe_monster.kind == NONE
-                || t.maybe_monster.payload.kind == PLAYER
+                || is_player(t.maybe_monster.payload)
             )) {
             push_saturating(&neighbors, t);
         }
@@ -686,7 +707,7 @@ local void update_monster(struct world* world, monster monster) {
 local maybe_monster get_player(struct world* world) {
     tile tile = get_tile(world->tiles, world->xy);
     if (tile.maybe_monster.kind == SOME) {
-        if (tile.maybe_monster.payload.kind == PLAYER) {
+        if (is_player(tile.maybe_monster.payload)) {
             return tile.maybe_monster;
         }
     }
@@ -706,7 +727,7 @@ local monster_list get_monsters(tiles tiles) {
 
             if (
                 t.maybe_monster.kind == SOME
-                && t.maybe_monster.payload.kind != PLAYER
+                && !is_player(t.maybe_monster.payload)
             ) {
                 monster_list_push_saturating(&monsters, t.maybe_monster.payload);
             }
