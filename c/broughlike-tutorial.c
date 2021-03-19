@@ -175,7 +175,9 @@ local void draw_world(struct world* world) {
             draw_sprite_tile(sprite, m.xy);
 
             // Drawing HP
-            int hp = m.half_hp / 2;
+
+            // A single half HP should be drawn as a pip.
+            int hp = (m.half_hp + 1) / 2;
             for (int j = 0; j < hp; j += 1) {
                 draw_sprite(
                     9,
