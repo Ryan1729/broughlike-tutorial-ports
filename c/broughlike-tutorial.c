@@ -180,10 +180,10 @@ local void draw_world(struct world* world) {
                 draw_sprite(
                     9,
                     (screen_xy){
-                        ((float)m.xy.x) * (float)sizes.tile
-                        + (j%3) * (5.0f/16.0f),
-                        ((float)m.xy.y) * (float)sizes.tile
-                        - floorf((float)j/3.0f) * (5.0f/16.0f)
+                        (float)sizes.tile
+                        * ((float)m.xy.x + (j%3) * (5.0f/16.0f)),
+                        (float)sizes.tile
+                        * ((float)m.xy.y - floorf((float)j/3.0f) * (5.0f/16.0f))
                     }
                 );
             }
