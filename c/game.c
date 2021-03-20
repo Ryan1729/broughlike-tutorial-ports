@@ -87,7 +87,7 @@ typedef struct {
     monster_kind kind;
     tile_xy xy;
     half_hp half_hp;
-    u8 padding[1];
+    bool attacked_this_turn;
 } monster;
 
 local monster make_player(tile_xy xy) {
@@ -378,6 +378,9 @@ local maybe_monster try_move(struct world* world, monster m, delta_xy dxy) {
             monster target = new_tile.maybe_monster.payload;
             //`!=` is an example of why it's important that `true` is a single value.
             if(is_player(m) != is_player(target)){
+                m.attacked_this_turn = true;
+                set_monster(world->tiles, m);
+
                 hit(world->tiles, target, 2);
             }
 
@@ -700,8 +703,28 @@ local maybe_monster do_stuff(struct world* world, monster monster) {
     return output;
 }
 
-local void update_monster(struct world* world, monster monster) {
-    do_stuff(world, monster);
+local void update_monster(struct world* world, monster m) {
+    switch (m.kind) {
+        case SNAKE:
+            m.attacked_this_turn = false;
+
+            set_monster(world->tiles, m);
+
+            maybe_monster maybe_moved = do_stuff(world, m);
+            if (maybe_moved.kind == SOME) {
+                monster moved = maybe_moved.payload;
+                if (!moved.attacked_this_turn) {
+                    do_stuff(world, moved);
+                }
+            }
+        break;
+        case TANK:
+        case EATER:
+        case JESTER:
+        case BIRD:
+        case PLAYER: // Shouldn't happen.
+            do_stuff(world, m);
+    }
 }
 
 local maybe_monster get_player(struct world* world) {
