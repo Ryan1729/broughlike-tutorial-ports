@@ -88,6 +88,8 @@ typedef struct {
     tile_xy xy;
     half_hp half_hp;
     bool attacked_this_turn;
+    bool stunned;
+    u8 padding[3];
 } monster;
 
 local monster make_player(tile_xy xy) {
@@ -298,13 +300,12 @@ local void set_monster(tiles tiles, monster monster) {
     tiles[xy_to_i(monster.xy)].maybe_monster = some_monster(monster);
 }
 
-local void hit(tiles tiles, monster monster, half_hp half_hp) {
-    if (monster.half_hp > half_hp) {
-        monster.half_hp -= half_hp;
+local void hit(monster* monster, half_hp half_hp) {
+    if (monster->half_hp > half_hp) {
+        monster->half_hp -= half_hp;
     } else {
-        monster.half_hp = 0;
+        monster->half_hp = 0;
     }
-    set_monster(tiles, monster);
 }
 
 typedef u8 level;
@@ -315,7 +316,6 @@ struct world {
     u8 padding[5];
     xs rng;
     tiles tiles;
-    u8 padding_[4];
 };
 
 // result def {
@@ -381,7 +381,9 @@ local maybe_monster try_move(struct world* world, monster m, delta_xy dxy) {
                 m.attacked_this_turn = true;
                 set_monster(world->tiles, m);
 
-                hit(world->tiles, target, 2);
+                hit(&target, 2);
+                target.stunned = true;
+                set_monster(world->tiles, target);
             }
 
             output = some_monster(m);
@@ -704,8 +706,15 @@ local maybe_monster do_stuff(struct world* world, monster monster) {
 }
 
 local void update_monster(struct world* world, monster m) {
+    if (m.stunned) {
+        m.stunned = false;
+        set_monster(world->tiles, m);
+
+        return;
+    }
+
     switch (m.kind) {
-        case SNAKE:
+        case SNAKE: {
             m.attacked_this_turn = false;
 
             set_monster(world->tiles, m);
@@ -717,8 +726,21 @@ local void update_monster(struct world* world, monster m) {
                     do_stuff(world, moved);
                 }
             }
-        break;
-        case TANK:
+        } break;
+        case TANK: {
+            bool started_stunned = m.stunned;
+
+            maybe_monster maybe_moved = do_stuff(world, m);
+
+            if(!started_stunned){
+                monster moved = maybe_moved.kind == SOME
+                    ? maybe_moved.payload
+                    : m;
+
+                moved.stunned = true;
+                set_monster(world->tiles, moved);
+            }
+        } break;
         case EATER:
         case JESTER:
         case BIRD:
