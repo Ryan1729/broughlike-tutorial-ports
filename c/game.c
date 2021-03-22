@@ -83,6 +83,8 @@ typedef enum {
 
 typedef u8 half_hp;
 
+local const half_hp MAX_HALF_HP = 12;
+
 typedef struct {
     monster_kind kind;
     tile_xy xy;
@@ -300,11 +302,23 @@ local void set_monster(tiles tiles, monster monster) {
     tiles[xy_to_i(monster.xy)].maybe_monster = some_monster(monster);
 }
 
+local void replace(tiles tiles, tile_xy xy, tile (*maker)(tile_xy)) {
+    tiles[xy_to_i(xy)] = maker(xy);
+}
+
 local void hit(monster* monster, half_hp half_hp) {
     if (monster->half_hp > half_hp) {
         monster->half_hp -= half_hp;
     } else {
         monster->half_hp = 0;
+    }
+}
+
+local void heal(monster* monster, half_hp half_hp) {
+    if (monster->half_hp + half_hp < MAX_HALF_HP) {
+        monster->half_hp += half_hp;
+    } else {
+        monster->half_hp = MAX_HALF_HP;
     }
 }
 
@@ -741,7 +755,32 @@ local void update_monster(struct world* world, monster m) {
                 set_monster(world->tiles, moved);
             }
         } break;
-        case EATER:
+        case EATER: {
+            tile_list unfiltered_neighbors = get_adjacent_neighbors(
+                &world->rng,
+                world->tiles,
+                m.xy
+            );
+
+            tile_list neighbors = {0};
+            for (u8 i = 0; i < unfiltered_neighbors.length; i += 1) {
+                tile t = unfiltered_neighbors.pool[i];
+                if (
+                    !is_passable(t)
+                    && in_bounds(t.xy)
+                ) {
+                    push_saturating(&neighbors, t);
+                }
+            }
+
+            if(neighbors.length){
+                replace(world->tiles, neighbors.pool[0].xy, make_floor);
+                heal(&m, 1);
+                set_monster(world->tiles, m);
+            } else {
+                do_stuff(world, m);
+            }
+        } break;
         case JESTER:
         case BIRD:
         case PLAYER: // Shouldn't happen.
