@@ -781,9 +781,35 @@ local void update_monster(struct world* world, monster m) {
                 do_stuff(world, m);
             }
         } break;
-        case JESTER:
-        case BIRD:
+        case JESTER: {
+            tile_list unfiltered_neighbors = get_adjacent_neighbors(
+                &world->rng,
+                world->tiles,
+                m.xy
+            );
+
+            tile_list neighbors = {0};
+            for (u8 i = 0; i < unfiltered_neighbors.length; i += 1) {
+                tile t = unfiltered_neighbors.pool[i];
+                if (is_passable(t)) {
+                    push_saturating(&neighbors, t);
+                }
+            }
+
+            if (neighbors.length) {
+                tile_xy target_xy = neighbors.pool[0].xy;
+                try_move(
+                    world,
+                    m,
+                    (delta_xy) {
+                        (delta_x)target_xy.x - (delta_x)m.xy.x,
+                        (delta_y)target_xy.y - (delta_y)m.xy.y
+                    }
+                );
+            }
+        } break;
         case PLAYER: // Shouldn't happen.
+        case BIRD:
             do_stuff(world, m);
     }
 }
