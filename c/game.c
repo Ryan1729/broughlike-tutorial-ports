@@ -409,6 +409,24 @@ local maybe_monster try_move(struct world* world, monster m, delta_xy dxy) {
     return output;
 }
 
+typedef enum {
+    TITLE_FIRST,
+    TITLE_RETURN,
+    RUNNING,
+    DEAD,
+    STATE_ERROR
+} state_kind ;
+
+typedef struct {
+    state_kind kind;
+    u8 padding[4];
+    union {
+        xs rng; // TITLE_FIRST
+        struct world world; // TITLE_RETURN, RUNNING, DEAD
+        error_kind error_kind; // STATE_ERROR
+    };
+} state;
+
 // list def {
 typedef struct {
     tile pool[TILE_COUNT];
@@ -681,6 +699,25 @@ local world_result world_from_rng(xs rng, world_spec world_spec) {
     return world_ok(world);
 }
 
+local state state_from_rng(xs rng) {
+    world_result result = world_from_rng(
+        rng,
+        (world_spec){0}
+    );
+
+    if (result.kind == ERR) {
+        return (state) {
+            .kind = STATE_ERROR,
+            .error_kind = result.error,
+        };
+    } else {
+        return (state) {
+            .kind = RUNNING,
+            .world = result.result,
+        };
+    }
+}
+
 local maybe_monster do_stuff(struct world* world, monster monster) {
     tile_list unfiltered_neighbors = get_adjacent_neighbors(
         &world->rng,
@@ -880,21 +917,49 @@ typedef enum {
     INPUT_RIGHT,
 } input;
 
-local void update(struct world* world, input input) {
-    switch (input) {
-        case INPUT_NONE:
+local void update(state* state, input input) {
+    switch(state->kind) {
+        case TITLE_FIRST: {
+            if (input != INPUT_NONE) {
+                *state = state_from_rng(state->rng);
+            }
+        } break;
+        case TITLE_RETURN: {
+            if (input != INPUT_NONE) {
+                *state = state_from_rng(state->world.rng);
+            }
+        } break;
+        case RUNNING: {
+            switch (input) {
+                case INPUT_NONE:
+                    return;
+                case INPUT_UP:
+                    move_player(&state->world, (delta_xy){0, -1});
+                break;
+                case INPUT_DOWN:
+                    move_player(&state->world, (delta_xy){0, 1});
+                break;
+                case INPUT_LEFT:
+                    move_player(&state->world, (delta_xy){-1, 0});
+                break;
+                case INPUT_RIGHT:
+                    move_player(&state->world, (delta_xy){1, 0});
+                break;
+            }
+
+            maybe_monster maybe_player = get_player(&state->world);
+
+            if (maybe_player.kind == NONE || is_dead(maybe_player.payload)) {
+                state->kind = DEAD;
+            }
+        } break;
+        case DEAD: {
+            if (input != INPUT_NONE) {
+                state->kind = TITLE_RETURN;
+            }
+        } break;
+        case STATE_ERROR: {
             return;
-        case INPUT_UP:
-            move_player(world, (delta_xy){0, -1});
-        break;
-        case INPUT_DOWN:
-            move_player(world, (delta_xy){0, 1});
-        break;
-        case INPUT_LEFT:
-            move_player(world, (delta_xy){-1, 0});
-        break;
-        case INPUT_RIGHT:
-            move_player(world, (delta_xy){1, 0});
-        break;
+        } break;
     }
 }

@@ -20,6 +20,7 @@
 #include "game.c"
 
 local const Color INDIGO = { 0x4b, 0, 0x82, 0xff };
+local const Color OVERLAY = { 0, 0, 0, 0xcc };
 
 typedef int screen_size;
 
@@ -104,18 +105,34 @@ local void draw_sprite_tile(sprite_index sprite, tile_xy xy) {
     );
 }
 
+local void draw_error_text(const char* error_text) {
+    DrawText(
+        error_text,
+        sizes.play_area_x,
+        sizes.play_area_y,
+        40,
+        RED
+    );
+}
+
+local void draw_title() {
+    DrawRectangle(
+        sizes.play_area_x - 1,
+        sizes.play_area_y - 1,
+        sizes.play_area_w + 2,
+        sizes.play_area_h + 2,
+        OVERLAY
+    );
+}
+
 // Just for fun, let's reduce our reliance on the c stdlib
-/*local float float_floor(float f) {
+local float float_floor(float f) {
     // NaNs/Infs not handled
     long long n = (long long)f;
     return (float)n;
-}*/
-
-#include <math.h>
+}
 
 local void draw_world(struct world* world) {
-    ClearBackground(INDIGO);
-
     // the -1 and +2 business makes the border lie just outside the actual
     // play area
     DrawRectangleLines(
@@ -185,7 +202,7 @@ local void draw_world(struct world* world) {
                         (float)sizes.tile
                         * ((float)m.xy.x + (j%3) * (5.0f/16.0f)),
                         (float)sizes.tile
-                        * ((float)m.xy.y - floorf((float)j/3.0f) * (5.0f/16.0f))
+                        * ((float)m.xy.y - float_floor((float)j/3.0f) * (5.0f/16.0f))
                     }
                 );
             }
@@ -229,31 +246,10 @@ int main(void) {
 
     xs rng = rng_from_seed(seed);
 
-    world_result result = world_from_rng(rng, (world_spec){0});
-
-    if (result.kind == ERR) {
-        switch (result.error) {
-            case ERROR_ZERO:
-                printf("Incorrectly initialized result type!?\n");
-                // We don't want to return 0 in this case.
-                // I guess we might as well not collide with sysexits.h,
-                // since we won't need that many error types.
-            return 63;
-            case ERROR_NO_PASSABLE_TILE:
-                printf("No passable tile could be found.\n");
-            break;
-            case ERROR_GENERATE_TILES_NEEDS_TO_BE_PASSED_A_BUFFER:
-                printf("Internal error: GENERATE_TILES_NEEDS_TO_BE_PASSED_A_BUFFER\n");
-            break;
-            case ERROR_MAP_GENERATION_TIMEOUT:
-                printf("Map generation timed out.\n");
-            break;
-        }
-
-        return (int) result.error;
-    }
-
-    struct world world = result.result;
+    state state = {
+        .kind = TITLE_FIRST,
+        .rng = rng,
+    };
 
     while (!WindowShouldClose()) {
         if (IsKeyPressed(KEY_F11)) {
@@ -276,11 +272,41 @@ int main(void) {
             input = INPUT_RIGHT;
         }
 
-        update(&world, input);
+        update(&state, input);
 
         BeginDrawing();
 
-        draw_world(&world);
+        ClearBackground(INDIGO);
+
+        switch(state.kind) {
+            case TITLE_FIRST: {
+                draw_title();
+            } break;
+            case TITLE_RETURN: {
+                draw_world(&state.world);
+                draw_title();
+            } break;
+            case RUNNING:
+            case DEAD: {
+                draw_world(&state.world);
+            } break;
+            case STATE_ERROR: {
+                switch (state.error_kind) {
+                    case ERROR_ZERO:
+                        draw_error_text("Incorrectly initialized result type!?\n");
+                    break;
+                    case ERROR_NO_PASSABLE_TILE:
+                        draw_error_text("No passable tile could be found.\n");
+                    break;
+                    case ERROR_GENERATE_TILES_NEEDS_TO_BE_PASSED_A_BUFFER:
+                        draw_error_text("Internal error: GENERATE_TILES_NEEDS_TO_BE_PASSED_A_BUFFER\n");
+                    break;
+                    case ERROR_MAP_GENERATION_TIMEOUT:
+                        draw_error_text("Map generation timed out.\n");
+                    break;
+                }
+            } break;
+        }
 
         EndDrawing();
     }
