@@ -323,11 +323,15 @@ local void heal(monster* monster, half_hp half_hp) {
 }
 
 typedef u8 level;
+typedef u8 spawn_counter;
+typedef u8 spawn_rate;
 
 struct world {
     tile_xy xy;
     level level;
-    u8 padding[5];
+    spawn_counter spawn_counter;
+    spawn_rate spawn_rate;
+    u8 padding[3];
     xs rng;
     tiles tiles;
 };
@@ -674,6 +678,7 @@ typedef struct {
 
 local world_result world_from_rng(xs rng, world_spec world_spec) {
     struct world world = {0};
+    world.spawn_counter = world.spawn_rate = 15;
 
     world.rng = rng;
     world.level = world_spec.level ? world_spec.level : 1;
@@ -893,6 +898,17 @@ local void tick(struct world* world){
             remove_monster(world->tiles, monster.xy);
         } else {
             update_monster(world, monster);
+        }
+    }
+
+    if (world->spawn_counter > 0) {
+        world->spawn_counter -= 1;
+    }
+    if (world->spawn_counter == 0) {
+        spawn_monster(&world->rng, world->tiles);
+        world->spawn_counter = world->spawn_rate;
+        if (world->spawn_rate > 0) {
+            world->spawn_rate -= 1;
         }
     }
 }
