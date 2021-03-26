@@ -167,7 +167,13 @@ local void draw_world(struct world* world) {
         if (t.maybe_monster.kind == SOME) {
             monster m = t.maybe_monster.payload;
 
+            if (m.teleport_counter) {
+                draw_sprite_tile(10, m.xy);
+                continue;
+            }
+
             sprite_index sprite = 0;
+
             switch (m.kind) {
                 case PLAYER:
                     sprite = is_dead(m) ? 1 : 0;

@@ -85,20 +85,26 @@ typedef u8 half_hp;
 
 local const half_hp MAX_HALF_HP = 12;
 
+typedef u8 teleport_counter;
+
 typedef struct {
     monster_kind kind;
     tile_xy xy;
     half_hp half_hp;
     bool attacked_this_turn;
     bool stunned;
-    u8 padding[3];
+    teleport_counter teleport_counter;
+    u8 padding[2];
 } monster;
+
+local const teleport_counter MAX_TELEPORT_COUNTER = 2;
 
 local monster make_player(tile_xy xy) {
     monster m = {
         .kind = PLAYER,
         .xy = xy,
         .half_hp = 6,
+        .teleport_counter = 0,
     };
 
     return m;
@@ -109,6 +115,7 @@ local monster make_bird(tile_xy xy) {
         .kind = BIRD,
         .xy = xy,
         .half_hp = 6,
+        .teleport_counter = MAX_TELEPORT_COUNTER,
     };
 
     return m;
@@ -119,6 +126,7 @@ local monster make_snake(tile_xy xy) {
         .kind = SNAKE,
         .xy = xy,
         .half_hp = 2,
+        .teleport_counter = MAX_TELEPORT_COUNTER,
     };
 
     return m;
@@ -129,6 +137,7 @@ local monster make_tank(tile_xy xy) {
         .kind = TANK,
         .xy = xy,
         .half_hp = 4,
+        .teleport_counter = MAX_TELEPORT_COUNTER,
     };
 
     return m;
@@ -139,6 +148,7 @@ local monster make_eater(tile_xy xy) {
         .kind = EATER,
         .xy = xy,
         .half_hp = 2,
+        .teleport_counter = MAX_TELEPORT_COUNTER,
     };
 
     return m;
@@ -149,6 +159,7 @@ local monster make_jester(tile_xy xy) {
         .kind = JESTER,
         .xy = xy,
         .half_hp = 4,
+        .teleport_counter = MAX_TELEPORT_COUNTER,
     };
 
     return m;
@@ -762,7 +773,11 @@ local maybe_monster do_stuff(struct world* world, monster monster) {
 }
 
 local void update_monster(struct world* world, monster m) {
-    if (m.stunned) {
+    if (m.teleport_counter) {
+        m.teleport_counter -= 1;
+    }
+
+    if (m.stunned || m.teleport_counter) {
         m.stunned = false;
         set_monster(world->tiles, m);
 
