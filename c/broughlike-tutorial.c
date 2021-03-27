@@ -156,6 +156,9 @@ local void draw_world(struct world* world) {
             case FLOOR:
                 sprite = 2;
             break;
+            case EXIT:
+                sprite = 11;
+            break;
         }
 
         draw_sprite_tile(sprite, t.xy);

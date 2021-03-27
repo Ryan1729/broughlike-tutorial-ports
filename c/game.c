@@ -203,6 +203,7 @@ local void monster_list_push_saturating(monster_list* list, monster monster) {
 typedef enum {
     WALL,
     FLOOR,
+    EXIT,
 } tile_kind;
 
 typedef struct {
@@ -213,7 +214,7 @@ typedef struct {
 } tile;
 
 local bool is_passable(tile tile) {
-    return tile.kind == FLOOR;
+    return tile.kind == FLOOR || tile.kind == EXIT;
 }
 
 // result def {
@@ -257,6 +258,15 @@ local tile make_floor(tile_xy xy) {
     tile t = {
         .xy = xy,
         .kind = FLOOR,
+    };
+
+    return t;
+}
+
+local tile make_exit(tile_xy xy) {
+    tile t = {
+        .xy = xy,
+        .kind = EXIT,
     };
 
     return t;
@@ -334,6 +344,9 @@ local void heal(monster* monster, half_hp half_hp) {
 }
 
 typedef u8 level;
+
+local const level MAX_LEVEL = 6;
+
 typedef u8 spawn_counter;
 typedef u8 spawn_rate;
 
@@ -441,6 +454,7 @@ typedef struct {
         error_kind error_kind; // STATE_ERROR
     };
 } state;
+
 
 // list def {
 typedef struct {
@@ -702,17 +716,33 @@ local world_result world_from_rng(xs rng, world_spec world_spec) {
         return world_err(tiles_r.error);
     }
 
-    tile_result t_r = random_passable_tile(&world.rng, world.tiles);
+    tile_result exit_t_r = random_passable_tile(&world.rng, world.tiles);
 
-    if (t_r.kind == ERR) {
-        return world_err(t_r.error);
+    if (exit_t_r.kind == ERR) {
+        return world_err(exit_t_r.error);
+    }
+    
+    // Do the exit first, so we don't replace the player!
+    replace(world.tiles, exit_t_r.result.xy, make_exit);
+
+    tile_result player_t_r = random_passable_tile(&world.rng, world.tiles);
+
+    if (player_t_r.kind == ERR) {
+        return world_err(player_t_r.error);
     }
 
-    world.xy = t_r.result.xy;
+    world.xy = player_t_r.result.xy;
 
     set_monster(world.tiles, make_player(world.xy));
 
     return world_ok(world);
+}
+
+local state state_from_error(error_kind error_kind) {
+    return (state) {
+        .kind = STATE_ERROR,
+        .error_kind = error_kind,
+    };
 }
 
 local state state_from_rng(xs rng) {
@@ -722,10 +752,7 @@ local state state_from_rng(xs rng) {
     );
 
     if (result.kind == ERR) {
-        return (state) {
-            .kind = STATE_ERROR,
-            .error_kind = result.error,
-        };
+        return state_from_error(result.error);
     } else {
         return (state) {
             .kind = RUNNING,
@@ -982,6 +1009,25 @@ local void update(state* state, input input) {
 
             if (maybe_player.kind == NONE || is_dead(maybe_player.payload)) {
                 state->kind = DEAD;
+            } else {
+                if (get_tile(state->world.tiles, state->world.xy).kind == EXIT) {
+                    if (state->world.level >= MAX_LEVEL) {
+                        state->kind = TITLE_RETURN;
+                    } else {
+                        world_result result = world_from_rng(
+                            state->world.rng,
+                            (world_spec) {
+                                .level = state->world.level + 1,
+                            }
+                        );
+
+                        if (result.kind == OK) {
+                            state->world = result.result;
+                        } else {
+                            *state = state_from_error(result.error);
+                        }
+                    }
+                }
             }
         } break;
         case DEAD: {
