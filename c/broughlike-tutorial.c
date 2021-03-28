@@ -20,6 +20,7 @@
 #include "game.c"
 
 local const Color INDIGO = { 0x4b, 0, 0x82, 0xff };
+local const Color VIOLET_ALT = { 0xee, 0x82, 0xee, 0xff };
 local const Color OVERLAY = { 0, 0, 0, 0xcc };
 
 typedef int screen_size;
@@ -112,6 +113,86 @@ local void draw_error_text(const char* error_text) {
         sizes.play_area_y,
         40,
         RED
+    );
+}
+
+#define MAX_STACK_STRING_LENGTH 254
+
+typedef struct {
+    u8 length;
+    char chars[MAX_STACK_STRING_LENGTH];
+    char final_terminating_zero;
+} stack_string;
+
+local void push_chars_saturating(stack_string* str, const char* chars) {
+    while (str->length <= MAX_STACK_STRING_LENGTH && *chars) {
+        str->chars[str->length] = *chars;
+        str->length += 1;
+
+        chars += 1;
+    }
+}
+
+local void push_u8_chars_saturating(stack_string* str, u8 byte) {
+    if (byte >= 100) {
+        str->chars[str->length] = '0' + (byte / 100);
+        str->length += 1;
+        byte %= 100;
+    }
+
+    if (byte >= 10) {
+        str->chars[str->length] = '0' + (byte / 10);
+        str->length += 1;
+        byte %= 10;
+    }
+
+    str->chars[str->length] = '0' + (char)byte;
+    str->length += 1;
+}
+
+typedef enum {
+    TITLE_TOP,
+    TITLE_BOTTOM,
+    UI
+} text_mode;
+
+typedef struct {
+    stack_string* text;
+    text_mode text_mode;
+    screen_size y;
+    Color colour;
+    u8 padding[4];
+} text_spec;
+
+local const screen_size UI_FONT_SIZE = 40;
+
+local void draw_text(text_spec spec) {
+    screen_size size;
+    screen_size x;
+
+    switch (spec.text_mode) {
+        case TITLE_TOP: {
+            //TODO
+            size = UI_FONT_SIZE;
+            x = ((screen_size) NUM_TILES) * sizes.tile + MeasureText("m", size);
+        } break;
+        case TITLE_BOTTOM: {
+            //TODO
+            size = UI_FONT_SIZE;
+            x = ((screen_size) NUM_TILES) * sizes.tile + MeasureText("m", size);
+        } break;
+        case UI: {
+            size = UI_FONT_SIZE;
+            x = ((screen_size) NUM_TILES) * sizes.tile + MeasureText("m", size);
+        } break;
+    }
+
+    DrawText(
+        (const char*) &spec.text->chars,
+        sizes.play_area_x + x,
+        spec.y,
+        40,
+        spec.colour
     );
 }
 
@@ -217,6 +298,18 @@ local void draw_world(struct world* world) {
             }
         }
     }
+
+    stack_string level_text = {0};
+
+    push_chars_saturating(&level_text, "Level: ");
+    push_u8_chars_saturating(&level_text, world->level);
+
+    draw_text((text_spec) {
+        .text_mode = UI,
+        .y = 30,
+        .colour = VIOLET_ALT,
+        .text = &level_text,
+    });
 }
 
 #include "stdio.h"
