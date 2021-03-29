@@ -151,8 +151,7 @@ local void push_u8_chars_saturating(stack_string* str, u8 byte) {
 }
 
 typedef enum {
-    TITLE_TOP,
-    TITLE_BOTTOM,
+    TITLE,
     UI
 } text_mode;
 
@@ -165,21 +164,20 @@ typedef struct {
 } text_spec;
 
 local const screen_size UI_FONT_SIZE = 40;
+local const screen_size TITLE_FONT_SIZE = 50;
+
+local const char* LONGEST_TILE_LINE = "Broughlike in";
 
 local void draw_text(text_spec spec) {
     screen_size size;
     screen_size x;
 
+    const char* chars = (const char*) &spec.text->chars;
+
     switch (spec.text_mode) {
-        case TITLE_TOP: {
-            //TODO
-            size = UI_FONT_SIZE;
-            x = ((screen_size) NUM_TILES) * sizes.tile + MeasureText("m", size);
-        } break;
-        case TITLE_BOTTOM: {
-            //TODO
-            size = UI_FONT_SIZE;
-            x = ((screen_size) NUM_TILES) * sizes.tile + MeasureText("m", size);
+        case TITLE: {
+            size = TITLE_FONT_SIZE;
+            x = (sizes.play_area_w - MeasureText(LONGEST_TILE_LINE, size))/2;
         } break;
         case UI: {
             size = UI_FONT_SIZE;
@@ -188,7 +186,7 @@ local void draw_text(text_spec spec) {
     }
 
     DrawText(
-        (const char*) &spec.text->chars,
+        chars,
         sizes.play_area_x + x,
         spec.y,
         40,
@@ -204,6 +202,50 @@ local void draw_title() {
         sizes.play_area_h + 2,
         OVERLAY
     );
+
+    screen_size y = TITLE_FONT_SIZE * 2;
+    {
+        stack_string line1 = {0};
+
+        push_chars_saturating(&line1, "Awesome");
+
+        draw_text((text_spec) {
+            .text_mode = TITLE,
+            .y = y,
+            .colour = WHITE,
+            .text = &line1,
+        });
+    }
+
+    y += TITLE_FONT_SIZE;
+
+    {
+        stack_string line2 = {0};
+
+        push_chars_saturating(&line2, LONGEST_TILE_LINE);
+
+        draw_text((text_spec) {
+            .text_mode = TITLE,
+            .y = y,
+            .colour = WHITE,
+            .text = &line2,
+        });
+    }
+
+    y += TITLE_FONT_SIZE;
+
+    {
+        stack_string line3 = {0};
+
+        push_chars_saturating(&line3, "C");
+
+        draw_text((text_spec) {
+            .text_mode = TITLE,
+            .y = y,
+            .colour = WHITE,
+            .text = &line3,
+        });
+    }
 }
 
 // Just for fun, let's reduce our reliance on the c stdlib
