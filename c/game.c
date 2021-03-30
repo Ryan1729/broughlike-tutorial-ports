@@ -209,7 +209,8 @@ typedef enum {
 typedef struct {
     tile_kind kind;
     tile_xy xy;
-    u8 padding[2];
+    bool treasure;
+    u8 padding;
     maybe_monster maybe_monster;
 } tile;
 
@@ -325,6 +326,10 @@ local void set_monster(tiles tiles, monster monster) {
 
 local void replace(tiles tiles, tile_xy xy, tile (*maker)(tile_xy)) {
     tiles[xy_to_i(xy)] = maker(xy);
+}
+
+local void add_treasure(tiles tiles, tile_xy xy) {
+    tiles[xy_to_i(xy)].treasure = true;
 }
 
 local void hit(monster* monster, half_hp half_hp) {
@@ -734,6 +739,16 @@ local world_result world_from_rng(xs rng, world_spec world_spec) {
     world.xy = player_t_r.result.xy;
 
     set_monster(world.tiles, make_player(world.xy));
+
+    for (int i = 0; i < 3; i += 1) {
+        tile_result t_r = random_passable_tile(&world.rng, world.tiles);
+
+        if (t_r.kind == ERR) {
+            return world_err(t_r.error);
+        }
+
+        add_treasure(world.tiles, t_r.result.xy);
+    }
 
     return world_ok(world);
 }

@@ -285,6 +285,10 @@ local void draw_world(struct world* world) {
         }
 
         draw_sprite_tile(sprite, t.xy);
+
+        if (t.treasure) {
+            draw_sprite_tile(12, t.xy);
+        }
     }
 
     for (u8 i = 0; i < TILE_COUNT; i++) {
