@@ -133,21 +133,40 @@ local void push_chars_saturating(stack_string* str, const char* chars) {
     }
 }
 
-local void push_u8_chars_saturating(stack_string* str, u8 byte) {
-    if (byte >= 100) {
-        str->chars[str->length] = '0' + (byte / 100);
+local void push_u8_chars_saturating(stack_string* str, u8 n) {
+    if (n == 0) {
+        str->chars[str->length] = '0';
         str->length += 1;
-        byte %= 100;
+    } else {
+        u8 unit = 100;
+        while (unit) {
+            if (n >= unit) {
+                str->chars[str->length] = '0' + (char)(n / unit);
+                str->length += 1;
+                n %= unit;
+            }
+    
+            unit /= 10;
+        }
     }
+}
 
-    if (byte >= 10) {
-        str->chars[str->length] = '0' + (byte / 10);
+local void push_u16_chars_saturating(stack_string* str, u16 n) {
+    if (n == 0) {
+        str->chars[str->length] = '0';
         str->length += 1;
-        byte %= 10;
+    } else {
+        u16 unit = 10000;
+        while (unit) {
+            if (n >= unit) {
+                str->chars[str->length] = '0' + (char)(n / unit);
+                str->length += 1;
+                n %= unit;
+            }
+    
+            unit /= 10;
+        }
     }
-
-    str->chars[str->length] = '0' + (char)byte;
-    str->length += 1;
 }
 
 typedef enum {
@@ -350,11 +369,27 @@ local void draw_world(struct world* world) {
     push_chars_saturating(&level_text, "Level: ");
     push_u8_chars_saturating(&level_text, world->level);
 
+    screen_size y = 30;
+
     draw_text((text_spec) {
         .text_mode = UI,
-        .y = 30,
+        .y = y,
         .colour = VIOLET_ALT,
         .text = &level_text,
+    });
+
+    y += UI_FONT_SIZE;
+
+    stack_string score_text = {0};
+
+    push_chars_saturating(&score_text, "Score: ");
+    push_u16_chars_saturating(&score_text, world->score);
+
+    draw_text((text_spec) {
+        .text_mode = UI,
+        .y = y,
+        .colour = VIOLET_ALT,
+        .text = &score_text,
     });
 }
 

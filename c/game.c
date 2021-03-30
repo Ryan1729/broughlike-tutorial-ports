@@ -332,6 +332,10 @@ local void add_treasure(tiles tiles, tile_xy xy) {
     tiles[xy_to_i(xy)].treasure = true;
 }
 
+local void remove_treasure(tiles tiles, tile_xy xy) {
+    tiles[xy_to_i(xy)].treasure = false;
+}
+
 local void hit(monster* monster, half_hp half_hp) {
     if (monster->half_hp > half_hp) {
         monster->half_hp -= half_hp;
@@ -348,6 +352,7 @@ local void heal(monster* monster, half_hp half_hp) {
     }
 }
 
+typedef u16 score;
 typedef u8 level;
 
 local const level MAX_LEVEL = 6;
@@ -357,10 +362,11 @@ typedef u8 spawn_rate;
 
 struct world {
     tile_xy xy;
+    score score;
     level level;
     spawn_counter spawn_counter;
     spawn_rate spawn_rate;
-    u8 padding[3];
+    u8 padding;
     xs rng;
     tiles tiles;
 };
@@ -967,6 +973,16 @@ local void tick(struct world* world){
         if (world->spawn_rate > 0) {
             world->spawn_rate -= 1;
         }
+    }
+
+    tile player_tile = get_tile(world->tiles, world->xy);
+
+    if (player_tile.treasure) {
+        if (world->score < (score)(-1)) {
+            world->score += 1;
+        }
+        remove_treasure(world->tiles, player_tile.xy);
+        spawn_monster(&world->rng, world->tiles);
     }
 }
 
