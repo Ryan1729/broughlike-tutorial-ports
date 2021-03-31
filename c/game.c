@@ -709,7 +709,9 @@ local tile_result random_passable_tile(xs* rng, tiles tiles){
 }
 
 typedef struct {
+    score score;
     level level;
+    u8 padding;
 } world_spec;
 
 local world_result world_from_rng(xs rng, world_spec world_spec) {
@@ -718,6 +720,7 @@ local world_result world_from_rng(xs rng, world_spec world_spec) {
 
     world.rng = rng;
     world.level = world_spec.level ? world_spec.level : 1;
+    world.score = world_spec.score;
 
     tiles_result tiles_r = tiles_ok(&world.tiles);
 
@@ -986,7 +989,31 @@ local void tick(struct world* world){
     }
 }
 
-local void move_player(struct world* world, delta_xy dxy) {
+typedef enum {
+    NOTHING_INTERESTING,
+    PLAYER_DIED,
+    COMPLETED_RUN,
+    UPDATE_ERROR,
+} update_event_kind;
+
+typedef struct {
+    update_event_kind kind;
+    union {
+        score score; // PLAYER_DIED, COMPLETED_RUN
+        error_kind error_kind; // UPDATE_ERROR
+    };
+} update_event;
+
+local update_event update_event_from_error(error_kind error_kind) {
+    return (update_event) {
+        .kind = UPDATE_ERROR,
+        .error_kind = error_kind,
+    };
+}
+
+local update_event move_player(struct world* world, delta_xy dxy) {
+    update_event event = {0};
+
     maybe_monster maybe_player = get_player(world);
 
     if (maybe_player.kind == SOME) {
@@ -995,7 +1022,38 @@ local void move_player(struct world* world, delta_xy dxy) {
         if (maybe_moved.kind == SOME) {
             tick(world);
         }
+
+        // We need the fresh player, with updated health, etc. after `tick`.
+        maybe_monster fresh_player = get_player(world);
+        
+        if (fresh_player.kind == NONE || is_dead(fresh_player.payload)) {
+            event.kind = PLAYER_DIED;
+            event.score = world->score;
+        } else {
+            if (get_tile(world->tiles, world->xy).kind == EXIT) {
+                if (world->level >= MAX_LEVEL) {
+                    event.kind = COMPLETED_RUN;
+                    event.score = world->score;
+                } else {
+                    world_result result = world_from_rng(
+                        world->rng,
+                        (world_spec) {
+                            .level = world->level + 1,
+                            .score = world->score,
+                        }
+                    );
+    
+                    if (result.kind == OK) {
+                        *world = result.result;
+                    } else {
+                        event = update_event_from_error(result.error);
+                    }
+                }
+            }
+        }
     }
+
+    return event;
 }
 
 typedef enum {
@@ -1006,7 +1064,9 @@ typedef enum {
     INPUT_RIGHT,
 } input;
 
-local void update(state* state, input input) {
+local update_event update(state* state, input input) {
+    update_event event = {0};
+
     switch(state->kind) {
         case TITLE_FIRST: {
             if (input != INPUT_NONE) {
@@ -1021,44 +1081,35 @@ local void update(state* state, input input) {
         case RUNNING: {
             switch (input) {
                 case INPUT_NONE:
-                    return;
+                    // do nothing
+                break;
                 case INPUT_UP:
-                    move_player(&state->world, (delta_xy){0, -1});
+                    event = move_player(&state->world, (delta_xy){0, -1});
                 break;
                 case INPUT_DOWN:
-                    move_player(&state->world, (delta_xy){0, 1});
+                    event = move_player(&state->world, (delta_xy){0, 1});
                 break;
                 case INPUT_LEFT:
-                    move_player(&state->world, (delta_xy){-1, 0});
+                    event = move_player(&state->world, (delta_xy){-1, 0});
                 break;
                 case INPUT_RIGHT:
-                    move_player(&state->world, (delta_xy){1, 0});
+                    event = move_player(&state->world, (delta_xy){1, 0});
                 break;
             }
 
-            maybe_monster maybe_player = get_player(&state->world);
-
-            if (maybe_player.kind == NONE || is_dead(maybe_player.payload)) {
-                state->kind = DEAD;
-            } else {
-                if (get_tile(state->world.tiles, state->world.xy).kind == EXIT) {
-                    if (state->world.level >= MAX_LEVEL) {
-                        state->kind = TITLE_RETURN;
-                    } else {
-                        world_result result = world_from_rng(
-                            state->world.rng,
-                            (world_spec) {
-                                .level = state->world.level + 1,
-                            }
-                        );
-
-                        if (result.kind == OK) {
-                            state->world = result.result;
-                        } else {
-                            *state = state_from_error(result.error);
-                        }
-                    }
-                }
+            switch (event.kind) {
+                case NOTHING_INTERESTING:
+                    return event;
+                break;
+                case PLAYER_DIED:
+                    state->kind = DEAD;
+                break;
+                case COMPLETED_RUN:
+                    state->kind = TITLE_RETURN;
+                break;
+                case UPDATE_ERROR:
+                    *state = state_from_error(event.error_kind);
+                break;
             }
         } break;
         case DEAD: {
@@ -1067,7 +1118,9 @@ local void update(state* state, input input) {
             }
         } break;
         case STATE_ERROR: {
-            return;
+            // do nothing
         } break;
     }
+
+    return event;
 }
