@@ -413,6 +413,97 @@ local xs rng_from_seed(u64 seed) {
     return rng;
 }
 
+// 64k runs ought to be enough for anybody.
+typedef u16 runs;
+
+typedef struct {
+    score score;
+    score total_score;
+    runs run;
+    bool active;
+    u8 padding;
+} score_row;
+
+typedef struct {
+    score pool[10];
+    u8 length;
+    bool fresh;
+    u8 padding[2];
+} score_list;
+
+typedef struct {
+    char save_path[FILENAME_MAX];
+    score_list score_list;
+} scores;
+
+local scores scores_global = {0};
+
+#if defined(_WIN32) || defined(_WIN64)
+#include <direct.h>
+#define get_current_dir _getcwd
+local char path_sep = '\\';
+#elif defined(__unix__)
+#include <unistd.h>
+#define get_current_dir getcwd
+local char path_sep = '/';
+#else
+"Unsupported platform"
+#endif
+
+// Just for fun, let's reduce our reliance on the c stdlib
+local size_t null_terminated_string_len(const char* str) {
+    size_t output = 0;
+    while (*str) {
+        output += 1;
+        str += 1;
+    }
+
+    return output;
+}
+
+local void init_scores() {
+    // We assume that scores_global is zeroed already.
+    get_current_dir(scores_global.save_path, FILENAME_MAX);
+
+    size_t i = null_terminated_string_len(scores_global.save_path);
+    scores_global.save_path[i] = path_sep;
+
+    const char* save_name = "broughlike-tutorial.sav";
+    size_t extra_len = null_terminated_string_len(save_name);
+    i += 1;
+
+    for (size_t j = 0; j < extra_len; j += 1) {
+        scores_global.save_path[i] = save_name[j];
+        i += 1;
+    }
+}
+
+local score_list get_scores() {
+    // TODO load from disk only if cache is invalid
+    return (score_list) {0};
+}
+
+local void add_score(update_event event) {
+    score score;
+    bool won;
+    switch (event.kind) {
+        case NOTHING_INTERESTING:
+        case UPDATE_ERROR:
+            return;
+        case PLAYER_DIED: {
+            score = event.score;
+            won = false;
+        } break;
+        case COMPLETED_RUN: {
+            score = event.score;
+            won = true;
+        } break;
+    }
+
+    // TODO save to disk and mark cache as invalid
+    get_scores();
+}
+
 #include "time.h"
 
 int main(void) {
@@ -424,6 +515,9 @@ int main(void) {
     spritesheet = LoadTextureFromImage(spritesheet_img);
 
     sizes = fresh_sizes();
+
+    init_scores();
+    printf("Will save to: %s\n", scores_global.save_path);
 
     u64 seed = (u64) time(0);
 
@@ -455,7 +549,9 @@ int main(void) {
             input = INPUT_RIGHT;
         }
 
-        update(&state, input);
+        update_event event = update(&state, input);
+
+        add_score(event);
 
         BeginDrawing();
 

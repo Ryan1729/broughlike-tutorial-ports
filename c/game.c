@@ -186,7 +186,7 @@ local maybe_monster some_monster(monster monster) {
 
 // list def {
 typedef struct {
-    // THe maximum umber of monsters is < TILE_COUNT.
+    // The maximum umber of monsters is < TILE_COUNT.
     monster pool[TILE_COUNT];
     u8 length;
     u8 padding[3];
