@@ -393,6 +393,7 @@ local void draw_world(struct world* world) {
     });
 }
 
+#include "errno.h"
 #include "stdio.h"
 
 local xs rng_from_seed(u64 seed) {
@@ -425,11 +426,40 @@ typedef struct {
 } score_row;
 
 typedef struct {
-    score pool[10];
+    score_row pool[10];
     u8 length;
     bool fresh;
     u8 padding[2];
 } score_list;
+
+local void score_list_push_saturating(score_list* list, score_row row) {
+    if (list->length < 10) {
+        list->pool[list->length] = row;
+        list->length += 1;
+    }
+}
+
+// maybe def {
+typedef struct {
+    maybe_kind kind;
+    score_row payload;
+} maybe_score_row;
+
+local maybe_score_row some_score_row(score_row score_row) {
+    return (maybe_score_row) {.kind = SOME, .payload = score_row};
+}
+// }
+
+local maybe_score_row score_list_pop(score_list* list) {
+    maybe_score_row output = {0};
+
+    if (list->length) {
+        output = some_score_row(list->pool[list->length - 1]);
+        list->length -= 1;
+    }
+
+    return output;
+}
 
 typedef struct {
     char save_path[FILENAME_MAX];
@@ -479,29 +509,129 @@ local void init_scores() {
 }
 
 local score_list get_scores() {
-    // TODO load from disk only if cache is invalid
-    return (score_list) {0};
+    score_list output = {0};
+
+    if (scores_global.score_list.fresh) {
+        for (u8 i = 0; i < scores_global.score_list.length; i += 1) {
+            score_list_push_saturating(
+                &output,
+                scores_global.score_list.pool[i]
+            );
+        }
+    } else {
+        if (null_terminated_string_len(scores_global.save_path)) {
+            /* parse scores from file based on this code from the rust version
+            if let Ok(s) = std::fs::read_to_string(path) {
+                for line in s.lines() {
+                    let mut columns = line.split('\t');
+
+                    let mut row = ScoreRow {
+                        score: 0,
+                        total_score: 0,
+                        run: 0,
+                        active: false,
+                    };
+
+                    macro_rules! parse_or_continue {
+                        ($field: ident as $type: ty) => {
+                            parse_or_continue!($field as $type, { $field });
+                        };
+                        ($field: ident as $type: ty, $transform: block) => {
+                            if let Some($field) = columns.next()
+                                .and_then(|s| s.trim().parse::<$type>().ok()) {
+                                row.$field = $transform;
+                            } else {
+                                continue;
+                            }
+                        }
+                    }
+
+                    parse_or_continue!(score as state::Score);
+                    parse_or_continue!(total_score as state::Score);
+                    parse_or_continue!(run as Runs);
+                    parse_or_continue!(active as u8, { active > 0 });
+
+                    output.push(row);
+                }
+            }*/
+        }
+        
+        for (u8 i = 0; i < output.length; i += 1) {
+            score_list_push_saturating(
+                &scores_global.score_list,
+                output.pool[i]
+            );
+        }
+    }
+    return output;
 }
 
 local void add_score(update_event event) {
-    score score;
+    score new_score;
     bool won;
     switch (event.kind) {
         case NOTHING_INTERESTING:
         case UPDATE_ERROR:
             return;
         case PLAYER_DIED: {
-            score = event.score;
+            new_score = event.score;
             won = false;
         } break;
         case COMPLETED_RUN: {
-            score = event.score;
+            new_score = event.score;
             won = true;
         } break;
     }
+    
+    score_list list = get_scores();
+    score_row row = {
+        .score = new_score,
+        .run = 1,
+        .total_score = new_score,
+        .active = won,
+    };
 
-    // TODO save to disk and mark cache as invalid
-    get_scores();
+    maybe_score_row m_s_r = score_list_pop(&list);
+    if (m_s_r.kind == SOME) {
+        score_row last_score = m_s_r.payload;
+        if (last_score.active) {
+            row.run = last_score.run + 1;
+            row.total_score += last_score.total_score;
+        } else {
+            score_list_push_saturating(&list, last_score);
+        }
+    }
+
+    score_list_push_saturating(&list, row);
+
+    if (null_terminated_string_len(scores_global.save_path)) {
+        FILE* save_file = fopen(scores_global.save_path, "wb");
+
+        if (save_file == 0) {
+            perror("Error opening file for writing");
+
+            // Presumably, the player thinks getting to play with no high
+            // scores saved is better than not being able to play.
+            return;
+        }
+
+        for (u8 i = 0; i < list.length; i += 1) {
+            score_row r = list.pool[i];
+            
+            fprintf(
+                save_file,
+                "%u\t%u\t%u\t%u\n",
+                r.score,
+                r.total_score,
+                r.run,
+                r.active ? 1 : 0
+            );
+        }
+
+        scores_global.score_list.fresh = false;
+
+        fclose(save_file);
+    }
 }
 
 #include "time.h"
