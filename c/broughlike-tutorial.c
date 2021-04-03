@@ -508,6 +508,139 @@ local void init_scores() {
     }
 }
 
+typedef enum {
+    PARSE_NO_ERROR,
+    PARSE_EXPECTED_DIGIT_OR_TAB,
+    PARSE_DIGIT_OVERFLOW,
+    PARSE_NUMERIC_OVERFLOW,
+    PARSE_EXPECTED_NEWLINE,
+} parse_error_kind;
+
+typedef struct {
+    parse_error_kind kind;
+    int unexpected_char;
+} parse_error;
+
+typedef enum {
+    EXPECTING_SCORE_COL,
+    EXPECTING_TOTAL_SCORE_COL,
+    EXPECTING_RUN_COL,
+    EXPECTING_ACTIVE_COL,
+    EXPECTING_NEWLINE,
+} parse_state;
+
+local parse_error parse_non_null_file_into(
+    FILE* save_file,
+    score_list* output
+) {
+    parse_state state = EXPECTING_SCORE_COL;
+
+    score_row row = {0};
+
+// We expect score to be a u16, and 65535 has 5 digits
+#define PARSE_NUMBER_BUFFER_LEN 5    
+    u8 number_buffer[PARSE_NUMBER_BUFFER_LEN] = {0};
+    u8 number_buffer_index = 0;
+
+#define PARSE_CLEAR_NUMBER_BUFFER \
+    number_buffer[0] = 0;\
+    number_buffer[1] = 0;\
+    number_buffer[2] = 0;\
+    number_buffer[3] = 0;\
+    number_buffer[4] = 0;\
+    number_buffer_index = 0;\
+
+#define PARSE_PUSH_DIGIT_OR_SET(row_field, target_state) \
+    if (c >= '0' && c <= '9') {\
+        if (number_buffer_index < PARSE_NUMBER_BUFFER_LEN) {\
+            number_buffer[number_buffer_index] = (u8)(c - '0');\
+            number_buffer_index += 1;\
+        } else {\
+            return (parse_error) {\
+                .kind = PARSE_DIGIT_OVERFLOW,\
+                .unexpected_char = c,\
+            };\
+        }\
+    } else if (c == '\t') {\
+        score unit = 1;\
+        for (u8 i = 0; i < number_buffer_index; i += 1) {\
+            score prev_score = row_field;\
+\
+            row_field += number_buffer[i] * unit;\
+            unit *= 10;\
+\
+            if (prev_score > row_field) {\
+                return (parse_error) {\
+                    .kind = PARSE_NUMERIC_OVERFLOW,\
+                    .unexpected_char = c,\
+                };\
+            }\
+        }\
+\
+        PARSE_CLEAR_NUMBER_BUFFER\
+        state = target_state;\
+    } else {\
+        return (parse_error) {\
+            .kind = PARSE_EXPECTED_DIGIT_OR_TAB,\
+            .unexpected_char = c,\
+        };\
+    }\
+
+    int c; // note: int, not char, required to handle EOF
+    while ((c = fgetc(save_file)) != EOF) {
+        switch (state) {
+            case EXPECTING_SCORE_COL: {
+                PARSE_PUSH_DIGIT_OR_SET(
+                    row.score,
+                    EXPECTING_TOTAL_SCORE_COL
+                )
+            } break;
+            case EXPECTING_TOTAL_SCORE_COL: {
+                PARSE_PUSH_DIGIT_OR_SET(
+                    row.total_score,
+                    EXPECTING_RUN_COL
+                )
+            } break;
+            case EXPECTING_RUN_COL: {
+                // This relies on the fact that `runs` is the same size as `score`.
+                PARSE_PUSH_DIGIT_OR_SET(
+                    row.run,
+                    EXPECTING_ACTIVE_COL
+                )
+            } break;
+            case EXPECTING_ACTIVE_COL: {
+                score active_score = 0;
+
+                PARSE_PUSH_DIGIT_OR_SET(
+                    active_score,
+                    EXPECTING_NEWLINE
+                )
+
+                if (state == EXPECTING_NEWLINE) {
+                    row.active = active_score != 0;
+                }
+            } break;
+            case EXPECTING_NEWLINE: {
+                if (c == '\n') {
+                    score_list_push_saturating(output, row);
+                    row = (score_row) {0};
+
+                    PARSE_CLEAR_NUMBER_BUFFER
+
+                    state = EXPECTING_SCORE_COL;
+                } else {
+                    return (parse_error) {
+                        .kind = PARSE_EXPECTED_NEWLINE,
+                        .unexpected_char = c,
+                    };
+                }
+            } break;
+        }
+    }
+
+    return (parse_error) {0};
+}
+
 local score_list get_scores() {
     score_list output = {0};
 
@@ -520,47 +653,62 @@ local score_list get_scores() {
         }
     } else {
         if (null_terminated_string_len(scores_global.save_path)) {
-            /* parse scores from file based on this code from the rust version
-            if let Ok(s) = std::fs::read_to_string(path) {
-                for line in s.lines() {
-                    let mut columns = line.split('\t');
+            FILE* save_file = fopen(scores_global.save_path, "rb");
+    
+            if (save_file == 0) {
+                perror("Error opening file for reading");
+    
+                // Presumably, the player thinks getting to play with no high
+                // scores saved is better than not being able to play.
+            } else {
+                parse_error error = parse_non_null_file_into(
+                    save_file,
+                    &output
+                );
 
-                    let mut row = ScoreRow {
-                        score: 0,
-                        total_score: 0,
-                        run: 0,
-                        active: false,
-                    };
-
-                    macro_rules! parse_or_continue {
-                        ($field: ident as $type: ty) => {
-                            parse_or_continue!($field as $type, { $field });
-                        };
-                        ($field: ident as $type: ty, $transform: block) => {
-                            if let Some($field) = columns.next()
-                                .and_then(|s| s.trim().parse::<$type>().ok()) {
-                                row.$field = $transform;
-                            } else {
-                                continue;
-                            }
-                        }
+                if (error.kind == PARSE_NO_ERROR) {
+                    for (u8 i = 0; i < output.length; i += 1) {
+                        score_list_push_saturating(
+                            &scores_global.score_list,
+                            output.pool[i]
+                        );
+                    }
+                
+                    scores_global.score_list.fresh = true;
+                } else {
+                    char* error_str;
+                    switch (error.kind) {
+                        case PARSE_NO_ERROR: {
+                            // We already checked this, but for completeness sake.
+                            error_str = "PARSE_NO_ERROR";
+                        } break;
+                        case PARSE_EXPECTED_DIGIT_OR_TAB: {
+                            error_str = "PARSE_EXPECTED_DIGIT_OR_TAB";
+                        } break;
+                        case PARSE_DIGIT_OVERFLOW: {
+                            error_str = "PARSE_DIGIT_OVERFLOW";
+                        } break;
+                        case PARSE_NUMERIC_OVERFLOW: {
+                            error_str = "PARSE_NUMERIC_OVERFLOW";
+                        } break;
+                        case PARSE_EXPECTED_NEWLINE: {
+                            error_str = "PARSE_EXPECTED_NEWLINE";
+                        } break;
                     }
 
-                    parse_or_continue!(score as state::Score);
-                    parse_or_continue!(total_score as state::Score);
-                    parse_or_continue!(run as Runs);
-                    parse_or_continue!(active as u8, { active > 0 });
+                    fprintf(
+                        stderr,
+                        "Error parsing save file: found '%c' %s",
+                        error.unexpected_char,
+                        error_str
+                    );
 
-                    output.push(row);
+                    output = (score_list) {0};
                 }
-            }*/
-        }
-        
-        for (u8 i = 0; i < output.length; i += 1) {
-            score_list_push_saturating(
-                &scores_global.score_list,
-                output.pool[i]
-            );
+
+                fclose(save_file);
+            }
+   
         }
     }
     return output;
