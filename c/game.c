@@ -711,7 +711,7 @@ local tile_result random_passable_tile(xs* rng, tiles tiles){
 typedef struct {
     score score;
     level level;
-    u8 padding;
+    half_hp half_hp;
 } world_spec;
 
 local world_result world_from_rng(xs rng, world_spec world_spec) {
@@ -747,7 +747,12 @@ local world_result world_from_rng(xs rng, world_spec world_spec) {
 
     world.xy = player_t_r.result.xy;
 
-    set_monster(world.tiles, make_player(world.xy));
+    monster player = make_player(world.xy);
+    if (world_spec.half_hp) {
+        player.half_hp = world_spec.half_hp;
+    }
+
+    set_monster(world.tiles, player);
 
     for (int i = 0; i < 3; i += 1) {
         tile_result t_r = random_passable_tile(&world.rng, world.tiles);
@@ -1040,6 +1045,9 @@ local update_event move_player(struct world* world, delta_xy dxy) {
                         (world_spec) {
                             .level = world->level + 1,
                             .score = world->score,
+                            .half_hp = fresh_player.payload.half_hp + 1 > MAX_HALF_HP
+                                ? MAX_HALF_HP
+                                : fresh_player.payload.half_hp + 1
                         }
                     );
     
