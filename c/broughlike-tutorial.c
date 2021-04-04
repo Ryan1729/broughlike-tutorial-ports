@@ -513,7 +513,7 @@ typedef enum {
     PARSE_EXPECTED_DIGIT_OR_TAB,
     PARSE_DIGIT_OVERFLOW,
     PARSE_NUMERIC_OVERFLOW,
-    PARSE_EXPECTED_NEWLINE,
+    PARSE_EXPECTED_DIGIT_OR_NEWLINE,
 } parse_error_kind;
 
 typedef struct {
@@ -526,7 +526,6 @@ typedef enum {
     EXPECTING_TOTAL_SCORE_COL,
     EXPECTING_RUN_COL,
     EXPECTING_ACTIVE_COL,
-    EXPECTING_NEWLINE,
 } parse_state;
 
 local parse_error parse_non_null_file_into(
@@ -550,7 +549,7 @@ local parse_error parse_non_null_file_into(
     number_buffer[4] = 0;\
     number_buffer_index = 0;\
 
-#define PARSE_PUSH_DIGIT_OR_SET(row_field, target_state) \
+#define PARSE_PUSH_DIGIT_OR_SET(transition_char, row_field, target_state) \
     if (c >= '0' && c <= '9') {\
         if (number_buffer_index < PARSE_NUMBER_BUFFER_LEN) {\
             number_buffer[number_buffer_index] = (u8)(c - '0');\
@@ -561,7 +560,7 @@ local parse_error parse_non_null_file_into(
                 .unexpected_char = c,\
             };\
         }\
-    } else if (c == '\t') {\
+    } else if (c == transition_char) {\
         score unit = 1;\
         for (u8 i = 0; i < number_buffer_index; i += 1) {\
             score prev_score = row_field;\
@@ -580,8 +579,11 @@ local parse_error parse_non_null_file_into(
         PARSE_CLEAR_NUMBER_BUFFER\
         state = target_state;\
     } else {\
+        parse_error_kind err_kind = transition_char == '\t'\
+            ? PARSE_EXPECTED_DIGIT_OR_TAB\
+            : PARSE_EXPECTED_DIGIT_OR_NEWLINE;\
         return (parse_error) {\
-            .kind = PARSE_EXPECTED_DIGIT_OR_TAB,\
+            .kind = err_kind,\
             .unexpected_char = c,\
         };\
     }\
@@ -591,12 +593,14 @@ local parse_error parse_non_null_file_into(
         switch (state) {
             case EXPECTING_SCORE_COL: {
                 PARSE_PUSH_DIGIT_OR_SET(
+                    '\t',
                     row.score,
                     EXPECTING_TOTAL_SCORE_COL
                 )
             } break;
             case EXPECTING_TOTAL_SCORE_COL: {
                 PARSE_PUSH_DIGIT_OR_SET(
+                    '\t',
                     row.total_score,
                     EXPECTING_RUN_COL
                 )
@@ -604,6 +608,7 @@ local parse_error parse_non_null_file_into(
             case EXPECTING_RUN_COL: {
                 // This relies on the fact that `runs` is the same size as `score`.
                 PARSE_PUSH_DIGIT_OR_SET(
+                    '\t',
                     row.run,
                     EXPECTING_ACTIVE_COL
                 )
@@ -612,27 +617,18 @@ local parse_error parse_non_null_file_into(
                 score active_score = 0;
 
                 PARSE_PUSH_DIGIT_OR_SET(
+                    '\n',
                     active_score,
-                    EXPECTING_NEWLINE
+                    EXPECTING_SCORE_COL
                 )
 
-                if (state == EXPECTING_NEWLINE) {
+                if (state == EXPECTING_SCORE_COL) {
                     row.active = active_score != 0;
-                }
-            } break;
-            case EXPECTING_NEWLINE: {
-                if (c == '\n') {
+
                     score_list_push_saturating(output, row);
                     row = (score_row) {0};
 
                     PARSE_CLEAR_NUMBER_BUFFER
-
-                    state = EXPECTING_SCORE_COL;
-                } else {
-                    return (parse_error) {
-                        .kind = PARSE_EXPECTED_NEWLINE,
-                        .unexpected_char = c,
-                    };
                 }
             } break;
         }
@@ -691,14 +687,14 @@ local score_list get_scores() {
                         case PARSE_NUMERIC_OVERFLOW: {
                             error_str = "PARSE_NUMERIC_OVERFLOW";
                         } break;
-                        case PARSE_EXPECTED_NEWLINE: {
-                            error_str = "PARSE_EXPECTED_NEWLINE";
+                        case PARSE_EXPECTED_DIGIT_OR_NEWLINE: {
+                            error_str = "PARSE_EXPECTED_DIGIT_OR_NEWLINE";
                         } break;
                     }
 
                     fprintf(
                         stderr,
-                        "Error parsing save file: found '%c' %s",
+                        "Error parsing save file: found '%c' %s\n",
                         error.unexpected_char,
                         error_str
                     );
