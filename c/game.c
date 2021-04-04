@@ -1031,11 +1031,17 @@ local update_event move_player(struct world* world, delta_xy dxy) {
         // We need the fresh player, with updated health, etc. after `tick`.
         maybe_monster fresh_player = get_player(world);
         
-        if (fresh_player.kind == NONE || is_dead(fresh_player.payload)) {
+        bool on_exit = get_tile(world->tiles, world->xy).kind == EXIT;
+
+        if (
+            fresh_player.kind == NONE
+            // let the player through the exit before getting killed
+            || (!on_exit && is_dead(fresh_player.payload))
+        ) {
             event.kind = PLAYER_DIED;
             event.score = world->score;
         } else {
-            if (get_tile(world->tiles, world->xy).kind == EXIT) {
+            if (on_exit) {
                 if (world->level >= MAX_LEVEL) {
                     event.kind = COMPLETED_RUN;
                     event.score = world->score;
