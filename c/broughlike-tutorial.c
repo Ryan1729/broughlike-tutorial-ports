@@ -19,6 +19,7 @@
 #include "assets.c"
 #include "game.c"
 
+local const Color AQUA = { 0, 0xff, 0xff, 0xff };
 local const Color INDIGO = { 0x4b, 0, 0x82, 0xff };
 local const Color VIOLET_ALT = { 0xee, 0x82, 0xee, 0xff };
 local const Color OVERLAY = { 0, 0, 0, 0xcc };
@@ -169,13 +170,32 @@ local void push_u16_chars_saturating(stack_string* str, u16 n) {
     }
 }
 
+local void clear_chars(stack_string* str) {
+    *str = (stack_string) {0};
+}
+
+// Just for fun, let's reduce our reliance on the c stdlib
+local int null_terminated_string_len(const char* str) {
+    int output = 0;
+    while (*str) {
+        output += 1;
+        str += 1;
+    }
+
+    return output;
+}
+
 typedef enum {
     TITLE,
-    UI
+    UI,
+    SCORE_HEADER,
+    SCORE_COL_1,
+    SCORE_COL_2,
+    SCORE_COL_3,
 } text_mode;
 
 typedef struct {
-    stack_string* text;
+    const stack_string* text;
     text_mode text_mode;
     screen_size y;
     Color colour;
@@ -187,11 +207,47 @@ local const screen_size TITLE_FONT_SIZE = 50;
 
 local const char* LONGEST_TILE_LINE = "Broughlike in";
 
+local stack_string right_pad(int size, const char** text_array){
+    stack_string output = {0};
+
+    for (int i = 0; i < size; i += 1) {
+        const char* text = text_array[i];
+
+        push_chars_saturating(&output, text);
+
+        int length = null_terminated_string_len(text);
+        for (int j = length; j < 10; j += 1) {
+            push_chars_saturating(&output, " ");
+        }
+    }
+
+    return output;
+}
+
+local const char* SCORE_HEADERS_ARRAY[3] = {"RUN","SCORE","TOTAL"};
+
+local stack_string score_header;
+local stack_string score_header_first_column;
+local stack_string score_header_first_two_columns;
+
+local void init_score_headers() {
+    score_header = right_pad(3, SCORE_HEADERS_ARRAY);
+    score_header_first_column = right_pad(1, SCORE_HEADERS_ARRAY);
+    score_header_first_two_columns = right_pad(2, SCORE_HEADERS_ARRAY);
+}
+
+// This is to account for the fact that the last column has 5 extra spaces 
+// after it, so the centering seems off, because it's based on the full text 
+// width.
+local const screen_size SCORE_NUDGE_IN_EMS = 5.0;
+
 local void draw_text(text_spec spec) {
     screen_size size;
     screen_size x;
 
     const char* chars = (const char*) &spec.text->chars;
+
+    int em = MeasureText("m", UI_FONT_SIZE);
 
     switch (spec.text_mode) {
         case TITLE: {
@@ -200,7 +256,39 @@ local void draw_text(text_spec spec) {
         } break;
         case UI: {
             size = UI_FONT_SIZE;
-            x = ((screen_size) NUM_TILES) * sizes.tile + MeasureText("m", size);
+            x = ((screen_size) NUM_TILES) * sizes.tile + em;
+        } break;
+        case SCORE_HEADER: {
+            size = UI_FONT_SIZE;
+            x = (
+                sizes.play_area_w 
+                - MeasureText(chars, size)
+                + SCORE_NUDGE_IN_EMS * em
+            )/2;
+        } break;
+        case SCORE_COL_1: {
+            size = UI_FONT_SIZE;
+            x = (
+                sizes.play_area_w 
+                - MeasureText((const char*) score_header.chars, size)
+                + SCORE_NUDGE_IN_EMS * em
+            )/2;
+        } break;
+        case SCORE_COL_2: {
+            size = UI_FONT_SIZE;
+            x = (
+                sizes.play_area_w 
+                - MeasureText((const char*) score_header.chars, size)
+                + SCORE_NUDGE_IN_EMS * em
+            )/2 + MeasureText((const char*) score_header_first_column.chars, size);
+        } break;
+        case SCORE_COL_3: {
+            size = UI_FONT_SIZE;
+            x = (
+                sizes.play_area_w 
+                - MeasureText((const char*) score_header.chars, size)
+                + SCORE_NUDGE_IN_EMS * em
+            )/2 + MeasureText((const char*) score_header_first_two_columns.chars, size);
         } break;
     }
 
@@ -211,6 +299,148 @@ local void draw_text(text_spec spec) {
         40,
         spec.colour
     );
+}
+
+// 64k runs ought to be enough for anybody.
+typedef u16 runs;
+
+typedef struct {
+    score score;
+    score total_score;
+    runs run;
+    bool active;
+    u8 padding;
+} score_row;
+
+#define SCORE_LIST_COUNT 10
+
+typedef struct {
+    score_row pool[SCORE_LIST_COUNT];
+    u8 length;
+    bool fresh;
+    u8 padding[2];
+} score_list;
+
+local void score_list_push_saturating(score_list* list, score_row row) {
+    if (list->length < SCORE_LIST_COUNT) {
+        list->pool[list->length] = row;
+        list->length += 1;
+    }
+}
+
+local void score_list_push_back_saturating(score_list* list, score_row row) {
+    if (list->length < SCORE_LIST_COUNT) {
+        for (u8 i = list->length; i > 0; i -= 1) {
+            list->pool[i] = list->pool[i - 1];
+        }
+        list->pool[0] = row;
+        list->length += 1;
+    }
+}
+
+// maybe def {
+typedef struct {
+    maybe_kind kind;
+    score_row payload;
+} maybe_score_row;
+
+local maybe_score_row some_score_row(score_row score_row) {
+    return (maybe_score_row) {.kind = SOME, .payload = score_row};
+}
+// }
+
+local maybe_score_row score_list_pop(score_list* list) {
+    maybe_score_row output = {0};
+
+    if (list->length) {
+        output = some_score_row(list->pool[list->length - 1]);
+        list->length -= 1;
+    }
+
+    return output;
+}
+
+local void sort_by_total_score_desc(score_list* list) {
+    // This is used on lists that have at most SCORE_LIST_COUNT elements. So we 
+    // don't really care how this scales, so bubble sort will do just fine.
+    for (u8 i = 0; i < list->length; i += 1) {
+        for (u8 j = i + 1; j < list->length; j += 1) {
+            score total_score_i = list->pool[i].total_score;
+            score total_score_j = list->pool[j].total_score;
+
+            if (total_score_i < total_score_j) {
+                score_row temp = list->pool[i];
+                list->pool[i] = list->pool[j];
+                list->pool[j] = temp;
+            }
+        }
+    }
+}
+
+local score_list get_scores(void);
+local void sort_by_total_score_desc(score_list* list);
+
+local void draw_scores() {
+    score_list scores = get_scores();
+
+    maybe_score_row maybe_newest_score = score_list_pop(&scores);
+
+    if(maybe_newest_score.kind == SOME){
+        score_row newest_score = maybe_newest_score.payload;
+
+        draw_text((text_spec) {
+            .text = &score_header,
+            .text_mode = SCORE_HEADER,
+            .y = sizes.play_area_y + (sizes.play_area_h / 2),
+            .colour = WHITE,
+        });
+
+        sort_by_total_score_desc(&scores);
+
+        score_list_push_back_saturating(&scores, newest_score);
+
+        for (int i = 0; i < scores.length; i++) {
+            score_row row = scores.pool[i];
+
+            float row_h = (float)sizes.play_area_h * 1.0f / 24.0f;
+
+            stack_string text = {0};
+
+            text_spec spec = {
+                .text = &text,
+                .text_mode = SCORE_COL_1,
+                .y = (screen_size)((float)sizes.play_area_y + ((float)sizes.play_area_h / 2)
+                            + row_h + (float)i * row_h),
+                .colour = i == 0 ? AQUA : VIOLET_ALT,
+            };
+
+            push_u16_chars_saturating(
+                &text,
+                row.run
+            );
+
+            draw_text(spec);
+            
+            clear_chars(&text);
+            push_u16_chars_saturating(
+                &text,
+                row.score
+            );
+            spec.text_mode = SCORE_COL_2;
+
+            draw_text(spec);
+
+            clear_chars(&text);
+            push_u16_chars_saturating(
+                &text,
+                row.total_score
+            );
+            spec.text_mode = SCORE_COL_3;
+
+            draw_text(spec);
+        }
+
+    }
 }
 
 local void draw_title() {
@@ -265,6 +495,8 @@ local void draw_title() {
             .text = &line3,
         });
     }
+
+    draw_scores();
 }
 
 // Just for fun, let's reduce our reliance on the c stdlib
@@ -414,53 +646,6 @@ local xs rng_from_seed(u64 seed) {
     return rng;
 }
 
-// 64k runs ought to be enough for anybody.
-typedef u16 runs;
-
-typedef struct {
-    score score;
-    score total_score;
-    runs run;
-    bool active;
-    u8 padding;
-} score_row;
-
-typedef struct {
-    score_row pool[10];
-    u8 length;
-    bool fresh;
-    u8 padding[2];
-} score_list;
-
-local void score_list_push_saturating(score_list* list, score_row row) {
-    if (list->length < 10) {
-        list->pool[list->length] = row;
-        list->length += 1;
-    }
-}
-
-// maybe def {
-typedef struct {
-    maybe_kind kind;
-    score_row payload;
-} maybe_score_row;
-
-local maybe_score_row some_score_row(score_row score_row) {
-    return (maybe_score_row) {.kind = SOME, .payload = score_row};
-}
-// }
-
-local maybe_score_row score_list_pop(score_list* list) {
-    maybe_score_row output = {0};
-
-    if (list->length) {
-        output = some_score_row(list->pool[list->length - 1]);
-        list->length -= 1;
-    }
-
-    return output;
-}
-
 typedef struct {
     char save_path[FILENAME_MAX];
     score_list score_list;
@@ -480,29 +665,18 @@ local char path_sep = '/';
 "Unsupported platform"
 #endif
 
-// Just for fun, let's reduce our reliance on the c stdlib
-local size_t null_terminated_string_len(const char* str) {
-    size_t output = 0;
-    while (*str) {
-        output += 1;
-        str += 1;
-    }
-
-    return output;
-}
-
 local void init_scores() {
     // We assume that scores_global is zeroed already.
     get_current_dir(scores_global.save_path, FILENAME_MAX);
 
-    size_t i = null_terminated_string_len(scores_global.save_path);
+    int i = null_terminated_string_len(scores_global.save_path);
     scores_global.save_path[i] = path_sep;
 
     const char* save_name = "broughlike-tutorial.sav";
-    size_t extra_len = null_terminated_string_len(save_name);
+    int extra_len = null_terminated_string_len(save_name);
     i += 1;
 
-    for (size_t j = 0; j < extra_len; j += 1) {
+    for (int j = 0; j < extra_len; j += 1) {
         scores_global.save_path[i] = save_name[j];
         i += 1;
     }
@@ -707,6 +881,7 @@ local score_list get_scores() {
    
         }
     }
+
     return output;
 }
 
@@ -790,6 +965,7 @@ int main(void) {
 
     sizes = fresh_sizes();
 
+    init_score_headers();
     init_scores();
     printf("Will save to: %s\n", scores_global.save_path);
 

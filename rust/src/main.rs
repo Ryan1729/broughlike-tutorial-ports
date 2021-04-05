@@ -109,7 +109,7 @@ async fn main() {
     let score_header_first_column = &right_pad(&["RUN"]);
     let score_header_first_two_columns = &right_pad(&["RUN","SCORE"]);
     // This is to account for the fact that the last column has 5 extra spaces 
-    // after it, so the centering seems off, bacuase it's based on the full text 
+    // after it, so the centering seems off, because it's based on the full text 
     // width.
     const SCORE_NUDGE_IN_EMS: Size = 5.;
 
