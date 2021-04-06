@@ -87,8 +87,19 @@ local const half_hp MAX_HALF_HP = 12;
 
 typedef u8 teleport_counter;
 
+typedef i16 offset_x;
+typedef i16 offset_y;
+
+local const i16 OFFSET_MULTIPLE = 8;
+
+typedef struct {
+    offset_x x;
+    offset_y y;
+} offset_xy;
+
 typedef struct {
     monster_kind kind;
+    offset_xy offset_xy;
     tile_xy xy;
     half_hp half_hp;
     bool attacked_this_turn;
@@ -171,6 +182,21 @@ local bool is_dead(monster monster) {
 
 local bool is_player(monster monster) {
     return monster.kind == PLAYER;
+}
+
+typedef i16 display_x;
+typedef i16 display_y;
+
+typedef struct {
+    display_x x;
+    display_y y;
+} display_xy;
+
+local display_xy get_display_xy(monster* m) {
+    return (display_xy) {
+        (display_x)m->xy.x * OFFSET_MULTIPLE + m->offset_xy.x,
+        (display_y)m->xy.y * OFFSET_MULTIPLE + m->offset_xy.y
+    };
 }
 
 // maybe def {
@@ -369,6 +395,7 @@ struct world {
     u8 padding;
     xs rng;
     tiles tiles;
+    u8 padding_[4];
 };
 
 // result def {
@@ -400,7 +427,8 @@ local world_result world_ok(struct world payload) {
 
 local monster move(struct world* world, monster monster, tile_xy xy) {
     remove_monster(world->tiles, monster.xy);
-
+    monster.offset_xy.x = ((offset_x)monster.xy.x - (offset_x)xy.x) * OFFSET_MULTIPLE;
+    monster.offset_xy.y = ((offset_y)monster.xy.y - (offset_y)xy.y) * OFFSET_MULTIPLE;
     monster.xy = xy;
 
     set_monster(world->tiles, monster);
@@ -1070,6 +1098,28 @@ local update_event move_player(struct world* world, delta_xy dxy) {
     return event;
 }
 
+local i16 i16_signum(i16 x) {
+    if (x == 0) {
+        return 0;
+    } else if (x > 0) {
+        return 1;
+    } else {
+        return -1;
+    }
+}
+
+local void begin_game_frame(struct world* world) {
+    for (u8 i = 0; i < TILE_COUNT; i += 1) {
+        tile* t = &world->tiles[i];
+
+        // Monster offsets
+        if (t->maybe_monster.kind == SOME) {
+            t->maybe_monster.payload.offset_xy.x -= i16_signum(t->maybe_monster.payload.offset_xy.x);
+            t->maybe_monster.payload.offset_xy.y -= i16_signum(t->maybe_monster.payload.offset_xy.y);
+        }
+    }
+}
+
 typedef enum {
     INPUT_NONE,
     INPUT_UP,
@@ -1093,6 +1143,8 @@ local update_event update(state* state, input input) {
             }
         } break;
         case RUNNING: {
+            begin_game_frame(&state->world);
+
             switch (input) {
                 case INPUT_NONE:
                     // do nothing
@@ -1127,6 +1179,8 @@ local update_event update(state* state, input input) {
             }
         } break;
         case DEAD: {
+            begin_game_frame(&state->world);
+
             if (input != INPUT_NONE) {
                 state->kind = TITLE_RETURN;
             }

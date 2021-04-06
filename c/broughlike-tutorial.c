@@ -12,6 +12,7 @@
 #define local static
 #define i8 char
 #define u8 unsigned char
+#define i16 short
 #define u16 unsigned short
 #define u32 unsigned long
 #define u64 unsigned long long
@@ -576,7 +577,19 @@ local void draw_world(struct world* world) {
                 break;
             }
 
-            draw_sprite_tile(sprite, m.xy);
+            display_xy disp_xy = get_display_xy(&m);
+            float disp_x = (float)disp_xy.x / (float)OFFSET_MULTIPLE;
+            float disp_y = (float)disp_xy.y / (float)OFFSET_MULTIPLE;
+
+            draw_sprite(
+                sprite,
+                (screen_xy){
+                    (float)sizes.tile
+                    * (disp_x),
+                    (float)sizes.tile
+                    * (disp_y)
+                }
+            );
 
             // Drawing HP
 
@@ -587,9 +600,9 @@ local void draw_world(struct world* world) {
                     9,
                     (screen_xy){
                         (float)sizes.tile
-                        * ((float)m.xy.x + (j%3) * (5.0f/16.0f)),
+                        * (disp_x + (j%3) * (5.0f/16.0f)),
                         (float)sizes.tile
-                        * ((float)m.xy.y - float_floor((float)j/3.0f) * (5.0f/16.0f))
+                        * (disp_y - float_floor((float)j/3.0f) * (5.0f/16.0f))
                     }
                 );
             }
