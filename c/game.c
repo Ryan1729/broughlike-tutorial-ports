@@ -460,6 +460,8 @@ local maybe_monster try_move(struct world* world, monster m, delta_xy dxy) {
             //`!=` is an example of why it's important that `true` is a single value.
             if(is_player(m) != is_player(target)){
                 m.attacked_this_turn = true;
+                m.offset_xy.x = ((offset_x)target.xy.x - (offset_x)m.xy.x) * OFFSET_MULTIPLE / 2;
+                m.offset_xy.y = ((offset_y)target.xy.y - (offset_x)m.xy.y) * OFFSET_MULTIPLE / 2;
                 set_monster(world->tiles, m);
 
                 hit(&target, 2);
