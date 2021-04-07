@@ -98,12 +98,15 @@ local void draw_sprite(sprite_index sprite, screen_xy xy) {
     );
 }
 
-local void draw_sprite_tile(sprite_index sprite, tile_xy xy) {
+#define offset_to_float(o) \
+    ((float)o / (float) OFFSET_MULTIPLE) \
+
+local void draw_sprite_tile(sprite_index sprite, tile_xy xy, offset_xy shake) {
     draw_sprite(
         sprite,
         (screen_xy) {
-            (float)((screen_size)xy.x * sizes.tile),
-            (float)((screen_size)xy.y * sizes.tile)
+            (float)((screen_size)xy.x * sizes.tile) + offset_to_float(shake.x),
+            (float)((screen_size)xy.y * sizes.tile) + offset_to_float(shake.y)
         }
     );
 }
@@ -536,10 +539,10 @@ local void draw_world(struct world* world) {
             break;
         }
 
-        draw_sprite_tile(sprite, t.xy);
+        draw_sprite_tile(sprite, t.xy, world->shake.xy);
 
         if (t.treasure) {
-            draw_sprite_tile(12, t.xy);
+            draw_sprite_tile(12, t.xy, world->shake.xy);
         }
     }
 
@@ -550,7 +553,7 @@ local void draw_world(struct world* world) {
             monster m = t.maybe_monster.payload;
 
             if (m.teleport_counter) {
-                draw_sprite_tile(10, m.xy);
+                draw_sprite_tile(10, m.xy, world->shake.xy);
                 continue;
             }
 
@@ -578,16 +581,16 @@ local void draw_world(struct world* world) {
             }
 
             display_xy disp_xy = get_display_xy(&m);
-            float disp_x = (float)disp_xy.x / (float)OFFSET_MULTIPLE;
-            float disp_y = (float)disp_xy.y / (float)OFFSET_MULTIPLE;
+            float disp_x = offset_to_float(disp_xy.x);
+            float disp_y = offset_to_float(disp_xy.y);
 
             draw_sprite(
                 sprite,
                 (screen_xy){
                     (float)sizes.tile
-                    * (disp_x),
+                    * (disp_x) + offset_to_float(world->shake.xy.x),
                     (float)sizes.tile
-                    * (disp_y)
+                    * (disp_y) + offset_to_float(world->shake.xy.y)
                 }
             );
 
@@ -600,9 +603,9 @@ local void draw_world(struct world* world) {
                     9,
                     (screen_xy){
                         (float)sizes.tile
-                        * (disp_x + (j%3) * (5.0f/16.0f)),
+                        * (disp_x + (j%3) * (5.0f/16.0f)) + offset_to_float(world->shake.xy.x),
                         (float)sizes.tile
-                        * (disp_y - float_floor((float)j/3.0f) * (5.0f/16.0f))
+                        * (disp_y - float_floor((float)j/3.0f) * (5.0f/16.0f)) + offset_to_float(world->shake.xy.y)
                     }
                 );
             }

@@ -386,6 +386,17 @@ local const level MAX_LEVEL = 6;
 typedef u8 spawn_counter;
 typedef u8 spawn_rate;
 
+typedef u8 amount;
+
+typedef struct {
+    offset_xy xy;
+    amount amount;
+    u8 padding[3];
+    // We keep a separate shake RNG so that how fast the user inputs things
+    // does not affect the world generation
+    xs rng;
+} shake;
+
 struct world {
     tile_xy xy;
     score score;
@@ -393,6 +404,7 @@ struct world {
     spawn_counter spawn_counter;
     spawn_rate spawn_rate;
     u8 padding;
+    shake shake;
     xs rng;
     tiles tiles;
     u8 padding_[4];
@@ -463,6 +475,8 @@ local maybe_monster try_move(struct world* world, monster m, delta_xy dxy) {
                 m.offset_xy.x = ((offset_x)target.xy.x - (offset_x)m.xy.x) * OFFSET_MULTIPLE / 2;
                 m.offset_xy.y = ((offset_y)target.xy.y - (offset_x)m.xy.y) * OFFSET_MULTIPLE / 2;
                 set_monster(world->tiles, m);
+
+                world->shake.amount = 5;
 
                 hit(&target, 2);
                 target.stunned = true;
@@ -1118,6 +1132,36 @@ local void begin_game_frame(struct world* world) {
         if (t->maybe_monster.kind == SOME) {
             t->maybe_monster.payload.offset_xy.x -= i16_signum(t->maybe_monster.payload.offset_xy.x);
             t->maybe_monster.payload.offset_xy.y -= i16_signum(t->maybe_monster.payload.offset_xy.y);
+        }
+    }
+
+    // Screenshake offsets
+    shake* shake = &world->shake;
+    if (shake->amount > 0) {
+        shake->amount -= 1;
+
+        // An extremely approximate version of picking a random angle, taking
+        // cos/sin of the angle, multiplying that by shake->amount.
+        
+        // We ask for 2 more random bits to determine the quadrant.
+        offset_x max_offset = ((offset_x)shake->amount) * OFFSET_MULTIPLE;
+        u32 shake_spec = xs_u32(&shake->rng, 0, ((u32)max_offset + 1) << 2);
+        
+        // Here we pull those bits out.
+        u32 quadrant = shake_spec & ((1 << 2) - 1);
+        // Here we slide those bits off to get random number from 0 to max_offset.
+        shake->xy.x = (offset_x)(shake_spec >> 2);
+        // On a unit square diamond, (our extreme appoximation to a unit circle)
+        // |x| + |y| == 1
+        // We skip the absolute value part by staying in the positive quadrant for now.
+        shake->xy.y = max_offset - shake->xy.x;
+    
+        // check each quadrant bit in turn to decide whether to flip across each axis.
+        if ((quadrant & 1) == 0) {
+            shake->xy.x *= -1;
+        }
+        if ((quadrant & 2) == 0) {
+            shake->xy.y *= -1;
         }
     }
 }
