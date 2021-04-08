@@ -68,6 +68,16 @@ local struct sizes fresh_sizes(void) {
 
 local Texture2D spritesheet = {0};
 
+struct sounds {
+    Sound hit_1;
+    Sound hit_2;
+    Sound new_level;
+    Sound spell;
+    Sound treasure;
+};
+
+local struct sounds sounds = {0};
+
 typedef struct {
     float x;
     float y;
@@ -976,8 +986,25 @@ int main(void) {
 
     SetTargetFPS(60);
 
+    InitAudioDevice();
+
     Image spritesheet_img = spritesheet_image();
     spritesheet = LoadTextureFromImage(spritesheet_img);
+
+    Wave hit_1_wav = hit_1_wave();
+    sounds.hit_1 = LoadSoundFromWave(hit_1_wav);
+
+    Wave hit_2_wav = hit_2_wave();
+    sounds.hit_2 = LoadSoundFromWave(hit_2_wav);
+
+    Wave new_level_wav = new_level_wave();
+    sounds.new_level = LoadSoundFromWave(new_level_wav);
+
+    Wave spell_wav = spell_wave();
+    sounds.spell = LoadSoundFromWave(spell_wav);
+
+    Wave treasure_wav = treasure_wave();
+    sounds.treasure = LoadSoundFromWave(treasure_wav);
 
     sizes = fresh_sizes();
 
@@ -1057,8 +1084,13 @@ int main(void) {
     }
 
     CloseWindow();
+
     UnloadTexture(spritesheet);
     UnloadImage(spritesheet_img);
+
+    StopSoundMulti();
+
+    CloseAudioDevice();
 
     return 0;
 }
