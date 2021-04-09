@@ -397,6 +397,17 @@ typedef struct {
     xs rng;
 } shake;
 
+typedef enum {
+    SOUND_NONE,
+    SOUND_HIT_1,
+    SOUND_HIT_2,
+    SOUND_NEW_LEVEL,
+    SOUND_SPELL,
+    SOUND_TREASURE,
+} sound_spec;
+
+#define WORLD_SOUND_SPEC_COUNT 16
+
 struct world {
     tile_xy xy;
     score score;
@@ -407,8 +418,24 @@ struct world {
     shake shake;
     xs rng;
     tiles tiles;
+    sound_spec sound_specs[WORLD_SOUND_SPEC_COUNT];
     u8 padding_[4];
 };
+
+local void clear_sounds(struct world* world) {
+    for (u8 i = 0; i < WORLD_SOUND_SPEC_COUNT; i += 1) {
+        world->sound_specs[i] = SOUND_NONE;
+    }
+}
+
+local void push_sound_saturating(struct world* world, sound_spec spec) {
+    for (u8 i = 0; i < WORLD_SOUND_SPEC_COUNT; i += 1) {
+        if (world->sound_specs[i] == SOUND_NONE) {
+            world->sound_specs[i] = spec;
+            break;
+        }
+    }
+}
 
 // result def {
 typedef struct { 
@@ -479,6 +506,13 @@ local maybe_monster try_move(struct world* world, monster m, delta_xy dxy) {
                 world->shake.amount = 5;
 
                 hit(&target, 2);
+
+                if (is_player(target)) {
+                    push_sound_saturating(world, SOUND_HIT_1);
+                } else {
+                    push_sound_saturating(world, SOUND_HIT_2);
+                }
+
                 target.stunned = true;
                 set_monster(world->tiles, target);
             }
@@ -1033,6 +1067,9 @@ local void tick(struct world* world){
         if (world->score < (score)(-1)) {
             world->score += 1;
         }
+
+        push_sound_saturating(world, SOUND_TREASURE);
+
         remove_treasure(world->tiles, player_tile.xy);
         spawn_monster(&world->rng, world->tiles);
     }
@@ -1086,6 +1123,8 @@ local update_event move_player(struct world* world, delta_xy dxy) {
             event.score = world->score;
         } else {
             if (on_exit) {
+                push_sound_saturating(world, SOUND_NEW_LEVEL);
+
                 if (world->level >= MAX_LEVEL) {
                     event.kind = COMPLETED_RUN;
                     event.score = world->score;
@@ -1125,6 +1164,8 @@ local i16 i16_signum(i16 x) {
 }
 
 local void begin_game_frame(struct world* world) {
+    clear_sounds(world);
+
     for (u8 i = 0; i < TILE_COUNT; i += 1) {
         tile* t = &world->tiles[i];
 

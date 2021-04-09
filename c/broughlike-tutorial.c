@@ -1061,6 +1061,31 @@ int main(void) {
             case RUNNING:
             case DEAD: {
                 draw_world(&state.world);
+
+                for (int i = 0; i < WORLD_SOUND_SPEC_COUNT; i += 1) {
+                    Sound sound;
+                    switch (state.world.sound_specs[i]) {
+                        case SOUND_NONE:
+                            continue;
+                        case SOUND_HIT_1: {
+                            sound = sounds.hit_1;
+                        } break;
+                        case SOUND_HIT_2: {
+                            sound = sounds.hit_2;
+                        } break;
+                        case SOUND_NEW_LEVEL: {
+                            sound = sounds.new_level;
+                        } break;
+                        case SOUND_SPELL: {
+                            sound = sounds.spell;
+                        } break;
+                        case SOUND_TREASURE: {
+                            sound = sounds.treasure;
+                        } break;
+                    }
+
+                    PlaySoundMulti(sound);
+                }
             } break;
             case STATE_ERROR: {
                 switch (state.error_kind) {
