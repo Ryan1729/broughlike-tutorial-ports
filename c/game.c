@@ -790,6 +790,7 @@ typedef struct {
     score score;
     level level;
     half_hp half_hp;
+    sound_spec sound_specs[WORLD_SOUND_SPEC_COUNT];
 } world_spec;
 
 local world_result world_from_rng(xs rng, world_spec world_spec) {
@@ -840,6 +841,10 @@ local world_result world_from_rng(xs rng, world_spec world_spec) {
         }
 
         add_treasure(world.tiles, t_r.result.xy);
+    }
+
+    for (u8 i = 0; i < WORLD_SOUND_SPEC_COUNT; i += 1) {
+        world.sound_specs[i] = world_spec.sound_specs[i];
     }
 
     return world_ok(world);
@@ -1129,15 +1134,20 @@ local update_event move_player(struct world* world, delta_xy dxy) {
                     event.kind = COMPLETED_RUN;
                     event.score = world->score;
                 } else {
+                    world_spec spec = (world_spec) {
+                        .level = world->level + 1,
+                        .score = world->score,
+                        .half_hp = fresh_player.payload.half_hp + 1 > MAX_HALF_HP
+                            ? MAX_HALF_HP
+                            : fresh_player.payload.half_hp + 1,
+                    };
+                    for (u8 i = 0; i < WORLD_SOUND_SPEC_COUNT; i += 1) {
+                        spec.sound_specs[i] = world->sound_specs[i];
+                    }
+
                     world_result result = world_from_rng(
                         world->rng,
-                        (world_spec) {
-                            .level = world->level + 1,
-                            .score = world->score,
-                            .half_hp = fresh_player.payload.half_hp + 1 > MAX_HALF_HP
-                                ? MAX_HALF_HP
-                                : fresh_player.payload.half_hp + 1
-                        }
+                        spec
                     );
     
                     if (result.kind == OK) {
