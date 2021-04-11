@@ -649,6 +649,33 @@ local void draw_world(struct world* world) {
         .colour = VIOLET_ALT,
         .text = &score_text,
     });
+
+    y += UI_FONT_SIZE;
+
+    for (u8 i = 0; i < MAX_NUM_SPELLS; i += 1) {
+        y += UI_FONT_SIZE;
+
+        stack_string spell_text = {0};
+
+        push_u8_chars_saturating(&spell_text, i + 1);
+        push_chars_saturating(&spell_text, ") ");
+
+        switch (world->spells[i]) {
+            case NO_SPELL: {
+                // do nothing
+            } break;
+            case WOOP: {
+                push_chars_saturating(&spell_text, "WOOP");
+            } break;
+        }
+
+        draw_text((text_spec) {
+            .text_mode = UI,
+            .y = y,
+            .colour = AQUA,
+            .text = &spell_text,
+        });
+    }
 }
 
 #include "errno.h"

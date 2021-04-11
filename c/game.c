@@ -408,17 +408,34 @@ typedef enum {
 
 #define WORLD_SOUND_SPEC_COUNT 16
 
+#define MAX_NUM_SPELLS 9
+
+typedef u8 spell_count;
+
+#define ALL_SPELL_NAMES_WITH_COMMAS \
+    WOOP //,\
+    // QUAKE //,
+
+#define ALL_SPELL_NAMES_LENGTH 1
+
+typedef enum {
+    NO_SPELL,
+    ALL_SPELL_NAMES_WITH_COMMAS
+} spell_name;
+
 struct world {
     tile_xy xy;
     score score;
     level level;
     spawn_counter spawn_counter;
     spawn_rate spawn_rate;
-    u8 padding;
+    spell_count num_spells;
     shake shake;
     xs rng;
     tiles tiles;
+    u8 padding[4];
     sound_spec sound_specs[WORLD_SOUND_SPEC_COUNT];
+    spell_name spells[MAX_NUM_SPELLS];
     u8 padding_[4];
 };
 
@@ -583,6 +600,16 @@ local void shuffle(xs* rng, tile_list* list) {
         tile temp = list->pool[i];
         list->pool[i] = list->pool[r];
         list->pool[r] = temp;
+    }
+}
+
+
+local void shuffle_spell_names(xs* rng, spell_name* list) {
+    for (u8 i = 1; i < ALL_SPELL_NAMES_LENGTH; i += 1) {
+        u32 r = xs_u32(rng, 0, i + 1);
+        spell_name temp = list[i];
+        list[i] = list[r];
+        list[r] = temp;
     }
 }
 
@@ -790,6 +817,8 @@ typedef struct {
     score score;
     level level;
     half_hp half_hp;
+    spell_count num_spells;
+    u8 padding[3];
     sound_spec sound_specs[WORLD_SOUND_SPEC_COUNT];
 } world_spec;
 
@@ -800,6 +829,7 @@ local world_result world_from_rng(xs rng, world_spec world_spec) {
     world.rng = rng;
     world.level = world_spec.level ? world_spec.level : 1;
     world.score = world_spec.score;
+    world.num_spells = world_spec.num_spells ? world_spec.num_spells : 1;
 
     tiles_result tiles_r = tiles_ok(&world.tiles);
 
@@ -841,6 +871,13 @@ local world_result world_from_rng(xs rng, world_spec world_spec) {
         }
 
         add_treasure(world.tiles, t_r.result.xy);
+    }
+
+    spell_name all_spells[ALL_SPELL_NAMES_LENGTH] = {ALL_SPELL_NAMES_WITH_COMMAS};
+    shuffle_spell_names(&world.rng, all_spells);
+
+    for (u8 i = 0; i < world.num_spells; i += 1) {
+        world.spells[i] = all_spells[i % ALL_SPELL_NAMES_LENGTH];
     }
 
     for (u8 i = 0; i < WORLD_SOUND_SPEC_COUNT; i += 1) {
