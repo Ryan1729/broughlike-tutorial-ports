@@ -1069,6 +1069,34 @@ int main(void) {
             input = INPUT_RIGHT;
         }
 
+        if (IsKeyPressed(KEY_ONE)) {
+            input = INPUT_PAGE_1;
+        }
+        if (IsKeyPressed(KEY_TWO)) {
+            input = INPUT_PAGE_2;
+        }
+        if (IsKeyPressed(KEY_THREE)) {
+            input = INPUT_PAGE_3;
+        }
+        if (IsKeyPressed(KEY_FOUR)) {
+            input = INPUT_PAGE_4;
+        }
+        if (IsKeyPressed(KEY_FIVE)) {
+            input = INPUT_PAGE_5;
+        }
+        if (IsKeyPressed(KEY_SIX)) {
+            input = INPUT_PAGE_6;
+        }
+        if (IsKeyPressed(KEY_SEVEN)) {
+            input = INPUT_PAGE_7;
+        }
+        if (IsKeyPressed(KEY_EIGHT)) {
+            input = INPUT_PAGE_8;
+        }
+        if (IsKeyPressed(KEY_NINE)) {
+            input = INPUT_PAGE_9;
+        }
+
         update_event event = update(&state, input);
 
         add_score(event);

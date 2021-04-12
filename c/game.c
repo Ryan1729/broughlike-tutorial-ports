@@ -398,6 +398,28 @@ typedef struct {
 } shake;
 
 typedef enum {
+    NOTHING_INTERESTING,
+    PLAYER_DIED,
+    COMPLETED_RUN,
+    UPDATE_ERROR,
+} update_event_kind;
+
+typedef struct {
+    update_event_kind kind;
+    union {
+        score score; // PLAYER_DIED, COMPLETED_RUN
+        error_kind error_kind; // UPDATE_ERROR
+    };
+} update_event;
+
+local update_event update_event_from_error(error_kind error_kind) {
+    return (update_event) {
+        .kind = UPDATE_ERROR,
+        .error_kind = error_kind,
+    };
+}
+
+typedef enum {
     SOUND_NONE,
     SOUND_HIT_1,
     SOUND_HIT_2,
@@ -438,6 +460,8 @@ struct world {
     spell_name spells[MAX_NUM_SPELLS];
     u8 padding_[4];
 };
+
+local void tick(struct world* world);
 
 local void clear_sounds(struct world* world) {
     for (u8 i = 0; i < WORLD_SOUND_SPEC_COUNT; i += 1) {
@@ -494,6 +518,54 @@ local monster move(struct world* world, monster monster, tile_xy xy) {
     }
 
     return monster;
+}
+
+typedef update_event (*spell_proc) (struct world*);
+
+local maybe_monster get_player(struct world*);
+
+local tile_result random_passable_tile(xs* rng, tiles tiles);
+
+local update_event woop(struct world* world) {
+    update_event output = {0};
+
+    maybe_monster maybe_player = get_player(world);
+
+    if (maybe_player.kind == SOME) {
+        tile_result t_r = random_passable_tile(&world->rng, world->tiles);
+        if (t_r.kind == OK) {
+            move(world, maybe_player.payload, t_r.result.xy);
+        } else {
+            // If the player tries to teleport when there is no free space
+            // I'm not sure what else they would expect to happen. But I
+            // know that they wouldn't want the game to freeze with an error.
+        }
+    }
+
+    return output;
+}
+
+local update_event cast_spell(struct world* world, u8 index) {
+    update_event output = {0};
+
+    spell_name name = world->spells[index];
+
+    spell_proc spell;
+    switch (name) {
+        case NO_SPELL:
+            return output;
+        case WOOP: {
+            spell = woop;
+        } break;
+    }
+
+    world->spells[index] = NO_SPELL;
+    output = spell(world);
+
+    push_sound_saturating(world, SOUND_SPELL);
+    tick(world);
+
+    return output;
 }
 
 local tile get_neighbor(tiles tiles, tile_xy xy, delta_xy dxy) {
@@ -707,8 +779,6 @@ local tile_list get_connected_tiles(xs* rng, tiles tiles, tile start_tile) {
 
     return connected_tiles;
 }
-
-local tile_result random_passable_tile(xs* rng, tiles tiles);
 
 local void spawn_monster(xs* rng, tiles tiles) {
     tile_result t_r = random_passable_tile(rng, tiles);
@@ -1117,28 +1187,6 @@ local void tick(struct world* world){
     }
 }
 
-typedef enum {
-    NOTHING_INTERESTING,
-    PLAYER_DIED,
-    COMPLETED_RUN,
-    UPDATE_ERROR,
-} update_event_kind;
-
-typedef struct {
-    update_event_kind kind;
-    union {
-        score score; // PLAYER_DIED, COMPLETED_RUN
-        error_kind error_kind; // UPDATE_ERROR
-    };
-} update_event;
-
-local update_event update_event_from_error(error_kind error_kind) {
-    return (update_event) {
-        .kind = UPDATE_ERROR,
-        .error_kind = error_kind,
-    };
-}
-
 local update_event move_player(struct world* world, delta_xy dxy) {
     update_event event = {0};
 
@@ -1260,6 +1308,15 @@ typedef enum {
     INPUT_DOWN,
     INPUT_LEFT,
     INPUT_RIGHT,
+    INPUT_PAGE_1,
+    INPUT_PAGE_2,
+    INPUT_PAGE_3,
+    INPUT_PAGE_4,
+    INPUT_PAGE_5,
+    INPUT_PAGE_6,
+    INPUT_PAGE_7,
+    INPUT_PAGE_8,
+    INPUT_PAGE_9,
 } input;
 
 local update_event update(state* state, input input) {
@@ -1295,6 +1352,19 @@ local update_event update(state* state, input input) {
                 case INPUT_RIGHT:
                     event = move_player(&state->world, (delta_xy){1, 0});
                 break;
+                case INPUT_PAGE_1:
+                case INPUT_PAGE_2:
+                case INPUT_PAGE_3:
+                case INPUT_PAGE_4:
+                case INPUT_PAGE_5:
+                case INPUT_PAGE_6:
+                case INPUT_PAGE_7:
+                case INPUT_PAGE_8:
+                case INPUT_PAGE_9: {
+                    // Apparently enum conversion to int is defined
+                    u8 page_index = (u8)((int)INPUT_PAGE_1 - (int)input);
+                    event = cast_spell(&state->world, page_index);
+                } break;
             }
 
             switch (event.kind) {
