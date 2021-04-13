@@ -378,6 +378,38 @@ local void heal(monster* monster, half_hp half_hp) {
     }
 }
 
+// list def {
+typedef struct {
+    tile pool[TILE_COUNT];
+    u8 length;
+    u8 padding[3];
+} tile_list;
+
+local void push_saturating(tile_list* list, tile tile) {
+    if (list->length < TILE_COUNT) {
+        list->pool[list->length] = tile;
+        list->length += 1;
+    }
+}
+// }
+
+local void concat_saturating(tile_list* dest, tile_list* src) {
+    for (u8 i = 0; i < src->length; i += 1) {
+        push_saturating(dest, src->pool[i]);
+    }
+}
+
+local bool contains(tile_list* list, tile_xy xy) {
+    for (u8 i = 0; i < list->length; i += 1) {
+        tile t = list->pool[i];
+        
+        if (t.xy.x == xy.x && t.xy.y == xy.y) {
+            return true;
+        }
+    }
+    return false;
+}
+
 typedef u16 score;
 typedef u8 level;
 
@@ -435,10 +467,10 @@ typedef enum {
 typedef u8 spell_count;
 
 #define ALL_SPELL_NAMES_WITH_COMMAS \
-    WOOP //,\
-    // QUAKE //,
+    WOOP,\
+    QUAKE,\
 
-#define ALL_SPELL_NAMES_LENGTH 1
+#define ALL_SPELL_NAMES_LENGTH 2
 
 typedef enum {
     NO_SPELL,
@@ -526,6 +558,8 @@ local maybe_monster get_player(struct world*);
 
 local tile_result random_passable_tile(xs* rng, tiles tiles);
 
+local tile_list get_adjacent_neighbors(xs* rng, tiles tiles, tile_xy xy);
+
 local update_event woop(struct world* world) {
     update_event output = {0};
 
@@ -545,6 +579,50 @@ local update_event woop(struct world* world) {
     return output;
 }
 
+local update_event quake(struct world* world) {
+    update_event output = {0};
+
+    for (u8 y = 0; y < NUM_TILES; y += 1) {
+        for (u8 x = 0; x < NUM_TILES; x += 1) {
+            tile_xy xy = {x, y};
+            tile t = get_tile(world->tiles, xy);
+
+            if (t.maybe_monster.kind == SOME) {
+                monster target = t.maybe_monster.payload;
+
+                tile_list unfiltered_neighbors = get_adjacent_neighbors(
+                    &world->rng,
+                    world->tiles,
+                    xy
+                );
+            
+                u8 passable_count = 0;
+                for (u8 i = 0; i < unfiltered_neighbors.length; i += 1) {
+                    if (is_passable(unfiltered_neighbors.pool[i])) {
+                        passable_count += 1;
+                    }
+                }
+
+                u8 num_walls = 4 - passable_count;
+
+                hit(&target, num_walls * 4);
+
+                if (is_player(target)) {
+                    push_sound_saturating(world, SOUND_HIT_1);
+                } else {
+                    push_sound_saturating(world, SOUND_HIT_2);
+                }
+
+                set_monster(world->tiles, target);
+            }
+        }
+    }
+
+    world->shake.amount = 20;
+
+    return output;
+}
+
 local update_event cast_spell(struct world* world, u8 index) {
     update_event output = {0};
 
@@ -556,6 +634,9 @@ local update_event cast_spell(struct world* world, u8 index) {
             return output;
         case WOOP: {
             spell = woop;
+        } break;
+        case QUAKE: {
+            spell = quake;
         } break;
     }
 
@@ -633,39 +714,6 @@ typedef struct {
     };
 } state;
 
-
-// list def {
-typedef struct {
-    tile pool[TILE_COUNT];
-    u8 length;
-    u8 padding[3];
-} tile_list;
-
-local void push_saturating(tile_list* list, tile tile) {
-    if (list->length < TILE_COUNT) {
-        list->pool[list->length] = tile;
-        list->length += 1;
-    }
-}
-// }
-
-local void concat_saturating(tile_list* dest, tile_list* src) {
-    for (u8 i = 0; i < src->length; i += 1) {
-        push_saturating(dest, src->pool[i]);
-    }
-}
-
-local bool contains(tile_list* list, tile_xy xy) {
-    for (u8 i = 0; i < list->length; i += 1) {
-        tile t = list->pool[i];
-        
-        if (t.xy.x == xy.x && t.xy.y == xy.y) {
-            return true;
-        }
-    }
-    return false;
-}
-
 local void shuffle(xs* rng, tile_list* list) {
     for (u8 i = 1; i < list->length; i += 1) {
         u32 r = xs_u32(rng, 0, i + 1);
@@ -674,7 +722,6 @@ local void shuffle(xs* rng, tile_list* list) {
         list->pool[r] = temp;
     }
 }
-
 
 local void shuffle_spell_names(xs* rng, spell_name* list) {
     for (u8 i = 1; i < ALL_SPELL_NAMES_LENGTH; i += 1) {
