@@ -1256,6 +1256,20 @@ local void tick(struct world* world){
             world->score += 1;
         }
 
+        if (world->score % 3 == 0 && world->num_spells < MAX_NUM_SPELLS) {
+            world->num_spells += 1;
+
+            // Add spell
+            u8 i = world->num_spells - 1;
+
+            spell_name all_spells[ALL_SPELL_NAMES_LENGTH] = {ALL_SPELL_NAMES_WITH_COMMAS};
+            shuffle_spell_names(&world->rng, all_spells);
+
+            if (world->spells[i] == NO_SPELL) {
+                world->spells[i] = all_spells[0];
+            }
+        }
+
         push_sound_saturating(world, SOUND_TREASURE);
 
         remove_treasure(world->tiles, player_tile.xy);
@@ -1301,6 +1315,7 @@ local update_event move_player(struct world* world, delta_xy dxy) {
                         .half_hp = fresh_player.payload.half_hp + 1 > MAX_HALF_HP
                             ? MAX_HALF_HP
                             : fresh_player.payload.half_hp + 1,
+                        .num_spells = world->num_spells,
                     };
                     for (u8 i = 0; i < WORLD_SOUND_SPEC_COUNT; i += 1) {
                         spec.sound_specs[i] = world->sound_specs[i];

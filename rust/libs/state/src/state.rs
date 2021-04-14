@@ -609,22 +609,17 @@ fn tick(world: &mut World) -> AfterTick {
             TileKind::Floor => if t.treasure {
                 world.score = world.score.saturating_add(1);
 
-                if world.score % 3 == 0 && world.num_spells < 9 {
+                if world.score % 3 == 0 && world.num_spells < MAX_NUM_SPELLS {
                     world.num_spells += 1;
 
                     // Add spell
                     let mut spells = ALL_SPELL_NAMES;
                     shuffle(&mut world.rng, &mut spells);
 
-                    let len = world.spells.len();
-                    for index in (0..len).rev() {
-                        if world.spells[index].is_some() {
-                            let i = index + 1;
-                            if i < len {
-                                world.spells[i] = Some(spells[0]);
-                                break
-                            }
-                        }
+                    let i: usize = (world.num_spells - 1 as usize);
+
+                    if (world.spells[i].is_none()) {
+                        world.spells[i] = Some(spells[0]);
                     }
                 }
 
