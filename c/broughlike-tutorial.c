@@ -1178,5 +1178,17 @@ int main(void) {
 
     CloseAudioDevice();
 
+    UnloadSound(sounds.hit_1);
+    UnloadSound(sounds.hit_2);
+    UnloadSound(sounds.new_level);
+    UnloadSound(sounds.spell);
+    UnloadSound(sounds.treasure);
+
+    UnloadWave(hit_1_wav);
+    UnloadWave(hit_2_wav);
+    UnloadWave(new_level_wav);
+    UnloadWave(spell_wav);
+    UnloadWave(treasure_wav);
+
     return 0;
 }
