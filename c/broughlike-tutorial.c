@@ -670,6 +670,9 @@ local void draw_world(struct world* world) {
             case QUAKE: {
                 push_chars_saturating(&spell_text, "QUAKE");
             } break;
+            case MAELSTROM: {
+                push_chars_saturating(&spell_text, "MAELSTROM");
+            } break;
         }
 
         draw_text((text_spec) {

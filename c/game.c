@@ -469,8 +469,9 @@ typedef u8 spell_count;
 #define ALL_SPELL_NAMES_WITH_COMMAS \
     WOOP,\
     QUAKE,\
+    MAELSTROM,\
 
-#define ALL_SPELL_NAMES_LENGTH 2
+#define ALL_SPELL_NAMES_LENGTH 3
 
 typedef enum {
     NO_SPELL,
@@ -560,6 +561,8 @@ local tile_result random_passable_tile(xs* rng, tiles tiles);
 
 local tile_list get_adjacent_neighbors(xs* rng, tiles tiles, tile_xy xy);
 
+local monster_list get_monsters(tiles tiles);
+
 local update_event woop(struct world* world) {
     update_event output = {0};
 
@@ -623,6 +626,29 @@ local update_event quake(struct world* world) {
     return output;
 }
 
+local update_event maelstrom(struct world* world) {
+    update_event output = {0};
+
+    monster_list monsters = get_monsters(world->tiles);
+
+    for (u8 i = 0; i < monsters.length; i += 1) {
+        monster monster = monsters.pool[i];
+        monster.teleport_counter = 2;
+
+        tile_result t_r = random_passable_tile(&world->rng, world->tiles);
+        if (t_r.kind == OK) {
+            move(world, monster, t_r.result.xy);
+        } else {
+            // If there is no free space, the player would likely prefer that we
+            // just set the teleport counter and move on, instead of causing the
+            // game to freeze with an error.
+            set_monster(world->tiles, monster);
+        }
+    }
+
+    return output;
+}
+
 local update_event cast_spell(struct world* world, u8 index) {
     update_event output = {0};
 
@@ -637,6 +663,9 @@ local update_event cast_spell(struct world* world, u8 index) {
         } break;
         case QUAKE: {
             spell = quake;
+        } break;
+        case MAELSTROM: {
+            spell = maelstrom;
         } break;
     }
 

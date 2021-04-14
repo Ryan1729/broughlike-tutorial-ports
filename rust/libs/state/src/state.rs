@@ -1243,7 +1243,7 @@ fn maelstrom(world: &mut World) -> Res<()> {
             r#move(world, monster, new_tile.xy);
         } else {
             // If there is no free space, the player would likely prefer that we
-            // just set the teleport counter and move one, instead of causing the
+            // just set the teleport counter and move on, instead of causing the
             // game to freeze with an error.
             set_monster(&mut world.tiles, monster);
         }
