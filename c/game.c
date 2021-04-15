@@ -1501,7 +1501,7 @@ local update_event update(state* state, input input) {
                 case INPUT_PAGE_8:
                 case INPUT_PAGE_9: {
                     // Apparently enum conversion to int is defined
-                    u8 page_index = (u8)((int)INPUT_PAGE_1 - (int)input);
+                    u8 page_index = (u8)((int)input - (int)INPUT_PAGE_1);
                     event = cast_spell(&state->world, page_index);
                 } break;
             }
