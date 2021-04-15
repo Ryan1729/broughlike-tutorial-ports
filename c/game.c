@@ -4,7 +4,7 @@ local const u8 NUM_TILES = 9;
 #define TILE_COUNT 81
 local const u8 UI_WIDTH = 4;
 
-typedef enum { 
+typedef enum {
     ERR,
     OK
 } result_kind;
@@ -470,8 +470,9 @@ typedef u8 spell_count;
     WOOP,\
     QUAKE,\
     MAELSTROM,\
+    MULLIGAN,\
 
-#define ALL_SPELL_NAMES_LENGTH 3
+#define ALL_SPELL_NAMES_LENGTH 4
 
 typedef enum {
     NO_SPELL,
@@ -563,6 +564,92 @@ local tile_list get_adjacent_neighbors(xs* rng, tiles tiles, tile_xy xy);
 
 local monster_list get_monsters(tiles tiles);
 
+local void generate_tiles(xs* rng, tiles_result* output, level level);
+
+local void shuffle_spell_names(xs* rng, spell_name* list);
+
+typedef struct {
+    score score;
+    level level;
+    half_hp half_hp;
+    spell_count num_spells;
+    bool read_spells;
+    u8 padding[2];
+    sound_spec sound_specs[WORLD_SOUND_SPEC_COUNT];
+    spell_name spells[MAX_NUM_SPELLS];
+} world_spec;
+
+local world_result world_from_rng(xs rng, world_spec world_spec) {
+    struct world world = {0};
+    world.spawn_counter = world.spawn_rate = 15;
+
+    world.rng = rng;
+    world.level = world_spec.level ? world_spec.level : 1;
+    world.score = world_spec.score;
+    world.num_spells = world_spec.num_spells ? world_spec.num_spells : 1;
+
+    tiles_result tiles_r = tiles_ok(&world.tiles);
+
+    generate_tiles(&world.rng, &tiles_r, world.level);
+
+    if (tiles_r.kind == ERR) {
+        return world_err(tiles_r.error);
+    }
+
+    tile_result exit_t_r = random_passable_tile(&world.rng, world.tiles);
+
+    if (exit_t_r.kind == ERR) {
+        return world_err(exit_t_r.error);
+    }
+    
+    // Do the exit first, so we don't replace the player!
+    replace(world.tiles, exit_t_r.result.xy, make_exit);
+
+    tile_result player_t_r = random_passable_tile(&world.rng, world.tiles);
+
+    if (player_t_r.kind == ERR) {
+        return world_err(player_t_r.error);
+    }
+
+    world.xy = player_t_r.result.xy;
+
+    monster player = make_player(world.xy);
+    if (world_spec.half_hp) {
+        player.half_hp = world_spec.half_hp;
+    }
+
+    set_monster(world.tiles, player);
+
+    for (int i = 0; i < 3; i += 1) {
+        tile_result t_r = random_passable_tile(&world.rng, world.tiles);
+
+        if (t_r.kind == ERR) {
+            return world_err(t_r.error);
+        }
+
+        add_treasure(world.tiles, t_r.result.xy);
+    }
+
+    if (world_spec.read_spells) {
+        for (u8 i = 0; i < world.num_spells; i += 1) {
+            world.spells[i] = world_spec.spells[i];
+        }
+    } else {
+        spell_name all_spells[ALL_SPELL_NAMES_LENGTH] = {ALL_SPELL_NAMES_WITH_COMMAS};
+        shuffle_spell_names(&world.rng, all_spells);
+
+        for (u8 i = 0; i < world.num_spells; i += 1) {
+            world.spells[i] = all_spells[i % ALL_SPELL_NAMES_LENGTH];
+        }
+    }
+
+    for (u8 i = 0; i < WORLD_SOUND_SPEC_COUNT; i += 1) {
+        world.sound_specs[i] = world_spec.sound_specs[i];
+    }
+
+    return world_ok(world);
+}
+
 local update_event woop(struct world* world) {
     update_event output = {0};
 
@@ -649,6 +736,37 @@ local update_event maelstrom(struct world* world) {
     return output;
 }
 
+local update_event mulligan(struct world* world) {
+    update_event output = {0};
+
+    world_spec spec = {0};
+    spec.level = world->level;
+    spec.half_hp = 2;
+    spec.num_spells = world->num_spells;
+
+    spec.read_spells = true;
+    for (u8 i = 0; i < spec.num_spells; i += 1) {
+        spec.spells[i] = world->spells[i];
+    }
+
+    for (u8 i = 0; i < WORLD_SOUND_SPEC_COUNT; i += 1) {
+        spec.sound_specs[i] = world->sound_specs[i];
+    }
+
+    world_result result = world_from_rng(
+        world->rng,
+        spec
+    );
+
+    if (result.kind == ERR) {
+        output = update_event_from_error(result.error);
+    } else {
+        *world = result.result;
+    }
+
+    return output;
+}
+
 local update_event cast_spell(struct world* world, u8 index) {
     update_event output = {0};
 
@@ -667,9 +785,13 @@ local update_event cast_spell(struct world* world, u8 index) {
         case MAELSTROM: {
             spell = maelstrom;
         } break;
+        case MULLIGAN: {
+            spell = mulligan;
+        } break;
     }
-
+    
     world->spells[index] = NO_SPELL;
+
     output = spell(world);
 
     push_sound_saturating(world, SOUND_SPELL);
@@ -957,80 +1079,6 @@ local tile_result random_passable_tile(xs* rng, tiles tiles){
     }
 
     return tile_err(ERROR_NO_PASSABLE_TILE);
-}
-
-typedef struct {
-    score score;
-    level level;
-    half_hp half_hp;
-    spell_count num_spells;
-    u8 padding[3];
-    sound_spec sound_specs[WORLD_SOUND_SPEC_COUNT];
-} world_spec;
-
-local world_result world_from_rng(xs rng, world_spec world_spec) {
-    struct world world = {0};
-    world.spawn_counter = world.spawn_rate = 15;
-
-    world.rng = rng;
-    world.level = world_spec.level ? world_spec.level : 1;
-    world.score = world_spec.score;
-    world.num_spells = world_spec.num_spells ? world_spec.num_spells : 1;
-
-    tiles_result tiles_r = tiles_ok(&world.tiles);
-
-    generate_tiles(&world.rng, &tiles_r, world.level);
-
-    if (tiles_r.kind == ERR) {
-        return world_err(tiles_r.error);
-    }
-
-    tile_result exit_t_r = random_passable_tile(&world.rng, world.tiles);
-
-    if (exit_t_r.kind == ERR) {
-        return world_err(exit_t_r.error);
-    }
-    
-    // Do the exit first, so we don't replace the player!
-    replace(world.tiles, exit_t_r.result.xy, make_exit);
-
-    tile_result player_t_r = random_passable_tile(&world.rng, world.tiles);
-
-    if (player_t_r.kind == ERR) {
-        return world_err(player_t_r.error);
-    }
-
-    world.xy = player_t_r.result.xy;
-
-    monster player = make_player(world.xy);
-    if (world_spec.half_hp) {
-        player.half_hp = world_spec.half_hp;
-    }
-
-    set_monster(world.tiles, player);
-
-    for (int i = 0; i < 3; i += 1) {
-        tile_result t_r = random_passable_tile(&world.rng, world.tiles);
-
-        if (t_r.kind == ERR) {
-            return world_err(t_r.error);
-        }
-
-        add_treasure(world.tiles, t_r.result.xy);
-    }
-
-    spell_name all_spells[ALL_SPELL_NAMES_LENGTH] = {ALL_SPELL_NAMES_WITH_COMMAS};
-    shuffle_spell_names(&world.rng, all_spells);
-
-    for (u8 i = 0; i < world.num_spells; i += 1) {
-        world.spells[i] = all_spells[i % ALL_SPELL_NAMES_LENGTH];
-    }
-
-    for (u8 i = 0; i < WORLD_SOUND_SPEC_COUNT; i += 1) {
-        world.sound_specs[i] = world_spec.sound_specs[i];
-    }
-
-    return world_ok(world);
 }
 
 local state state_from_error(error_kind error_kind) {
