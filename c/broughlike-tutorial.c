@@ -83,7 +83,13 @@ typedef struct {
     float y;
 } screen_xy;
 
-local void draw_sprite(sprite_index sprite, screen_xy xy) {
+typedef u8 alpha_byte;
+
+local void draw_sprite_alpha(
+    sprite_index sprite,
+    screen_xy xy,
+    alpha_byte alpha
+) {
     Rectangle spritesheet_rect = {
         .x = (float) sprite * 16,
         .y = 0,
@@ -98,26 +104,48 @@ local void draw_sprite(sprite_index sprite, screen_xy xy) {
         .height = (float) (sizes.tile),
     };
 
+    Color tint = WHITE;
+    tint.a = alpha;
+
     DrawTexturePro(
         spritesheet,
         spritesheet_rect,
         render_rect,
         (Vector2){0},
         0.0,
-        WHITE
+        tint
     );
+}
+
+local void draw_sprite(sprite_index sprite, screen_xy xy) {
+    draw_sprite_alpha(sprite, xy, 255);
 }
 
 #define offset_to_float(o) \
     ((float)o / (float) OFFSET_MULTIPLE) \
 
-local void draw_sprite_tile(sprite_index sprite, tile_xy xy, offset_xy shake) {
-    draw_sprite(
+local void draw_sprite_tile_alpha(
+    sprite_index sprite,
+    tile_xy xy,
+    offset_xy shake,
+    alpha_byte alpha
+) {
+    draw_sprite_alpha(
         sprite,
         (screen_xy) {
             (float)((screen_size)xy.x * sizes.tile) + offset_to_float(shake.x),
             (float)((screen_size)xy.y * sizes.tile) + offset_to_float(shake.y)
-        }
+        },
+        alpha
+    );
+}
+
+local void draw_sprite_tile(sprite_index sprite, tile_xy xy, offset_xy shake) {
+    draw_sprite_tile_alpha(
+        sprite,
+        xy,
+        shake,
+        255
     );
 }
 
@@ -554,6 +582,16 @@ local void draw_world(struct world* world) {
         if (t.treasure) {
             draw_sprite_tile(12, t.xy, world->shake.xy);
         }
+
+        draw_sprite_tile_alpha(
+            t.effect,
+            t.xy,
+            world->shake.xy,
+            (alpha_byte)(
+                ((float)t.effect_counter / (float)EFFECT_MAX)
+                * 255.0f
+            )
+        );
     }
 
     for (u8 i = 0; i < TILE_COUNT; i++) {
@@ -675,6 +713,9 @@ local void draw_world(struct world* world) {
             } break;
             case MULLIGAN: {
                 push_chars_saturating(&spell_text, "MULLIGAN");
+            } break;
+            case AURA: {
+                push_chars_saturating(&spell_text, "AURA");
             } break;
         }
 

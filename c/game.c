@@ -232,12 +232,16 @@ typedef enum {
     EXIT,
 } tile_kind;
 
+typedef u8 effect_counter;
+
 typedef struct {
     tile_kind kind;
     tile_xy xy;
     bool treasure;
-    u8 padding;
+    sprite_index effect;
     maybe_monster maybe_monster;
+    effect_counter effect_counter;
+    u8 padding[3];
 } tile;
 
 local bool is_passable(tile tile) {
@@ -362,6 +366,13 @@ local void remove_treasure(tiles tiles, tile_xy xy) {
     tiles[xy_to_i(xy)].treasure = false;
 }
 
+#define EFFECT_MAX 30
+
+local void set_effect(tiles tiles, tile_xy xy, sprite_index effect) {
+    tiles[xy_to_i(xy)].effect = effect;
+    tiles[xy_to_i(xy)].effect_counter = EFFECT_MAX;
+}
+
 local void hit(monster* monster, half_hp half_hp) {
     if (monster->half_hp > half_hp) {
         monster->half_hp -= half_hp;
@@ -471,8 +482,9 @@ typedef u8 spell_count;
     QUAKE,\
     MAELSTROM,\
     MULLIGAN,\
+    AURA,\
 
-#define ALL_SPELL_NAMES_LENGTH 4
+#define ALL_SPELL_NAMES_LENGTH 5
 
 typedef enum {
     NO_SPELL,
@@ -489,7 +501,6 @@ struct world {
     shake shake;
     xs rng;
     tiles tiles;
-    u8 padding[4];
     sound_spec sound_specs[WORLD_SOUND_SPEC_COUNT];
     spell_name spells[MAX_NUM_SPELLS];
     u8 padding_[4];
@@ -767,6 +778,38 @@ local update_event mulligan(struct world* world) {
     return output;
 }
 
+local update_event aura(struct world* world) {
+    update_event output = {0};
+
+    maybe_monster maybe_player = get_player(world);
+
+    if (maybe_player.kind == SOME) {
+        tile_list neighbors = get_adjacent_neighbors(
+            &world->rng,
+            world->tiles,
+            maybe_player.payload.xy
+        );
+
+        for (u8 i = 0; i < neighbors.length; i += 1) {
+            tile t = neighbors.pool[i];
+
+            set_effect(world->tiles, t.xy, 13);
+
+            if (t.maybe_monster.kind == SOME) {
+                heal(&t.maybe_monster.payload, 2);
+                set_monster(world->tiles, t.maybe_monster.payload);
+            }
+        }
+
+        set_effect(world->tiles, world->xy, 13);
+
+        heal(&maybe_player.payload, 2);
+        set_monster(world->tiles, maybe_player.payload);
+    }
+
+    return output;
+}
+
 local update_event cast_spell(struct world* world, u8 index) {
     update_event output = {0};
 
@@ -787,6 +830,9 @@ local update_event cast_spell(struct world* world, u8 index) {
         } break;
         case MULLIGAN: {
             spell = mulligan;
+        } break;
+        case AURA: {
+            spell = aura;
         } break;
     }
     
@@ -1407,6 +1453,11 @@ local void begin_game_frame(struct world* world) {
         if (t->maybe_monster.kind == SOME) {
             t->maybe_monster.payload.offset_xy.x -= i16_signum(t->maybe_monster.payload.offset_xy.x);
             t->maybe_monster.payload.offset_xy.y -= i16_signum(t->maybe_monster.payload.offset_xy.y);
+        }
+
+        // Tile Effects
+        if (t->effect_counter) {
+            t->effect_counter -= 1;
         }
     }
 
