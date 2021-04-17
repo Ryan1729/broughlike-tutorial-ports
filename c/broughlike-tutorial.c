@@ -717,6 +717,9 @@ local void draw_world(struct world* world) {
             case AURA: {
                 push_chars_saturating(&spell_text, "AURA");
             } break;
+            case DASH: {
+                push_chars_saturating(&spell_text, "DASH");
+            } break;
         }
 
         draw_text((text_spec) {

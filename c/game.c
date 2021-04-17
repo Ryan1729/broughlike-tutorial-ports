@@ -483,8 +483,9 @@ typedef u8 spell_count;
     MAELSTROM,\
     MULLIGAN,\
     AURA,\
+    DASH,\
 
-#define ALL_SPELL_NAMES_LENGTH 5
+#define ALL_SPELL_NAMES_LENGTH 6
 
 typedef enum {
     NO_SPELL,
@@ -503,7 +504,8 @@ struct world {
     tiles tiles;
     sound_spec sound_specs[WORLD_SOUND_SPEC_COUNT];
     spell_name spells[MAX_NUM_SPELLS];
-    u8 padding_[4];
+    delta_xy last_move;
+    u8 padding[2];
 };
 
 local void tick(struct world* world);
@@ -573,6 +575,8 @@ local tile_result random_passable_tile(xs* rng, tiles tiles);
 
 local tile_list get_adjacent_neighbors(xs* rng, tiles tiles, tile_xy xy);
 
+local tile get_neighbor(tiles tiles, tile_xy xy, delta_xy dxy);
+
 local monster_list get_monsters(tiles tiles);
 
 local void generate_tiles(xs* rng, tiles_result* output, level level);
@@ -593,6 +597,7 @@ typedef struct {
 local world_result world_from_rng(xs rng, world_spec world_spec) {
     struct world world = {0};
     world.spawn_counter = world.spawn_rate = 15;
+    world.last_move = (delta_xy){-1, 0};
 
     world.rng = rng;
     world.level = world_spec.level ? world_spec.level : 1;
@@ -810,6 +815,50 @@ local update_event aura(struct world* world) {
     return output;
 }
 
+local update_event dash(struct world* world) {
+    update_event output = {0};
+
+    maybe_monster maybe_player = get_player(world);
+
+    if (maybe_player.kind == SOME) {
+        tile_xy target_xy = world->xy;
+
+        while (true) {
+            tile t = get_neighbor(world->tiles, target_xy, world->last_move);
+            if (is_passable(t) && t.maybe_monster.kind == NONE) {
+                target_xy = t.xy;
+            } else {
+                break;
+            }
+        }
+
+        if (target_xy.x != world->xy.x || target_xy.y != world->xy.y) {
+            monster moved = move(world, maybe_player.payload, target_xy);
+
+            tile_list neighbors = get_adjacent_neighbors(
+                &world->rng,
+                world->tiles,
+                moved.xy
+            );
+
+            for (u8 i = 0; i < neighbors.length; i += 1) {
+                tile t = neighbors.pool[i];
+
+                if (t.maybe_monster.kind == SOME) {
+                    monster m = t.maybe_monster.payload;
+                    set_effect(world->tiles, t.xy, 14);
+
+                    m.stunned = true;
+                    hit(&m, 2);
+                    set_monster(world->tiles, m);
+                }
+            }
+        }
+    }
+
+    return output;
+}
+
 local update_event cast_spell(struct world* world, u8 index) {
     update_event output = {0};
 
@@ -833,6 +882,9 @@ local update_event cast_spell(struct world* world, u8 index) {
         } break;
         case AURA: {
             spell = aura;
+        } break;
+        case DASH: {
+            spell = dash;
         } break;
     }
     
@@ -1380,6 +1432,8 @@ local update_event move_player(struct world* world, delta_xy dxy) {
         maybe_monster maybe_moved = try_move(world, maybe_player.payload, dxy);
 
         if (maybe_moved.kind == SOME) {
+            world->last_move = dxy;
+
             tick(world);
         }
 
