@@ -720,6 +720,9 @@ local void draw_world(struct world* world) {
             case DASH: {
                 push_chars_saturating(&spell_text, "DASH");
             } break;
+            case DIG: {
+                push_chars_saturating(&spell_text, "DIG");
+            } break;
         }
 
         draw_text((text_spec) {

@@ -484,8 +484,9 @@ typedef u8 spell_count;
     MULLIGAN,\
     AURA,\
     DASH,\
+    DIG,\
 
-#define ALL_SPELL_NAMES_LENGTH 6
+#define ALL_SPELL_NAMES_LENGTH 7
 
 typedef enum {
     NO_SPELL,
@@ -859,6 +860,32 @@ local update_event dash(struct world* world) {
     return output;
 }
 
+local update_event dig(struct world* world) {
+    update_event output = {0};
+
+    maybe_monster maybe_player = get_player(world);
+
+    if (maybe_player.kind == SOME) {
+        for (u8 x = 1; x < NUM_TILES - 1; x += 1) {
+            for (u8 y = 1; y < NUM_TILES - 1; y += 1) {
+                tile_xy xy = {x, y};
+                tile t = get_tile(world->tiles, xy);
+
+                if (!is_passable(t)) {
+                    replace(world->tiles, t.xy, make_floor);
+                }
+            }
+        }
+
+        set_effect(world->tiles, world->xy, 13);
+
+        hit(&maybe_player.payload, 4);
+        set_monster(world->tiles, maybe_player.payload);
+    }
+
+    return output;
+}
+
 local update_event cast_spell(struct world* world, u8 index) {
     update_event output = {0};
 
@@ -885,6 +912,9 @@ local update_event cast_spell(struct world* world, u8 index) {
         } break;
         case DASH: {
             spell = dash;
+        } break;
+        case DIG: {
+            spell = dig;
         } break;
     }
     
