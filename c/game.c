@@ -485,8 +485,9 @@ typedef u8 spell_count;
     AURA,\
     DASH,\
     DIG,\
+    KINGMAKER,\
 
-#define ALL_SPELL_NAMES_LENGTH 7
+#define ALL_SPELL_NAMES_LENGTH 8
 
 typedef enum {
     NO_SPELL,
@@ -886,6 +887,22 @@ local update_event dig(struct world* world) {
     return output;
 }
 
+local update_event kingmaker(struct world* world) {
+    update_event output = {0};
+
+    monster_list monsters = get_monsters(world->tiles);
+
+    for (u8 i = 0; i < monsters.length; i += 1) {
+        monster m = monsters.pool[i];
+        heal(&m, 2);
+        set_monster(world->tiles, m);
+
+        add_treasure(world->tiles, m.xy);
+    }
+
+    return output;
+}
+
 local update_event cast_spell(struct world* world, u8 index) {
     update_event output = {0};
 
@@ -915,6 +932,9 @@ local update_event cast_spell(struct world* world, u8 index) {
         } break;
         case DIG: {
             spell = dig;
+        } break;
+        case KINGMAKER: {
+            spell = kingmaker;
         } break;
     }
     
