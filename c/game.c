@@ -879,7 +879,7 @@ local update_event dig(struct world* world) {
 
         set_effect(world->tiles, world->xy, 13);
 
-        hit(&maybe_player.payload, 4);
+        heal(&maybe_player.payload, 4);
         set_monster(world->tiles, maybe_player.payload);
     }
 
