@@ -486,8 +486,9 @@ typedef u8 spell_count;
     DASH,\
     DIG,\
     KINGMAKER,\
+    ALCHEMY,\
 
-#define ALL_SPELL_NAMES_LENGTH 8
+#define ALL_SPELL_NAMES_LENGTH 9
 
 typedef enum {
     NO_SPELL,
@@ -903,6 +904,26 @@ local update_event kingmaker(struct world* world) {
     return output;
 }
 
+local update_event alchemy(struct world* world) {
+    update_event output = {0};
+
+    tile_list neighbors = get_adjacent_neighbors(
+        &world->rng,
+        world->tiles,
+        world->xy
+    );
+
+    for (u8 i = 0; i < neighbors.length; i += 1) {
+        tile t = neighbors.pool[i];
+        if (!is_passable(t) && in_bounds(t.xy)) {
+            replace(world->tiles, t.xy, make_floor);
+            add_treasure(world->tiles, t.xy);
+        }
+    }
+
+    return output;
+}
+
 local update_event cast_spell(struct world* world, u8 index) {
     update_event output = {0};
 
@@ -935,6 +956,9 @@ local update_event cast_spell(struct world* world, u8 index) {
         } break;
         case KINGMAKER: {
             spell = kingmaker;
+        } break;
+        case ALCHEMY: {
+            spell = alchemy;
         } break;
     }
     

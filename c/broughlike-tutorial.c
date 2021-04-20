@@ -726,6 +726,9 @@ local void draw_world(struct world* world) {
             case KINGMAKER: {
                 push_chars_saturating(&spell_text, "KINGMAKER");
             } break;
+            case ALCHEMY: {
+                push_chars_saturating(&spell_text, "ALCHEMY");
+            } break;
         }
 
         draw_text((text_spec) {
