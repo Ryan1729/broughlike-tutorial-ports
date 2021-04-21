@@ -487,8 +487,9 @@ typedef u8 spell_count;
     DIG,\
     KINGMAKER,\
     ALCHEMY,\
+    POWER,\
 
-#define ALL_SPELL_NAMES_LENGTH 9
+#define ALL_SPELL_NAMES_LENGTH 10
 
 typedef enum {
     NO_SPELL,
@@ -508,7 +509,8 @@ struct world {
     sound_spec sound_specs[WORLD_SOUND_SPEC_COUNT];
     spell_name spells[MAX_NUM_SPELLS];
     delta_xy last_move;
-    u8 padding[2];
+    half_hp bonus_attack;
+    u8 padding;
 };
 
 local void tick(struct world* world);
@@ -924,6 +926,14 @@ local update_event alchemy(struct world* world) {
     return output;
 }
 
+local update_event power(struct world* world) {
+    update_event output = {0};
+
+    world->bonus_attack = 10;
+
+    return output;
+}
+
 local update_event cast_spell(struct world* world, u8 index) {
     update_event output = {0};
 
@@ -959,6 +969,9 @@ local update_event cast_spell(struct world* world, u8 index) {
         } break;
         case ALCHEMY: {
             spell = alchemy;
+        } break;
+        case POWER: {
+            spell = power;
         } break;
     }
     
@@ -998,7 +1011,16 @@ local maybe_monster try_move(struct world* world, monster m, delta_xy dxy) {
 
                 world->shake.amount = 5;
 
-                hit(&target, 2);
+                half_hp damage = 0;
+                if (is_player(m)) {
+                    damage = 2 + world->bonus_attack;
+
+                    world->bonus_attack = 0;
+                } else {
+                    damage = 2;
+                }
+
+                hit(&target, damage);
 
                 if (is_player(target)) {
                     push_sound_saturating(world, SOUND_HIT_1);
