@@ -488,8 +488,9 @@ typedef u8 spell_count;
     KINGMAKER,\
     ALCHEMY,\
     POWER,\
+    BUBBLE,\
 
-#define ALL_SPELL_NAMES_LENGTH 10
+#define ALL_SPELL_NAMES_LENGTH 11
 
 typedef enum {
     NO_SPELL,
@@ -934,6 +935,18 @@ local update_event power(struct world* world) {
     return output;
 }
 
+local update_event bubble(struct world* world) {
+    update_event output = {0};
+
+    for (u8 i = MAX_NUM_SPELLS - 1; i > 0; i -= 1) {
+        if (world->spells[i] == NO_SPELL) {
+            world->spells[i] = world->spells[i - 1];
+        }
+    }
+
+    return output;
+}
+
 local update_event cast_spell(struct world* world, u8 index) {
     update_event output = {0};
 
@@ -972,6 +985,9 @@ local update_event cast_spell(struct world* world, u8 index) {
         } break;
         case POWER: {
             spell = power;
+        } break;
+        case BUBBLE: {
+            spell = bubble;
         } break;
     }
     
