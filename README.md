@@ -33,8 +33,15 @@ A version of the code for the [elm programming language](https://elm-lang.org/).
 [Web Version](https://ryan1729.github.io/broughlike-tutorial-ports/elm/index.html)
 
 
-## nim
+## rust
 
-A version of the code for the [nim programming language](https://nim-lang.org/).
+A version of the code for the [rust programming language](https://rust-lang.org/).
 
 (Desktop Binary only)
+
+## c
+
+A version of the code for the c programming language. <!-- is there an official c website? -->
+
+(Desktop Binary only)
+
