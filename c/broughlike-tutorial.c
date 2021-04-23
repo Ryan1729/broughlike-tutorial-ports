@@ -735,6 +735,9 @@ local void draw_world(struct world* world) {
             case BUBBLE: {
                 push_chars_saturating(&spell_text, "BUBBLE");
             } break;
+            case BRAVERY: {
+                push_chars_saturating(&spell_text, "BRAVERY");
+            } break;
         }
 
         draw_text((text_spec) {

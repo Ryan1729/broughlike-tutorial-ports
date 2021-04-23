@@ -489,13 +489,16 @@ typedef u8 spell_count;
     ALCHEMY,\
     POWER,\
     BUBBLE,\
+    BRAVERY,\
 
-#define ALL_SPELL_NAMES_LENGTH 11
+#define ALL_SPELL_NAMES_LENGTH 12
 
 typedef enum {
     NO_SPELL,
     ALL_SPELL_NAMES_WITH_COMMAS
 } spell_name;
+
+typedef u8 shield;
 
 struct world {
     tile_xy xy;
@@ -511,7 +514,7 @@ struct world {
     spell_name spells[MAX_NUM_SPELLS];
     delta_xy last_move;
     half_hp bonus_attack;
-    u8 padding;
+    shield shield;
 };
 
 local void tick(struct world* world);
@@ -717,12 +720,14 @@ local update_event quake(struct world* world) {
 
                 u8 num_walls = 4 - passable_count;
 
-                hit(&target, num_walls * 4);
+                if (!(is_player(target) && world->shield > 0)) {
+                    hit(&target, num_walls * 4);
 
-                if (is_player(target)) {
-                    push_sound_saturating(world, SOUND_HIT_1);
-                } else {
-                    push_sound_saturating(world, SOUND_HIT_2);
+                    if (is_player(target)) {
+                        push_sound_saturating(world, SOUND_HIT_1);
+                    } else {
+                        push_sound_saturating(world, SOUND_HIT_2);
+                    }
                 }
 
                 set_monster(world->tiles, target);
@@ -947,6 +952,22 @@ local update_event bubble(struct world* world) {
     return output;
 }
 
+local update_event bravery(struct world* world) {
+    update_event output = {0};
+
+    world->shield = 2;
+
+    monster_list monsters = get_monsters(world->tiles);
+
+    for (u8 i = 0; i < monsters.length; i += 1) {
+        monster m = monsters.pool[i];
+        m.stunned = true;
+        set_monster(world->tiles, m);
+    }
+
+    return output;
+}
+
 local update_event cast_spell(struct world* world, u8 index) {
     update_event output = {0};
 
@@ -988,6 +1009,9 @@ local update_event cast_spell(struct world* world, u8 index) {
         } break;
         case BUBBLE: {
             spell = bubble;
+        } break;
+        case BRAVERY: {
+            spell = bravery;
         } break;
     }
     
@@ -1036,12 +1060,14 @@ local maybe_monster try_move(struct world* world, monster m, delta_xy dxy) {
                     damage = 2;
                 }
 
-                hit(&target, damage);
+                if (!(is_player(target) && world->shield > 0)) {
+                    hit(&target, damage);
 
-                if (is_player(target)) {
-                    push_sound_saturating(world, SOUND_HIT_1);
-                } else {
-                    push_sound_saturating(world, SOUND_HIT_2);
+                    if (is_player(target)) {
+                        push_sound_saturating(world, SOUND_HIT_1);
+                    } else {
+                        push_sound_saturating(world, SOUND_HIT_2);
+                    }
                 }
 
                 target.stunned = true;
@@ -1494,6 +1520,10 @@ local void tick(struct world* world){
         } else {
             update_monster(world, monster);
         }
+    }
+
+    if (world->shield > 0) {
+        world->shield -= 1;
     }
 
     if (world->spawn_counter > 0) {
