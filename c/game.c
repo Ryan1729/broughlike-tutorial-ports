@@ -490,8 +490,9 @@ typedef u8 spell_count;
     POWER,\
     BUBBLE,\
     BRAVERY,\
+    BOLT,\
 
-#define ALL_SPELL_NAMES_LENGTH 12
+#define ALL_SPELL_NAMES_LENGTH 13
 
 typedef enum {
     NO_SPELL,
@@ -968,6 +969,40 @@ local update_event bravery(struct world* world) {
     return output;
 }
 
+local void bolt_travel(
+    struct world* world,
+    delta_xy dxy,
+    sprite_index effect,
+    half_hp damage
+) {
+    tile_xy xy = world->xy;
+
+    while (true) {
+        tile test_tile = get_neighbor(world->tiles, xy, dxy);
+
+        if (is_passable(test_tile)) {
+            xy = test_tile.xy;
+
+            if (test_tile.maybe_monster.kind == SOME) {
+                hit(&test_tile.maybe_monster.payload, damage);
+                set_monster(world->tiles, test_tile.maybe_monster.payload);
+            }
+
+            set_effect(world->tiles, xy, effect);
+        } else {
+            break;
+        }
+    }
+}
+
+local update_event bolt(struct world* world) {
+    update_event output = {0};
+
+    bolt_travel(world, world->last_move, 15 + abs(world->last_move.y), 8);
+
+    return output;
+}
+
 local update_event cast_spell(struct world* world, u8 index) {
     update_event output = {0};
 
@@ -1012,6 +1047,9 @@ local update_event cast_spell(struct world* world, u8 index) {
         } break;
         case BRAVERY: {
             spell = bravery;
+        } break;
+        case BOLT: {
+            spell = bolt;
         } break;
     }
     
