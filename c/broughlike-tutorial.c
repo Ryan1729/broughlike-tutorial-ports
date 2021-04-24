@@ -959,7 +959,13 @@ local score_list get_scores() {
             FILE* save_file = fopen(scores_global.save_path, "rb");
     
             if (save_file == 0) {
-                perror("Error opening file for reading");
+                if (errno == ENOENT) {
+                    // If there wasn't a file there yet, we'll write one when we
+                    // complete a round.
+                    scores_global.score_list.fresh = true;
+                } else {
+                    perror("Error opening file for reading");
+                }
     
                 // Presumably, the player thinks getting to play with no high
                 // scores saved is better than not being able to play.
