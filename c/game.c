@@ -492,8 +492,9 @@ typedef u8 spell_count;
     BRAVERY,\
     BOLT,\
     CROSS,\
+    EX,\
 
-#define ALL_SPELL_NAMES_LENGTH 14
+#define ALL_SPELL_NAMES_LENGTH 15
 
 typedef enum {
     NO_SPELL,
@@ -1021,6 +1022,23 @@ local update_event cross(struct world* world) {
     return output;
 }
 
+local update_event ex(struct world* world) {
+    update_event output = {0};
+
+    delta_xy directions[4] = {
+        {-1,-1},
+        {-1, 1},
+        { 1,-1},
+        { 1, 1},
+    };
+
+    for (u8 i = 0; i < 4; i += 1) {
+        bolt_travel(world, directions[i], 14, 6);
+    }
+
+    return output;
+}
+
 local update_event cast_spell(struct world* world, u8 index) {
     update_event output = {0};
 
@@ -1071,6 +1089,9 @@ local update_event cast_spell(struct world* world, u8 index) {
         } break;
         case CROSS: {
             spell = cross;
+        } break;
+        case EX: {
+            spell = ex;
         } break;
     }
     

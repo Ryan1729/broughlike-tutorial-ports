@@ -744,6 +744,9 @@ local void draw_world(struct world* world) {
             case CROSS: {
                 push_chars_saturating(&spell_text, "CROSS");
             } break;
+            case EX: {
+                push_chars_saturating(&spell_text, "EX");
+            } break;
         }
 
         draw_text((text_spec) {
