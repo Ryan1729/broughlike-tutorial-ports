@@ -1682,9 +1682,9 @@ local update_event move_player(struct world* world, delta_xy dxy) {
                     world_spec spec = (world_spec) {
                         .level = world->level + 1,
                         .score = world->score,
-                        .half_hp = fresh_player.payload.half_hp + 1 > MAX_HALF_HP
+                        .half_hp = fresh_player.payload.half_hp + 2 > MAX_HALF_HP
                             ? MAX_HALF_HP
-                            : fresh_player.payload.half_hp + 1,
+                            : fresh_player.payload.half_hp + 2,
                         .num_spells = world->num_spells,
                     };
                     for (u8 i = 0; i < WORLD_SOUND_SPEC_COUNT; i += 1) {
