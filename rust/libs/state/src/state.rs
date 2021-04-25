@@ -616,7 +616,7 @@ fn tick(world: &mut World) -> AfterTick {
                     let mut spells = ALL_SPELL_NAMES;
                     shuffle(&mut world.rng, &mut spells);
 
-                    let i: usize = (world.num_spells - 1 as usize);
+                    let i: usize = (world.num_spells - 1) as usize;
 
                     if (world.spells[i].is_none()) {
                         world.spells[i] = Some(spells[0]);
