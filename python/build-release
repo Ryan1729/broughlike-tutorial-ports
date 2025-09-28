@@ -1,0 +1,4 @@
+
+# run pip install -r dev-requirements.txt once first
+
+pyinstaller broughlike_tutorial.spec
