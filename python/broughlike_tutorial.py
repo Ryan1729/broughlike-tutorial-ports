@@ -11,7 +11,7 @@ font = pygame.font.SysFont(pygame.font.get_fonts()[0], 30)
 running = True
 dt = 0
 
-player_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2)
+player = pygame.Rect(0, 0, 20, 20)
 
 while running:
     # poll for events
@@ -20,11 +20,25 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
+    #
+    # Render
+    #
     screen.fill("white")
 
-    text_surface = font.render('Hello, World!', True, "black")
+    pygame.draw.rect(screen, "black", player)
 
-    screen.blit(text_surface, (0, 0))
+    #
+    # Update
+    #
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_w] or keys[pygame.K_UP]:
+        player.y -= 1
+    if keys[pygame.K_s] or keys[pygame.K_DOWN]:
+        player.y += 1
+    if keys[pygame.K_a] or keys[pygame.K_LEFT]:
+        player.x -= 1
+    if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
+        player.x += 1
 
     pygame.display.flip()
 
