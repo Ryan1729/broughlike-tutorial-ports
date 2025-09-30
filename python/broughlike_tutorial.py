@@ -8,10 +8,23 @@ clock = pygame.time.Clock()
 
 font = pygame.font.SysFont(pygame.font.get_fonts()[0], 30)
 
+# Set the window title
+pygame.display.set_caption("AWESOME BROUGHLIKE")
+
 running = True
 dt = 0
 
-player = pygame.Rect(0, 0, 20, 20)
+def get_play_area():
+    w = screen.get_width()
+    h = screen.get_height()
+
+    short_side = min(w, h)
+
+    return pygame.Rect((w - short_side) / 2, (h - short_side) / 2, short_side, short_side)
+
+play_area = get_play_area()
+
+player = pygame.Rect(play_area.x, play_area.y, 20, 20)
 
 while running:
     # poll for events
@@ -23,7 +36,12 @@ while running:
     #
     # Render
     #
-    screen.fill("white")
+
+    screen.fill("indigo")
+
+    play_area = get_play_area()
+
+    pygame.draw.rect(screen, "white", play_area.inflate(2, 2), 1)
 
     pygame.draw.rect(screen, "black", player)
 
