@@ -1,5 +1,13 @@
-# Example file showing a circle moving on screen
+
+#
+#  This is the entrypoint file
+#
+
+import game
+
 import pygame
+
+from dataclasses import dataclass
 
 pygame.init()
 pygame.font.init()
@@ -14,17 +22,30 @@ pygame.display.set_caption("AWESOME BROUGHLIKE")
 running = True
 dt = 0
 
-def get_play_area():
+@dataclass
+class Sizes:
+    play_area: pygame.Rect
+    tile: float
+
+def get_sizes():
     w = screen.get_width()
     h = screen.get_height()
+    
+    tile = min(
+        w/(game.NUM_TILES+game.UI_WIDTH),
+        h/game.NUM_TILES,
+    )
+    play_area_w, play_area_h = tile*(game.NUM_TILES+game.UI_WIDTH), tile*game.NUM_TILES
+    play_area_x, play_area_y = (w-play_area_w)/2, (h-play_area_h)/2
 
-    short_side = min(w, h)
+    return Sizes(
+        pygame.Rect(play_area_x, play_area_y, play_area_w, play_area_h),
+        tile,
+    )
 
-    return pygame.Rect((w - short_side) / 2, (h - short_side) / 2, short_side, short_side)
+sizes = get_sizes()
 
-play_area = get_play_area()
-
-player = pygame.Rect(play_area.x, play_area.y, 20, 20)
+player_x, player_y = 0, 0
 
 while running:
     # poll for events
@@ -32,6 +53,20 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        elif event.type == pygame.KEYDOWN:
+            #
+            # Update
+            #
+            
+            
+            if event.key == pygame.K_w or event.key == pygame.K_UP:
+                player_y -= 1
+            if event.key == pygame.K_s or event.key == pygame.K_DOWN:
+                player_y += 1
+            if event.key == pygame.K_a or event.key == pygame.K_LEFT:
+                player_x -= 1
+            if event.key == pygame.K_d or event.key == pygame.K_RIGHT:
+                player_x += 1
 
     #
     # Render
@@ -39,24 +74,16 @@ while running:
 
     screen.fill("indigo")
 
-    play_area = get_play_area()
+    sizes = get_sizes()
 
-    pygame.draw.rect(screen, "white", play_area.inflate(2, 2), 1)
+    pygame.draw.rect(screen, "white", sizes.play_area.inflate(2, 2), 1)
 
-    pygame.draw.rect(screen, "black", player)
-
-    #
-    # Update
-    #
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_w] or keys[pygame.K_UP]:
-        player.y -= 1
-    if keys[pygame.K_s] or keys[pygame.K_DOWN]:
-        player.y += 1
-    if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-        player.x -= 1
-    if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-        player.x += 1
+    pygame.draw.rect(screen, "black", pygame.Rect(
+        sizes.play_area.x + player_x * sizes.tile, 
+        sizes.play_area.y + player_y * sizes.tile, 
+        sizes.tile,
+        sizes.tile
+    ))
 
     pygame.display.flip()
 

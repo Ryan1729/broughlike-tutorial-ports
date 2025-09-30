@@ -1,0 +1,3 @@
+
+NUM_TILES = 9
+UI_WIDTH = 4
