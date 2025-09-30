@@ -3,7 +3,7 @@ import pygame
 
 pygame.init()
 pygame.font.init()
-screen = pygame.display.set_mode((1280, 720))
+screen = pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
 clock = pygame.time.Clock()
 
 font = pygame.font.SysFont(pygame.font.get_fonts()[0], 30)
