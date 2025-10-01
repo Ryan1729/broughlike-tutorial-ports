@@ -8,13 +8,18 @@ import game
 import pygame
 
 from dataclasses import dataclass
+import os
 
 pygame.init()
 pygame.font.init()
-screen = pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
+screen: pygame.Surface = pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
 clock = pygame.time.Clock()
 
 font = pygame.font.SysFont(pygame.font.get_fonts()[0], 30)
+
+asset_path = os.path.join(os.path.dirname(__file__), "assets")
+spritesheet = pygame.image.load(os.path.join(asset_path, "spritesheet.png"))
+spritesheet = pygame.Surface.convert_alpha(spritesheet)
 
 # Set the window title
 pygame.display.set_caption("AWESOME BROUGHLIKE")
@@ -30,7 +35,7 @@ class Sizes:
 def get_sizes():
     w = screen.get_width()
     h = screen.get_height()
-    
+
     tile = min(
         w/(game.NUM_TILES+game.UI_WIDTH),
         h/game.NUM_TILES,
@@ -57,8 +62,8 @@ while running:
             #
             # Update
             #
-            
-            
+
+
             if event.key == pygame.K_w or event.key == pygame.K_UP:
                 player_y -= 1
             if event.key == pygame.K_s or event.key == pygame.K_DOWN:
@@ -78,9 +83,11 @@ while running:
 
     pygame.draw.rect(screen, "white", sizes.play_area.inflate(2, 2), 1)
 
+    screen.blit(spritesheet, sizes.play_area)
+
     pygame.draw.rect(screen, "black", pygame.Rect(
-        sizes.play_area.x + player_x * sizes.tile, 
-        sizes.play_area.y + player_y * sizes.tile, 
+        sizes.play_area.x + player_x * sizes.tile,
+        sizes.play_area.y + player_y * sizes.tile,
         sizes.tile,
         sizes.tile
     ))
