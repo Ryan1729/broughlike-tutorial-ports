@@ -27,6 +27,24 @@ pygame.display.set_caption("AWESOME BROUGHLIKE")
 running = True
 dt = 0
 
+SPRITE_SIZE = 16
+
+unscaled_sprites: list[pygame.Surface] = []
+
+for i in range(17):
+    unscaled_sprites.append(
+        spritesheet.subsurface(
+            pygame.Rect(
+                i * SPRITE_SIZE,
+                0,
+                SPRITE_SIZE,
+                SPRITE_SIZE
+            )
+        )
+    )
+
+PLAYER_INDEX = 0
+
 @dataclass
 class Sizes:
     play_area: pygame.Rect
@@ -83,14 +101,15 @@ while running:
 
     pygame.draw.rect(screen, "white", sizes.play_area.inflate(2, 2), 1)
 
-    screen.blit(spritesheet, sizes.play_area)
-
-    pygame.draw.rect(screen, "black", pygame.Rect(
-        sizes.play_area.x + player_x * sizes.tile,
-        sizes.play_area.y + player_y * sizes.tile,
-        sizes.tile,
-        sizes.tile
-    ))
+    screen.blit(
+        pygame.transform.scale(unscaled_sprites[PLAYER_INDEX], (sizes.tile, sizes.tile)),
+        pygame.Rect(
+            sizes.play_area.x + player_x * sizes.tile,
+            sizes.play_area.y + player_y * sizes.tile,
+            sizes.tile,
+            sizes.tile
+        ),
+    )
 
     pygame.display.flip()
 
