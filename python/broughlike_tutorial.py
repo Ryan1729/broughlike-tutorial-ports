@@ -3,52 +3,23 @@
 #  This is the entrypoint file
 #
 
-import game
-
 import pygame
-
-from dataclasses import dataclass
-import os
 
 pygame.init()
 pygame.font.init()
 screen: pygame.Surface = pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
+
+import game
+
 clock = pygame.time.Clock()
 
 font = pygame.font.SysFont(pygame.font.get_fonts()[0], 30)
-
-asset_path = os.path.join(os.path.dirname(__file__), "assets")
-spritesheet = pygame.image.load(os.path.join(asset_path, "spritesheet.png"))
-spritesheet = pygame.Surface.convert_alpha(spritesheet)
 
 # Set the window title
 pygame.display.set_caption("AWESOME BROUGHLIKE")
 
 running = True
 dt = 0
-
-SPRITE_SIZE = 16
-
-unscaled_sprites: list[pygame.Surface] = []
-
-for i in range(17):
-    unscaled_sprites.append(
-        spritesheet.subsurface(
-            pygame.Rect(
-                i * SPRITE_SIZE,
-                0,
-                SPRITE_SIZE,
-                SPRITE_SIZE
-            )
-        )
-    )
-
-PLAYER_INDEX = 0
-
-@dataclass
-class Sizes:
-    play_area: pygame.Rect
-    tile: float
 
 def get_sizes():
     w = screen.get_width()
@@ -61,12 +32,12 @@ def get_sizes():
     play_area_w, play_area_h = tile*(game.NUM_TILES+game.UI_WIDTH), tile*game.NUM_TILES
     play_area_x, play_area_y = (w-play_area_w)/2, (h-play_area_h)/2
 
-    return Sizes(
+    return game.Sizes(
         pygame.Rect(play_area_x, play_area_y, play_area_w, play_area_h),
         tile,
     )
 
-sizes = get_sizes()
+platform = game.Platform(screen, get_sizes())
 
 player_x, player_y = 0, 0
 
@@ -97,19 +68,11 @@ while running:
 
     screen.fill("indigo")
 
-    sizes = get_sizes()
+    platform.sizes = get_sizes()
 
-    pygame.draw.rect(screen, "white", sizes.play_area.inflate(2, 2), 1)
+    pygame.draw.rect(screen, "white", platform.sizes.play_area.inflate(2, 2), 1)
 
-    screen.blit(
-        pygame.transform.scale(unscaled_sprites[PLAYER_INDEX], (sizes.tile, sizes.tile)),
-        pygame.Rect(
-            sizes.play_area.x + player_x * sizes.tile,
-            sizes.play_area.y + player_y * sizes.tile,
-            sizes.tile,
-            sizes.tile
-        ),
-    )
+    game.draw_sprite(platform, game.PLAYER_INDEX, player_x, player_y)
 
     pygame.display.flip()
 
