@@ -10,6 +10,7 @@ pygame.font.init()
 screen: pygame.Surface = pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
 
 import game
+import time
 
 clock = pygame.time.Clock()
 
@@ -39,7 +40,11 @@ def get_sizes():
 
 platform = game.Platform(screen, get_sizes())
 
-player_x, player_y = 0, 0
+initial_seed = int(time.time())
+
+print(f"seed = {initial_seed}")
+
+state: game.State = game.new_state(initial_seed)
 
 while running:
     # poll for events
@@ -54,13 +59,13 @@ while running:
 
 
             if event.key == pygame.K_w or event.key == pygame.K_UP:
-                player_y -= 1
+                state.player.y -= 1
             if event.key == pygame.K_s or event.key == pygame.K_DOWN:
-                player_y += 1
+                state.player.y += 1
             if event.key == pygame.K_a or event.key == pygame.K_LEFT:
-                player_x -= 1
+                state.player.x -= 1
             if event.key == pygame.K_d or event.key == pygame.K_RIGHT:
-                player_x += 1
+                state.player.x += 1
 
     #
     # Render
@@ -72,7 +77,7 @@ while running:
 
     pygame.draw.rect(screen, "white", platform.sizes.play_area.inflate(2, 2), 1)
 
-    game.draw_sprite(platform, game.PLAYER_INDEX, player_x, player_y)
+    game.draw_sprite(platform, game.PLAYER_INDEX, state.player.x, state.player.y)
 
     pygame.display.flip()
 

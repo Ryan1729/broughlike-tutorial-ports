@@ -1,18 +1,20 @@
 
 import pygame
 
+import random
 from dataclasses import dataclass
 import os
+
+from game_types import SpriteIndex, X, Y
+from tile import Tile
+from map import Tiles
 
 NUM_TILES = 9
 UI_WIDTH = 4
 
-X = int
-Y = int
-
 Screen = pygame.Surface
 Sprite = pygame.Surface
-SpriteIndex = int
+
 
 SPRITE_SIZE = 16
 
@@ -56,3 +58,30 @@ def draw_sprite(platform: Platform, sprite_index: SpriteIndex, x: X, y: Y):
             platform.sizes.tile
         ),
     )
+
+def draw_tile(tile: Tile, platform: Platform):
+    draw_sprite(platform, tile.sprite_index, tile.x, tile.y)
+
+@dataclass
+class Player:
+    x: X
+    y: Y
+
+@dataclass
+class State:
+    player: Player
+    tiles: Tiles
+    rng: random.Random
+    
+def new_state(seed: int) -> State:
+    player = Player(0, 0)
+
+    rng = random.Random(seed)
+
+    state = State(
+        player,
+        [],
+        rng
+    )
+    
+    return state
