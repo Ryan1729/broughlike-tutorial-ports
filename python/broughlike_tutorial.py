@@ -9,8 +9,10 @@ pygame.init()
 pygame.font.init()
 screen: pygame.Surface = pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
 
+from game_types import NUM_TILES, UI_WIDTH
 import game
 import time
+from map import get_tile
 
 clock = pygame.time.Clock()
 
@@ -27,10 +29,10 @@ def get_sizes():
     h = screen.get_height()
 
     tile = min(
-        w/(game.NUM_TILES+game.UI_WIDTH),
-        h/game.NUM_TILES,
+        w/(NUM_TILES+UI_WIDTH),
+        h/NUM_TILES,
     )
-    play_area_w, play_area_h = tile*(game.NUM_TILES+game.UI_WIDTH), tile*game.NUM_TILES
+    play_area_w, play_area_h = tile*(NUM_TILES+UI_WIDTH), tile*NUM_TILES
     play_area_x, play_area_y = (w-play_area_w)/2, (h-play_area_h)/2
 
     return game.Sizes(
@@ -76,6 +78,10 @@ while running:
     platform.sizes = get_sizes()
 
     pygame.draw.rect(screen, "white", platform.sizes.play_area.inflate(2, 2), 1)
+
+    for i in range(NUM_TILES):
+        for j in range(NUM_TILES):
+            game.draw_tile(platform, get_tile(state, i, j))
 
     game.draw_sprite(platform, game.PLAYER_INDEX, state.player.x, state.player.y)
 

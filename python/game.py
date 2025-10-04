@@ -7,10 +7,7 @@ import os
 
 from game_types import SpriteIndex, X, Y
 from tile import Tile
-from map import Tiles
-
-NUM_TILES = 9
-UI_WIDTH = 4
+from map import Tiles, generate_level
 
 Screen = pygame.Surface
 Sprite = pygame.Surface
@@ -59,7 +56,7 @@ def draw_sprite(platform: Platform, sprite_index: SpriteIndex, x: X, y: Y):
         ),
     )
 
-def draw_tile(tile: Tile, platform: Platform):
+def draw_tile(platform: Platform, tile: Tile):
     draw_sprite(platform, tile.sprite_index, tile.x, tile.y)
 
 @dataclass
@@ -83,5 +80,7 @@ def new_state(seed: int) -> State:
         [],
         rng
     )
+
+    generate_level(state)
     
     return state
