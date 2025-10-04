@@ -47,7 +47,7 @@ class Platform:
 
 def draw_sprite(platform: Platform, sprite_index: SpriteIndex, x: X, y: Y):
     platform.screen.blit(
-        pygame.transform.scale(unscaled_sprites[sprite_index], (platform.sizes.tile, platform.sizes.tile)),
+        pygame.transform.scale(unscaled_sprites[sprite_index], (platform.sizes.tile + 0.5, platform.sizes.tile + 0.5)),
         pygame.Rect(
             platform.sizes.play_area.x + x * platform.sizes.tile,
             platform.sizes.play_area.y + y * platform.sizes.tile,
