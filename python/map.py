@@ -1,16 +1,15 @@
 
 from game_types import X, Y, NUM_TILES
 from tile import Tile, Wall, Floor
+from util import random_range, try_to, RNG
 
 from typing import Protocol
-
-import random
 
 Tiles = list[list[Tile]]
 
 class StateFields(Protocol):
     tiles: Tiles
-    rng: random.Random
+    rng: RNG
 
 def generate_level(state: StateFields):
     generate_tiles(state)
@@ -33,3 +32,19 @@ def get_tile(state: StateFields, x: X, y: Y):
         return state.tiles[x][y]
     else:
         return Wall(x,y)
+
+def random_passable_tile(state: StateFields) -> Tile:
+    tile = None
+    def cb():
+        nonlocal tile
+        x: X = random_range(state.rng, 0, NUM_TILES-1);
+        y: Y = random_range(state.rng, 0, NUM_TILES-1);
+        tile = get_tile(state, x, y);
+        return tile.passable and not tile.monster;
+
+    try_to('get random passable tile', cb);
+
+    assert tile is not None
+
+    return tile;
+

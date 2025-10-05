@@ -7,7 +7,7 @@ import os
 
 from game_types import SpriteIndex, X, Y
 from tile import Tile
-from map import Tiles, generate_level
+from map import Tiles, generate_level, random_passable_tile
 
 Screen = pygame.Surface
 Sprite = pygame.Surface
@@ -69,7 +69,7 @@ class State:
     player: Player
     tiles: Tiles
     rng: random.Random
-    
+
 def new_state(seed: int) -> State:
     player = Player(0, 0)
 
@@ -82,5 +82,10 @@ def new_state(seed: int) -> State:
     )
 
     generate_level(state)
-    
+
+    starting_tile: Tile = random_passable_tile(state);
+
+    player.x = starting_tile.x;
+    player.y = starting_tile.y;
+
     return state
