@@ -12,7 +12,7 @@ screen: pygame.Surface = pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
 from game_types import NUM_TILES, UI_WIDTH
 import game
 import time
-from map import get_tile
+from tile import get_tile
 
 clock = pygame.time.Clock()
 
@@ -81,7 +81,7 @@ while running:
 
     for i in range(NUM_TILES):
         for j in range(NUM_TILES):
-            game.draw_tile(platform, get_tile(state, i, j))
+            game.draw_tile(platform, get_tile(state.tiles, i, j))
 
     game.draw_sprite(platform, game.PLAYER_INDEX, state.player.x, state.player.y)
 

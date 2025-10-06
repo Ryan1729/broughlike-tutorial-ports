@@ -6,8 +6,8 @@ from dataclasses import dataclass
 import os
 
 from game_types import SpriteIndex, X, Y
-from tile import Tile
-from map import Tiles, generate_level, random_passable_tile
+from tile import Tiles, Tile
+from map import generate_level, random_passable_tile
 
 Screen = pygame.Surface
 Sprite = pygame.Surface
