@@ -5,9 +5,10 @@ import random
 from dataclasses import dataclass
 import os
 
-from game_types import SpriteIndex, X, Y
+from game_types import SpriteIndex, X, Y, TileSprite
 from tile import Tiles, Tile
 from map import generate_level, random_passable_tile
+from monster import Player
 
 Screen = pygame.Surface
 Sprite = pygame.Surface
@@ -56,13 +57,8 @@ def draw_sprite(platform: Platform, sprite_index: SpriteIndex, x: X, y: Y):
         ),
     )
 
-def draw_tile(platform: Platform, tile: Tile):
+def draw_tile(platform: Platform, tile: TileSprite):
     draw_sprite(platform, tile.sprite_index, tile.x, tile.y)
-
-@dataclass
-class Player:
-    x: X
-    y: Y
 
 @dataclass
 class State:
@@ -71,21 +67,19 @@ class State:
     rng: random.Random
 
 def new_state(seed: int) -> State:
-    player = Player(0, 0)
+    @dataclass
+    class MiniState:
+        rng: random.Random
+        tiles: Tiles
 
-    rng = random.Random(seed)
+    state = MiniState(random.Random(seed), [])
 
-    state = State(
-        player,
-        [],
-        rng
-    )
-
-    generate_level(state)
-
+    generate_level(state);
+    print(state.tiles)
     starting_tile: Tile = random_passable_tile(state);
 
-    player.x = starting_tile.x;
-    player.y = starting_tile.y;
-
-    return state
+    return State(
+        Player(starting_tile),
+        state.tiles,
+        state.rng
+    )

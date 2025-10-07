@@ -1,8 +1,9 @@
 
 from dataclasses import dataclass
 
-from game_types import SpriteIndex, X, Y, W, H, NUM_TILES
+from game_types import SpriteIndex, X, Y, W, H, NUM_TILES, TileSprite
 from util import shuffle, RNG
+from monster import Monster
 
 @dataclass
 class Tile:
@@ -10,7 +11,7 @@ class Tile:
     y: Y
     sprite_index: SpriteIndex
     passable: bool
-    monster: None
+    monster: Monster|None
 
 class Floor(Tile):
     def __init__(self, x: X, y: Y):
@@ -22,7 +23,7 @@ class Wall(Tile):
 
 Tiles = list[list[Tile]]
 
-def get_neighbor(tiles: Tiles, tile: Tile, dx: W, dy: H) -> Tile:
+def get_neighbor(tiles: Tiles, tile: TileSprite, dx: W, dy: H) -> Tile:
     return get_tile(tiles, tile.x + dx, tile.y + dy)
 
 def get_adjacent_neighbors(rng: RNG, tiles: Tiles, tile: Tile) -> list[Tile]:
@@ -63,3 +64,21 @@ def get_tile(tiles: Tiles, x: X, y: Y) -> Tile:
         return tiles[x][y]
     else:
         return Wall(x,y)
+
+def try_move(tiles: Tiles, monster: Monster, dx: W, dy: H) -> bool:
+    new_tile = get_neighbor(tiles, monster, dx, dy)
+    print(new_tile)
+    if new_tile.passable:
+        if not new_tile.monster:
+            new_tile.monster = monster;
+            
+            old_tile = get_tile(tiles, monster.x, monster.y)
+            old_tile.monster = None
+            
+            monster.x = new_tile.x
+            monster.y = new_tile.y
+        print(tiles)
+        return True
+            
+    return False
+    

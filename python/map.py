@@ -6,8 +6,8 @@ from util import random_range, try_to, RNG
 from typing import Protocol
 
 class StateFields(Protocol):
-    tiles: Tiles
     rng: RNG
+    tiles: Tiles
 
 def generate_level(state: StateFields):
     def cb() -> bool:

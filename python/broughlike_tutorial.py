@@ -12,7 +12,7 @@ screen: pygame.Surface = pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
 from game_types import NUM_TILES, UI_WIDTH
 import game
 import time
-from tile import get_tile
+from tile import get_tile, try_move
 
 clock = pygame.time.Clock()
 
@@ -61,13 +61,13 @@ while running:
 
 
             if event.key == pygame.K_w or event.key == pygame.K_UP:
-                state.player.y -= 1
+                try_move(state.tiles, state.player, 0, -1)
             if event.key == pygame.K_s or event.key == pygame.K_DOWN:
-                state.player.y += 1
+                try_move(state.tiles, state.player, 0, 1)
             if event.key == pygame.K_a or event.key == pygame.K_LEFT:
-                state.player.x -= 1
+                try_move(state.tiles, state.player, -1, 0)
             if event.key == pygame.K_d or event.key == pygame.K_RIGHT:
-                state.player.x += 1
+                try_move(state.tiles, state.player, 1, 0)
 
     #
     # Render
@@ -83,7 +83,7 @@ while running:
         for j in range(NUM_TILES):
             game.draw_tile(platform, get_tile(state.tiles, i, j))
 
-    game.draw_sprite(platform, game.PLAYER_INDEX, state.player.x, state.player.y)
+    game.draw_tile(platform, state.player)
 
     pygame.display.flip()
 
