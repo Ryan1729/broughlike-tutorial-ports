@@ -73,12 +73,13 @@ def try_move(tiles: Tiles, monster: Monster, dx: W, dy: H) -> bool:
             new_tile.monster = monster;
             
             old_tile = get_tile(tiles, monster.x, monster.y)
-            old_tile.monster = None
+            if dx != 0 or dy != 0:
+                old_tile.monster = None
             
             monster.x = new_tile.x
             monster.y = new_tile.y
 
-        return True
+            return True
             
     return False
     
