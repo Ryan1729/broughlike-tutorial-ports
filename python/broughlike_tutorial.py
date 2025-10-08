@@ -83,6 +83,9 @@ while running:
         for j in range(NUM_TILES):
             game.draw_tile(platform, get_tile(state.tiles, i, j))
 
+    for i in range(len(state.monsters)):
+        game.draw_tile(platform, state.monsters[i]);
+
     game.draw_tile(platform, state.player)
 
     pygame.display.flip()

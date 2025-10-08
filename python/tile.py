@@ -38,7 +38,7 @@ def get_adjacent_neighbors(rng: RNG, tiles: Tiles, tile: Tile) -> list[Tile]:
     );
 
 def get_adjacent_passable_neighbors(rng: RNG, tiles: Tiles, tile: Tile) -> list[Tile]:
-    return list(filter(lambda t: t.passable, get_adjacent_neighbors(rng, tiles, tile)))
+    return list(filter(lambda t: t.passable and not t.monster, get_adjacent_neighbors(rng, tiles, tile)))
 
 def get_connected_tiles(rng: RNG, tiles: Tiles, tile: Tile) -> list[Tile]:
     connected_tiles: list[Tile] = [tile];
@@ -67,7 +67,7 @@ def get_tile(tiles: Tiles, x: X, y: Y) -> Tile:
 
 def try_move(tiles: Tiles, monster: Monster, dx: W, dy: H) -> bool:
     new_tile = get_neighbor(tiles, monster, dx, dy)
-    print(new_tile)
+
     if new_tile.passable:
         if not new_tile.monster:
             new_tile.monster = monster;
@@ -77,7 +77,7 @@ def try_move(tiles: Tiles, monster: Monster, dx: W, dy: H) -> bool:
             
             monster.x = new_tile.x
             monster.y = new_tile.y
-        print(tiles)
+
         return True
             
     return False
