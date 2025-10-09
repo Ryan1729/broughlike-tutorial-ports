@@ -26,7 +26,7 @@ Tiles = list[list[Tile]]
 def get_neighbor(tiles: Tiles, tile: TileSprite, dx: W, dy: H) -> Tile:
     return get_tile(tiles, tile.x + dx, tile.y + dy)
 
-def get_adjacent_neighbors(rng: RNG, tiles: Tiles, tile: Tile) -> list[Tile]:
+def get_adjacent_neighbors(rng: RNG, tiles: Tiles, tile: TileSprite) -> list[Tile]:
     return shuffle(
         rng,
         [
@@ -37,7 +37,7 @@ def get_adjacent_neighbors(rng: RNG, tiles: Tiles, tile: Tile) -> list[Tile]:
         ]
     );
 
-def get_adjacent_passable_neighbors(rng: RNG, tiles: Tiles, tile: Tile) -> list[Tile]:
+def get_adjacent_passable_neighbors(rng: RNG, tiles: Tiles, tile: TileSprite) -> list[Tile]:
     return list(filter(lambda t: t.passable and not t.monster, get_adjacent_neighbors(rng, tiles, tile)))
 
 def get_connected_tiles(rng: RNG, tiles: Tiles, tile: Tile) -> list[Tile]:
