@@ -40,7 +40,7 @@ def get_sizes():
 
     return game.Sizes(
         pygame.Rect(play_area_x, play_area_y, play_area_w, play_area_h),
-        tile,
+        int(tile),
     )
 
 platform = game.Platform(screen, get_sizes())
@@ -110,7 +110,11 @@ while running:
     for i in range(len(state.monsters)):
         game.draw_tile(platform, state.monsters[i]);
 
+        game.draw_hp(platform, state.monsters[i])
+
     game.draw_tile(platform, state.player)
+
+    game.draw_hp(platform, state.player)
 
     pygame.display.flip()
 
