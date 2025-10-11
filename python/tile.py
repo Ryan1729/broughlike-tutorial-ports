@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from game_types import SpriteIndex, X, Y, W, H, NUM_TILES, TileSprite
 from util import shuffle, RNG
-from monster import Monster
+from monster import Monster, HP
 
 @dataclass
 class Tile:
@@ -38,7 +38,8 @@ def get_adjacent_neighbors(rng: RNG, tiles: Tiles, tile: TileSprite) -> list[Til
     );
 
 def get_adjacent_passable_neighbors(rng: RNG, tiles: Tiles, tile: TileSprite) -> list[Tile]:
-    return list(filter(lambda t: t.passable and not t.monster, get_adjacent_neighbors(rng, tiles, tile)))
+    # We don't check for t.monster here because we use this function for monster movement and we want them to move into the player
+    return list(filter(lambda t: t.passable, get_adjacent_neighbors(rng, tiles, tile)))
 
 def get_connected_tiles(rng: RNG, tiles: Tiles, tile: Tile) -> list[Tile]:
     connected_tiles: list[Tile] = [tile];
@@ -78,8 +79,20 @@ def try_move(tiles: Tiles, monster: Monster, dx: W, dy: H) -> bool:
             
             monster.x = new_tile.x
             monster.y = new_tile.y
+        else:
+             if monster.is_player != new_tile.monster.is_player:
+                 hit(tiles, new_tile.monster, 1)
 
-            return True
+        return True
             
     return False
     
+def hit(tiles: Tiles, monster: Monster, damage: HP):
+    monster.hp -= damage;
+    if monster.hp <= 0:
+        die(tiles, monster);
+
+def die(tiles: Tiles, monster: Monster):
+    monster.is_dead = True;
+    tiles[monster.x][monster.y].monster = None;
+    monster.sprite_index = 1;

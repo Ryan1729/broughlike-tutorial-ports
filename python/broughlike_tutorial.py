@@ -57,7 +57,6 @@ def player_move(state: game.State, dx: W, dy: H):
 
 def monster_do_stuff(state: game.State, monster: Monster):
     neighbors = get_adjacent_passable_neighbors(state.rng, state.tiles, monster);
-
     neighbors = list(filter(lambda t: (not t.monster) or (t.monster.is_player), neighbors));
     if len(neighbors):
        neighbors.sort(key=cmp_to_key(lambda a, b: dist(a, state.player) - dist(b, state.player)));
