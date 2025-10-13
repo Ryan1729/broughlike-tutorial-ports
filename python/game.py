@@ -1,14 +1,15 @@
 
 import pygame
 
-import random
 from dataclasses import dataclass
+from functools import cmp_to_key
 import os
+import random
 
-from game_types import SpriteIndex, TileSprite, Level
-from tile import Tiles, Tile
+from game_types import SpriteIndex, TileSprite, Level, W, H, dist
+from tile import Tiles, Tile, try_move, get_adjacent_passable_neighbors
 from map import generate_level, random_passable_tile
-from monster import Player, Monster
+from monster import Player, Monster, Bird, Snake, Tank, Eater, Jester
 
 Screen = pygame.Surface
 Sprite = pygame.Surface
@@ -33,8 +34,6 @@ for i in range(17):
             )
         )
     )
-
-PLAYER_INDEX: SpriteIndex = 0
 
 @dataclass
 class Sizes:
@@ -101,3 +100,44 @@ def new_state(seed: int) -> State:
         state.level,
         state.monsters,
     )
+
+
+def player_move(state: State, dx: W, dy: H):
+    if try_move(state.tiles, state.player, dx, dy):
+        tick(state);
+
+def basic_do_stuff(state: State, monster: Monster):
+    neighbors = get_adjacent_passable_neighbors(state.rng, state.tiles, monster);
+    neighbors = list(filter(lambda t: (not t.monster) or (t.monster.is_player), neighbors));
+    if len(neighbors):
+       neighbors.sort(key=cmp_to_key(lambda a, b: dist(a, state.player) - dist(b, state.player)));
+       new_tile = neighbors[0];
+       try_move(state.tiles, monster, new_tile.x - monster.x, new_tile.y - monster.y)
+
+def monster_do_stuff(state: State, monster: Monster):
+    monster.attacked_this_turn = False;
+    # Matching here seems better than forcing monster.py to know about State
+    match monster:
+        case Bird():
+            basic_do_stuff(state, monster)
+        case Snake():
+            basic_do_stuff(state, monster)
+            if not monster.attacked_this_turn:
+                basic_do_stuff(state, monster)
+        case Tank():
+            pass # TODO
+        case Eater():
+            pass # TODO
+        case Jester():
+            pass # TODO
+        case _:
+            print("unhandled do stuff case: ", monster)
+
+def tick(state: State):
+    # In reverse so we can safely delete monsters
+    for i in range(len(state.monsters) - 1, -1, -1):
+        if not state.monsters[i].is_dead:
+            # This seems nicer than maving to have monster.py know about State
+            monster_do_stuff(state, state.monsters[i]);
+        else:
+            state.monsters.pop(i);

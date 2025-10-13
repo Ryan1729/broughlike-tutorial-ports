@@ -8,6 +8,14 @@ H = int
 
 SpriteIndex = int
 
+
+PLAYER_INDEX: SpriteIndex = 0
+BIRD_INDEX: SpriteIndex = 4
+SNAKE_INDEX: SpriteIndex =  5
+TANK_INDEX: SpriteIndex =  6
+EATER_INDEX: SpriteIndex =  7
+JESTER_INDEX: SpriteIndex =  8
+
 class TileSprite(Protocol):
     x: X
     y: Y

@@ -9,12 +9,10 @@ pygame.init()
 pygame.font.init()
 screen: pygame.Surface = pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
 
-from game_types import NUM_TILES, UI_WIDTH, W, H, dist
+from game_types import NUM_TILES, UI_WIDTH
 import game
-from monster import Monster
-from tile import get_tile, try_move, get_adjacent_passable_neighbors
+from tile import get_tile
 
-from functools import cmp_to_key
 import time
 
 clock = pygame.time.Clock()
@@ -51,26 +49,6 @@ print(f"seed = {initial_seed}")
 
 state: game.State = game.new_state(initial_seed)
 
-def player_move(state: game.State, dx: W, dy: H):
-    if try_move(state.tiles, state.player, dx, dy):
-        tick(state);
-
-def monster_do_stuff(state: game.State, monster: Monster):
-    neighbors = get_adjacent_passable_neighbors(state.rng, state.tiles, monster);
-    neighbors = list(filter(lambda t: (not t.monster) or (t.monster.is_player), neighbors));
-    if len(neighbors):
-       neighbors.sort(key=cmp_to_key(lambda a, b: dist(a, state.player) - dist(b, state.player)));
-       new_tile = neighbors[0];
-       try_move(state.tiles, monster, new_tile.x - monster.x, new_tile.y - monster.y)
-
-def tick(state: game.State):
-    # In reverse so we can safely delete monsters
-    for i in range(len(state.monsters) - 1, -1, -1):
-        if not state.monsters[i].is_dead:
-            monster_do_stuff(state, state.monsters[i]);
-        else:
-            state.monsters.pop(i);
-
 while running:
     # poll for events
     # pygame.QUIT event means the user clicked X to close your window
@@ -84,13 +62,13 @@ while running:
 
 
             if event.key == pygame.K_w or event.key == pygame.K_UP:
-                player_move(state, 0, -1)
+                game.player_move(state, 0, -1)
             if event.key == pygame.K_s or event.key == pygame.K_DOWN:
-                player_move(state, 0, 1)
+                game.player_move(state, 0, 1)
             if event.key == pygame.K_a or event.key == pygame.K_LEFT:
-                player_move(state, -1, 0)
+                game.player_move(state, -1, 0)
             if event.key == pygame.K_d or event.key == pygame.K_RIGHT:
-                player_move(state, 1, 0)
+                game.player_move(state, 1, 0)
 
     #
     # Render
