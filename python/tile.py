@@ -82,6 +82,7 @@ def try_move(tiles: Tiles, monster: Monster, dx: W, dy: H) -> bool:
         else:
              if monster.is_player != new_tile.monster.is_player:
                  monster.attacked_this_turn = True;
+                 new_tile.monster.is_stunned = True;
                  hit(tiles, new_tile.monster, 1)
 
         return True

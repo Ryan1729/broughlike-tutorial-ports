@@ -115,6 +115,10 @@ def basic_do_stuff(state: State, monster: Monster):
        try_move(state.tiles, monster, new_tile.x - monster.x, new_tile.y - monster.y)
 
 def monster_do_stuff(state: State, monster: Monster):
+    if monster.is_stunned:
+        monster.is_stunned = False;
+        return;
+
     monster.attacked_this_turn = False;
     # Matching here seems better than forcing monster.py to know about State
     match monster:
@@ -125,7 +129,7 @@ def monster_do_stuff(state: State, monster: Monster):
             if not monster.attacked_this_turn:
                 basic_do_stuff(state, monster)
         case Tank():
-            pass # TODO
+            basic_do_stuff(state, monster)
         case Eater():
             pass # TODO
         case Jester():
@@ -137,6 +141,27 @@ def tick(state: State):
     # In reverse so we can safely delete monsters
     for i in range(len(state.monsters) - 1, -1, -1):
         if not state.monsters[i].is_dead:
+            match state.monsters[i]:
+                case Bird():
+                    pass
+                case Snake():
+                    pass
+                case Tank():
+                    started_stunned = state.monsters[i].is_stunned;
+                    monster_do_stuff(state, state.monsters[i]);
+
+                    if not started_stunned:
+                        state.monsters[i].is_stunned = True;
+
+                    continue
+                case Eater():
+                    pass
+                case Jester():
+                    pass
+                case _:
+                    print("unhandled tick case: ", state.monsters[i])
+
+
             # This seems nicer than maving to have monster.py know about State
             monster_do_stuff(state, state.monsters[i]);
         else:
