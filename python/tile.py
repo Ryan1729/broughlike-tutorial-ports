@@ -1,9 +1,11 @@
 
 from dataclasses import dataclass
+from typing import Callable
 
 from game_types import SpriteIndex, X, Y, W, H, NUM_TILES, TileSprite
 from util import shuffle, RNG
 from monster import Monster, HP
+
 
 @dataclass
 class Tile:
@@ -98,3 +100,6 @@ def die(tiles: Tiles, monster: Monster):
     monster.is_dead = True;
     tiles[monster.x][monster.y].monster = None;
     monster.sprite_index = 1;
+
+def replace(tiles: Tiles, tile: TileSprite, constructor: Callable[[X, Y], Tile]):
+    tiles[tile.x][tile.y] = constructor(tile.x, tile.y);

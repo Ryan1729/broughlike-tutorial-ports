@@ -7,7 +7,7 @@ import os
 import random
 
 from game_types import SpriteIndex, TileSprite, Level, W, H, dist
-from tile import Tiles, Tile, try_move, get_adjacent_passable_neighbors
+from tile import Tiles, Tile, try_move, get_adjacent_passable_neighbors, get_adjacent_neighbors, in_bounds, replace, Floor
 from map import generate_level, random_passable_tile
 from monster import Player, Monster, Bird, Snake, Tank, Eater, Jester
 
@@ -63,7 +63,7 @@ def draw_tile(platform: Platform, tile: TileSprite):
     draw_sprite(platform, tile.sprite_index, tile.x * platform.sizes.tile, tile.y * platform.sizes.tile)
 
 def draw_hp(platform: Platform, monster: Monster):
-    for i in range(monster.hp):
+    for i in range(int(monster.hp)):
         draw_sprite(
             platform,
             9,
@@ -131,7 +131,12 @@ def monster_do_stuff(state: State, monster: Monster):
         case Tank():
             basic_do_stuff(state, monster)
         case Eater():
-            pass # TODO
+            neighbors = list(filter(lambda t: not t.passable and in_bounds(t.x,t.y), get_adjacent_neighbors(state.rng, state.tiles, monster)));
+            if len(neighbors):
+                replace(state.tiles, neighbors[0], lambda x, y: Floor(x, y));
+                monster.heal(0.5);
+            else:
+                basic_do_stuff(state, monster)
         case Jester():
             pass # TODO
         case _:

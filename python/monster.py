@@ -3,7 +3,8 @@ from dataclasses import dataclass
 
 from game_types import SpriteIndex, X, Y, TileSprite, PLAYER_INDEX, BIRD_INDEX, SNAKE_INDEX, TANK_INDEX, EATER_INDEX, JESTER_INDEX
 
-HP = int
+HP = float
+MAX_HP = 6
 
 @dataclass
 class Monster:
@@ -15,6 +16,9 @@ class Monster:
     is_dead: bool
     attacked_this_turn: bool
     is_stunned: bool
+    
+    def heal(self, heal_amount: HP):
+        self.hp = min(MAX_HP, self.hp+heal_amount);
 
 
 class Player(Monster):
