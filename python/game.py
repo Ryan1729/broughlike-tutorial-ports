@@ -138,7 +138,9 @@ def monster_do_stuff(state: State, monster: Monster):
             else:
                 basic_do_stuff(state, monster)
         case Jester():
-            pass # TODO
+            neighbors = get_adjacent_passable_neighbors(state.rng, state.tiles, monster);
+            if len(neighbors):
+                try_move(state.tiles, monster, neighbors[0].x - monster.x, neighbors[0].y - monster.y)
         case _:
             print("unhandled do stuff case: ", monster)
 
