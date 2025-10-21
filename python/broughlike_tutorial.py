@@ -47,39 +47,9 @@ initial_seed = int(time.time())
 
 print(f"seed = {initial_seed}")
 
-state: game.State = game.new_state(initial_seed)
+state: game.State = game.title_state(initial_seed)
 
-while running:
-    # poll for events
-    # pygame.QUIT event means the user clicked X to close your window
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.KEYDOWN:
-            #
-            # Update
-            #
-
-
-            if event.key == pygame.K_w or event.key == pygame.K_UP:
-                game.player_move(state, 0, -1)
-            if event.key == pygame.K_s or event.key == pygame.K_DOWN:
-                game.player_move(state, 0, 1)
-            if event.key == pygame.K_a or event.key == pygame.K_LEFT:
-                game.player_move(state, -1, 0)
-            if event.key == pygame.K_d or event.key == pygame.K_RIGHT:
-                game.player_move(state, 1, 0)
-
-    #
-    # Render
-    #
-
-    screen.fill("indigo")
-
-    platform.sizes = get_sizes()
-
-    pygame.draw.rect(screen, "white", platform.sizes.play_area.inflate(2, 2), 1)
-
+def render_running(state: game.RunningState):
     for i in range(NUM_TILES):
         for j in range(NUM_TILES):
             game.draw_tile(platform, get_tile(state.tiles, i, j))
@@ -92,6 +62,54 @@ while running:
     game.draw_tile(platform, state.player)
 
     game.draw_hp(platform, state.player)
+
+while running:
+    # poll for events
+    # pygame.QUIT event means the user clicked X to close your window
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.KEYDOWN:
+            #
+            # Update
+            #
+
+            if isinstance(state, game.Title):
+                state = game.running_state(state)
+            elif isinstance(state, game.Dead):
+                state = game.to_title_state(state)
+            else:
+                died = False
+                if event.key == pygame.K_w or event.key == pygame.K_UP:
+                    died = game.player_move(state.state, 0, -1)
+                if event.key == pygame.K_s or event.key == pygame.K_DOWN:
+                    died = game.player_move(state.state, 0, 1)
+                if event.key == pygame.K_a or event.key == pygame.K_LEFT:
+                    died = game.player_move(state.state, -1, 0)
+                if event.key == pygame.K_d or event.key == pygame.K_RIGHT:
+                    died = game.player_move(state.state, 1, 0)
+
+                if died:
+                    state = game.dead_state(state)
+    #
+    # Render
+    #
+
+    screen.fill("indigo")
+
+    platform.sizes = get_sizes()
+
+    pygame.draw.rect(screen, "white", platform.sizes.play_area.inflate(2, 2), 1)
+
+    if isinstance(state, game.Running):
+        render_running(state.state)
+
+    if isinstance(state, game.Dead):
+        render_running(state.state)
+        s = pygame.Surface((platform.sizes.play_area.w, platform.sizes.play_area.h)) 
+        s.set_alpha(192)
+        s.fill((0,0,0))
+        screen.blit(s, (platform.sizes.play_area.x,platform.sizes.play_area.y))
 
     pygame.display.flip()
 

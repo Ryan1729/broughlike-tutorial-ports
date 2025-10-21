@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from game_types import SpriteIndex, X, Y, TileSprite, PLAYER_INDEX, BIRD_INDEX, SNAKE_INDEX, TANK_INDEX, EATER_INDEX, JESTER_INDEX
 
 HP = float
+STARTING_HP = 3
 MAX_HP = 6
 
 @dataclass

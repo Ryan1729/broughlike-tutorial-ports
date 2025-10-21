@@ -72,14 +72,33 @@ def draw_hp(platform: Platform, monster: Monster):
         );
 
 @dataclass
-class State:
+class RunningState:
     player: Player
     rng: random.Random
     tiles: Tiles
     level: Level
     monsters: list[Monster]
 
-def new_state(seed: int) -> State:
+@dataclass
+class State:
+    pass
+
+@dataclass
+class Title(State):
+    rng: random.Random
+
+@dataclass
+class Running(State):
+    state: RunningState
+    
+@dataclass
+class Dead(State):
+    state: RunningState
+
+def title_state(seed: int) -> Title:
+    return Title(random.Random(seed))
+
+def running_state(title: Title) -> Running:
     @dataclass
     class MiniState:
         rng: random.Random
@@ -87,26 +106,33 @@ def new_state(seed: int) -> State:
         level: Level
         monsters: list[Monster]
 
-    state = MiniState(random.Random(seed), [], 1, [])
+    state = MiniState(title.rng, [], 1, [])
 
     generate_level(state);
 
     starting_tile: Tile = random_passable_tile(state);
 
-    return State(
+    return Running(RunningState(
         Player(starting_tile),
         state.rng,
         state.tiles,
         state.level,
         state.monsters,
-    )
+    ))
 
+def dead_state(running: Running) -> Dead:
+    return Dead(running.state)
+    
+def to_title_state(dead: Dead) -> Title:
+    return Title(dead.state.rng)
 
-def player_move(state: State, dx: W, dy: H):
+def player_move(state: RunningState, dx: W, dy: H) -> bool:
+    died = False
     if try_move(state.tiles, state.player, dx, dy):
-        tick(state);
+        died = tick(state);
+    return died
 
-def basic_do_stuff(state: State, monster: Monster):
+def basic_do_stuff(state: RunningState, monster: Monster):
     neighbors = get_adjacent_passable_neighbors(state.rng, state.tiles, monster);
     neighbors = list(filter(lambda t: (not t.monster) or (t.monster.is_player), neighbors));
     if len(neighbors):
@@ -114,7 +140,7 @@ def basic_do_stuff(state: State, monster: Monster):
        new_tile = neighbors[0];
        try_move(state.tiles, monster, new_tile.x - monster.x, new_tile.y - monster.y)
 
-def monster_do_stuff(state: State, monster: Monster):
+def monster_do_stuff(state: RunningState, monster: Monster):
     if monster.is_stunned:
         monster.is_stunned = False;
         return;
@@ -144,7 +170,9 @@ def monster_do_stuff(state: State, monster: Monster):
         case _:
             print("unhandled do stuff case: ", monster)
 
-def tick(state: State):
+def tick(state: RunningState) -> bool:
+    died = False
+    
     # In reverse so we can safely delete monsters
     for i in range(len(state.monsters) - 1, -1, -1):
         if not state.monsters[i].is_dead:
@@ -173,3 +201,11 @@ def tick(state: State):
             monster_do_stuff(state, state.monsters[i]);
         else:
             state.monsters.pop(i);
+
+    if state.player.is_dead:
+        died = True
+
+    return died
+        
+        
+    
