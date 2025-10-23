@@ -8,7 +8,7 @@ import random
 
 from game_types import SpriteIndex, TileSprite, Level, W, H, dist
 from tile import Tiles, Tile, try_move, get_adjacent_passable_neighbors, get_adjacent_neighbors, in_bounds, replace, Floor
-from map import generate_level, random_passable_tile
+from map import generate_level, random_passable_tile, spawn_monster
 from monster import Player, Monster, Bird, Snake, Tank, Eater, Jester
 
 Screen = pygame.Surface
@@ -62,8 +62,15 @@ def draw_sprite(platform: Platform, sprite_index: SpriteIndex, x: PixelX, y: Pix
 def draw_tile(platform: Platform, tile: TileSprite):
     draw_sprite(platform, tile.sprite_index, tile.x * platform.sizes.tile, tile.y * platform.sizes.tile)
 
+def draw_monster(platform: Platform, monster: Monster):
+    if monster.teleport_counter > 0:
+        draw_sprite(platform, 10, monster.x * platform.sizes.tile, monster.y * platform.sizes.tile);
+    else:
+        draw_tile(platform, monster);
+        draw_hp(platform, monster);
+
 def draw_hp(platform: Platform, monster: Monster):
-    for i in range(int(monster.hp)):
+    for i in range(int(monster.hp + 0.5)):
         draw_sprite(
             platform,
             9,
@@ -78,6 +85,8 @@ class RunningState:
     tiles: Tiles
     level: Level
     monsters: list[Monster]
+    spawn_counter: int
+    spawn_rate: int
 
 @dataclass
 class State:
@@ -112,12 +121,16 @@ def running_state(title: Title) -> Running:
 
     starting_tile: Tile = random_passable_tile(state);
 
+    spawn_rate = 15
+
     return Running(RunningState(
         Player(starting_tile),
         state.rng,
         state.tiles,
         state.level,
         state.monsters,
+        spawn_rate,
+        spawn_rate,
     ))
 
 def dead_state(running: Running) -> Dead:
@@ -141,7 +154,8 @@ def basic_do_stuff(state: RunningState, monster: Monster):
        try_move(state.tiles, monster, new_tile.x - monster.x, new_tile.y - monster.y)
 
 def monster_do_stuff(state: RunningState, monster: Monster):
-    if monster.is_stunned:
+    monster.teleport_counter -= 1;
+    if monster.is_stunned or monster.teleport_counter > 0:
         monster.is_stunned = False;
         return;
 
@@ -204,6 +218,13 @@ def tick(state: RunningState) -> bool:
 
     if state.player.is_dead:
         died = True
+
+    state.spawn_counter -= 1;
+
+    if state.spawn_counter <= 0:
+        spawn_monster(state);
+        state.spawn_counter = state.spawn_rate;
+        state.spawn_rate -= 1;
 
     return died
         

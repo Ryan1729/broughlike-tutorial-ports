@@ -17,6 +17,7 @@ class Monster:
     is_dead: bool
     attacked_this_turn: bool
     is_stunned: bool
+    teleport_counter: int
     
     def heal(self, heal_amount: HP):
         self.hp = min(MAX_HP, self.hp+heal_amount);
@@ -24,24 +25,24 @@ class Monster:
 
 class Player(Monster):
     def __init__(self, tile: TileSprite):
-        super().__init__(tile.x, tile.y, PLAYER_INDEX, 3, True, False, False, False)
+        super().__init__(tile.x, tile.y, PLAYER_INDEX, 3, True, False, False, False, 0)
 
 class Bird(Monster):
     def __init__(self, tile: TileSprite):
-        super().__init__(tile.x, tile.y, BIRD_INDEX, 3, False, False, False, False)
+        super().__init__(tile.x, tile.y, BIRD_INDEX, 3, False, False, False, False, 2)
 
 class Snake(Monster):
     def __init__(self, tile: TileSprite):
-        super().__init__(tile.x, tile.y, SNAKE_INDEX, 1, False, False, False, False)
+        super().__init__(tile.x, tile.y, SNAKE_INDEX, 1, False, False, False, False, 2)
 
 class Tank(Monster):
     def __init__(self, tile: TileSprite):
-        super().__init__(tile.x, tile.y, TANK_INDEX, 2, False, False, False, False)
+        super().__init__(tile.x, tile.y, TANK_INDEX, 2, False, False, False, False, 2)
 
 class Eater(Monster):
     def __init__(self, tile: TileSprite):
-        super().__init__(tile.x, tile.y, EATER_INDEX, 1, False, False, False, False)
+        super().__init__(tile.x, tile.y, EATER_INDEX, 1, False, False, False, False, 2)
 
 class Jester(Monster):
     def __init__(self, tile: TileSprite):
-        super().__init__(tile.x, tile.y, JESTER_INDEX, 2, False, False, False, False)
+        super().__init__(tile.x, tile.y, JESTER_INDEX, 2, False, False, False, False, 2)

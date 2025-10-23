@@ -55,13 +55,9 @@ def render_running(state: game.RunningState):
             game.draw_tile(platform, get_tile(state.tiles, i, j))
 
     for i in range(len(state.monsters)):
-        game.draw_tile(platform, state.monsters[i]);
+        game.draw_monster(platform, state.monsters[i]);
 
-        game.draw_hp(platform, state.monsters[i])
-
-    game.draw_tile(platform, state.player)
-
-    game.draw_hp(platform, state.player)
+    game.draw_monster(platform, state.player)
 
 while running:
     # poll for events
