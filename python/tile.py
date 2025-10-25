@@ -23,6 +23,10 @@ class Wall(Tile):
     def __init__(self, x: X, y: Y):
         super().__init__(x, y, 3, False, None)
 
+class Exit(Tile):
+    def __init__(self, x: X, y: Y):
+        super().__init__(x, y, 11, True, None)
+
 Tiles = list[list[Tile]]
 
 def get_neighbor(tiles: Tiles, tile: TileSprite, dx: W, dy: H) -> Tile:
@@ -46,7 +50,7 @@ def get_adjacent_passable_neighbors(rng: RNG, tiles: Tiles, tile: TileSprite) ->
 def get_connected_tiles(rng: RNG, tiles: Tiles, tile: Tile) -> list[Tile]:
     connected_tiles: list[Tile] = [tile];
     frontier: list[Tile] = [tile];
-    while len(frontier):        
+    while len(frontier):
         neighbors: list[Tile] = list(
             filter(
                 lambda t: t not in connected_tiles,
@@ -55,7 +59,7 @@ def get_connected_tiles(rng: RNG, tiles: Tiles, tile: Tile) -> list[Tile]:
         );
         connected_tiles.extend(neighbors);
         frontier.extend(neighbors);
-    
+
     return connected_tiles;
 
 
@@ -68,29 +72,37 @@ def get_tile(tiles: Tiles, x: X, y: Y) -> Tile:
     else:
         return Wall(x,y)
 
-def try_move(tiles: Tiles, monster: Monster, dx: W, dy: H) -> bool:
+@dataclass
+class MoveResult:
+    did_move: bool
+    new_tile: Tile
+
+def try_move(tiles: Tiles, monster: Monster, dx: W, dy: H) -> MoveResult:
+    did_move = False
     new_tile = get_neighbor(tiles, monster, dx, dy)
 
     if new_tile.passable:
         if not new_tile.monster:
             new_tile.monster = monster;
-            
+
             old_tile = get_tile(tiles, monster.x, monster.y)
             if dx != 0 or dy != 0:
                 old_tile.monster = None
-            
+
             monster.x = new_tile.x
             monster.y = new_tile.y
+
+
         else:
              if monster.is_player != new_tile.monster.is_player:
                  monster.attacked_this_turn = True;
                  new_tile.monster.is_stunned = True;
                  hit(tiles, new_tile.monster, 1)
 
-        return True
-            
-    return False
-    
+        did_move = True
+
+    return MoveResult(did_move, new_tile)
+
 def hit(tiles: Tiles, monster: Monster, damage: HP):
     monster.hp -= damage;
     if monster.hp <= 0:

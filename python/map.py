@@ -26,7 +26,7 @@ def generate_level(state: StateFields):
         );
 
     try_to('generate map', cb);
-    
+
     generate_monsters(state);
 
 def generate_tiles(state: StateFields) -> int:
@@ -66,7 +66,7 @@ def generate_monsters(state: StateFields):
 def spawn_monster(state: StateFields):
     monster_type = shuffle(state.rng, [Bird, Snake, Tank, Eater, Jester])[0];
     monster = monster_type(random_passable_tile(state));
-    if try_move(state.tiles, monster, 0, 0): 
+    if try_move(state.tiles, monster, 0, 0):
         state.monsters.append(monster);
     else:
         print("Could not move " + str(monster))

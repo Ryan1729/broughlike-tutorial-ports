@@ -24,8 +24,8 @@ class Monster:
 
 
 class Player(Monster):
-    def __init__(self, tile: TileSprite):
-        super().__init__(tile.x, tile.y, PLAYER_INDEX, 3, True, False, False, False, 0)
+    def __init__(self, tile: TileSprite, hp: HP):
+        super().__init__(tile.x, tile.y, PLAYER_INDEX, hp, True, False, False, False, 0)
 
 class Bird(Monster):
     def __init__(self, tile: TileSprite):

@@ -73,20 +73,26 @@ while running:
             if isinstance(state, game.Title):
                 state = game.running_state(state)
             elif isinstance(state, game.Dead):
-                state = game.to_title_state(state)
-            else:
-                died = False
-                if event.key == pygame.K_w or event.key == pygame.K_UP:
-                    died = game.player_move(state.state, 0, -1)
-                if event.key == pygame.K_s or event.key == pygame.K_DOWN:
-                    died = game.player_move(state.state, 0, 1)
-                if event.key == pygame.K_a or event.key == pygame.K_LEFT:
-                    died = game.player_move(state.state, -1, 0)
-                if event.key == pygame.K_d or event.key == pygame.K_RIGHT:
-                    died = game.player_move(state.state, 1, 0)
+                state = game.to_title_state(state.state.rng)
+            elif isinstance(state, game.Running):
+                move_result = None
 
-                if died:
-                    state = game.dead_state(state)
+                if event.key == pygame.K_w or event.key == pygame.K_UP:
+                    move_result = game.player_move(state.state, 0, -1)
+                if event.key == pygame.K_s or event.key == pygame.K_DOWN:
+                    move_result = game.player_move(state.state, 0, 1)
+                if event.key == pygame.K_a or event.key == pygame.K_LEFT:
+                    move_result = game.player_move(state.state, -1, 0)
+                if event.key == pygame.K_d or event.key == pygame.K_RIGHT:
+                    move_result = game.player_move(state.state, 1, 0)
+
+                if move_result:
+                    if move_result.died:
+                        state = game.dead_state(state)
+                    elif move_result.move_result.did_move:
+                        new_state = game.step_on(state.state, state.state.player, move_result.move_result.new_tile)
+                        if new_state:
+                            state = new_state
     #
     # Render
     #
@@ -102,7 +108,7 @@ while running:
 
     if isinstance(state, game.Dead):
         render_running(state.state)
-        s = pygame.Surface((platform.sizes.play_area.w, platform.sizes.play_area.h)) 
+        s = pygame.Surface((platform.sizes.play_area.w, platform.sizes.play_area.h))
         s.set_alpha(192)
         s.fill((0,0,0))
         screen.blit(s, (platform.sizes.play_area.x,platform.sizes.play_area.y))

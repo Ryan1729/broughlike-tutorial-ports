@@ -7,9 +7,11 @@ import os
 import random
 
 from game_types import SpriteIndex, TileSprite, Level, W, H, dist
-from tile import Tiles, Tile, try_move, get_adjacent_passable_neighbors, get_adjacent_neighbors, in_bounds, replace, Floor
+from tile import Tiles, Tile, try_move, get_adjacent_passable_neighbors, get_adjacent_neighbors, in_bounds, replace, Floor, Wall, Exit, MoveResult
 from map import generate_level, random_passable_tile, spawn_monster
-from monster import Player, Monster, Bird, Snake, Tank, Eater, Jester
+from monster import Player, Monster, Bird, Snake, Tank, Eater, Jester, HP, MAX_HP
+
+NUM_LEVELS = 6
 
 Screen = pygame.Surface
 Sprite = pygame.Surface
@@ -99,7 +101,7 @@ class Title(State):
 @dataclass
 class Running(State):
     state: RunningState
-    
+
 @dataclass
 class Dead(State):
     state: RunningState
@@ -108,6 +110,9 @@ def title_state(seed: int) -> Title:
     return Title(random.Random(seed))
 
 def running_state(title: Title) -> Running:
+    return start_level(title.rng, 1, 3)
+
+def start_level(rng: random.Random, level: Level, player_hp: HP) -> Running:
     @dataclass
     class MiniState:
         rng: random.Random
@@ -115,7 +120,7 @@ def running_state(title: Title) -> Running:
         level: Level
         monsters: list[Monster]
 
-    state = MiniState(title.rng, [], 1, [])
+    state = MiniState(rng, [], level, [])
 
     generate_level(state);
 
@@ -123,8 +128,12 @@ def running_state(title: Title) -> Running:
 
     spawn_rate = 15
 
+    exit_tile: Tile = random_passable_tile(state);
+
+    replace(state.tiles, exit_tile, lambda x, y: Exit(x, y))
+
     return Running(RunningState(
-        Player(starting_tile),
+        Player(starting_tile, player_hp),
         state.rng,
         state.tiles,
         state.level,
@@ -135,15 +144,27 @@ def running_state(title: Title) -> Running:
 
 def dead_state(running: Running) -> Dead:
     return Dead(running.state)
-    
-def to_title_state(dead: Dead) -> Title:
-    return Title(dead.state.rng)
 
-def player_move(state: RunningState, dx: W, dy: H) -> bool:
+def to_title_state(rng: random.Random) -> Title:
+    return Title(rng)
+
+@dataclass
+class PlayerMoveResult:
+    died: bool
+    move_result: MoveResult
+
+def player_move(state: RunningState, dx: W, dy: H) -> PlayerMoveResult:
     died = False
-    if try_move(state.tiles, state.player, dx, dy):
+
+    move_result = try_move(state.tiles, state.player, dx, dy)
+
+    if move_result.did_move:
         died = tick(state);
-    return died
+
+    return PlayerMoveResult(
+        died,
+        move_result,
+    )
 
 def basic_do_stuff(state: RunningState, monster: Monster):
     neighbors = get_adjacent_passable_neighbors(state.rng, state.tiles, monster);
@@ -184,9 +205,28 @@ def monster_do_stuff(state: RunningState, monster: Monster):
         case _:
             print("unhandled do stuff case: ", monster)
 
+def step_on(state: RunningState, monster: Monster, tile: Tile) -> State | None:
+    match tile:
+        case Floor():
+            # TODO
+            pass
+        case Wall():
+            pass
+        case Exit():
+            if monster.is_player:
+                if state.level == NUM_LEVELS:
+                    return to_title_state(state.rng);
+                else:
+                    return start_level(state.rng, state.level + 1, min(MAX_HP, state.player.hp+1));
+        case _:
+            print("unhandled step on case: ", tile)
+
+    return None
+
+
 def tick(state: RunningState) -> bool:
     died = False
-    
+
     # In reverse so we can safely delete monsters
     for i in range(len(state.monsters) - 1, -1, -1):
         if not state.monsters[i].is_dead:
@@ -227,6 +267,6 @@ def tick(state: RunningState) -> bool:
         state.spawn_rate -= 1;
 
     return died
-        
-        
-    
+
+
+
