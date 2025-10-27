@@ -3,10 +3,11 @@ import pygame
 
 from dataclasses import dataclass
 from functools import cmp_to_key
+from typing import Callable
 import os
 import random
 
-from game_types import SpriteIndex, TileSprite, Level, W, H, dist
+from game_types import SpriteIndex, TileSprite, Level, W, H, dist, UI_WIDTH
 from tile import Tiles, Tile, try_move, get_adjacent_passable_neighbors, get_adjacent_neighbors, in_bounds, replace, Floor, Wall, Exit, MoveResult
 from map import generate_level, random_passable_tile, spawn_monster
 from monster import Player, Monster, Bird, Snake, Tank, Eater, Jester, HP, MAX_HP
@@ -42,9 +43,12 @@ class Sizes:
     play_area: pygame.Rect
     tile: int
 
+FontSize = int
+
 @dataclass
 class Platform:
     screen: Screen
+    get_font: Callable[[FontSize], pygame.font.Font]
     sizes: Sizes
 
 PixelX = int
@@ -79,6 +83,20 @@ def draw_hp(platform: Platform, monster: Monster):
             monster.x*platform.sizes.tile + ((i%3)*platform.sizes.tile*5)//16,
             monster.y*platform.sizes.tile - ((i//3)*platform.sizes.tile*5)//16
         );
+
+
+def draw_text(platform: Platform, text: str, size: int, centered: bool, text_y: float, color: pygame.Color):
+    text_surface: pygame.Surface = platform.get_font(size * 2).render(text, True, color)
+
+    if centered:
+        text_x = platform.sizes.play_area.x + (platform.sizes.play_area.width - text_surface.get_width())/2;
+    else:
+        text_x = platform.sizes.play_area.x + platform.sizes.play_area.width - (UI_WIDTH * platform.sizes.tile) + 25;
+
+    platform.screen.blit(
+        text_surface,
+        (text_x, text_y),
+    )
 
 @dataclass
 class RunningState:

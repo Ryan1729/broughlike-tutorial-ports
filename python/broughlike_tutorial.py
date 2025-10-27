@@ -17,7 +17,16 @@ import time
 
 clock = pygame.time.Clock()
 
-font = pygame.font.SysFont(pygame.font.get_fonts()[0], 30)
+
+font_name = pygame.font.get_fonts()[0]
+
+font_cache: dict[int, pygame.font.Font] = {}
+
+def get_font(size: int) -> pygame.font.Font:
+    if font := font_cache.get(size):
+        return font
+
+    return pygame.font.SysFont(font_name, size)
 
 # Set the window title
 pygame.display.set_caption("AWESOME BROUGHLIKE")
@@ -41,7 +50,7 @@ def get_sizes():
         int(tile),
     )
 
-platform = game.Platform(screen, get_sizes())
+platform = game.Platform(screen, get_font, get_sizes())
 
 initial_seed = int(time.time())
 
@@ -58,6 +67,8 @@ def render_running(state: game.RunningState):
         game.draw_monster(platform, state.monsters[i]);
 
     game.draw_monster(platform, state.player)
+
+    game.draw_text(platform, f"Level: {state.level}", 30, False, 40, pygame.color.Color("violet"));
 
 while running:
     # poll for events
@@ -102,6 +113,11 @@ while running:
     platform.sizes = get_sizes()
 
     pygame.draw.rect(screen, "white", platform.sizes.play_area.inflate(2, 2), 1)
+
+    if isinstance(state, game.Title):
+        white = pygame.color.Color("white")
+        game.draw_text(platform, "BROUGHPYKE", 40, True, platform.sizes.play_area.height/2 - 110, white);
+        game.draw_text(platform, "TUTORIAL", 70, True, platform.sizes.play_area.height/2 - 50, white);
 
     if isinstance(state, game.Running):
         render_running(state.state)
