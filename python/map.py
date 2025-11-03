@@ -28,6 +28,9 @@ def generate_level(state: StateFields):
     try_to('generate map', cb);
 
     generate_monsters(state);
+    
+    for _ in range(3):
+        random_passable_tile(state).has_treasure = True;
 
 def generate_tiles(state: StateFields) -> int:
     passable_tiles = 0

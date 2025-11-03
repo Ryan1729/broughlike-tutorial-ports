@@ -69,6 +69,7 @@ def render_running(state: game.RunningState):
     game.draw_monster(platform, state.player)
 
     game.draw_text(platform, f"Level: {state.level}", 30, False, 40, pygame.color.Color("violet"));
+    game.draw_text(platform, f"Score: {state.score}", 30, False, 90, pygame.color.Color("violet"));
 
 while running:
     # poll for events

@@ -13,19 +13,20 @@ class Tile:
     y: Y
     sprite_index: SpriteIndex
     passable: bool
+    has_treasure: bool
     monster: Monster|None
 
 class Floor(Tile):
     def __init__(self, x: X, y: Y):
-        super().__init__(x, y, 2, True, None)
+        super().__init__(x, y, 2, True, False, None)
 
 class Wall(Tile):
     def __init__(self, x: X, y: Y):
-        super().__init__(x, y, 3, False, None)
+        super().__init__(x, y, 3, False, False, None)
 
 class Exit(Tile):
     def __init__(self, x: X, y: Y):
-        super().__init__(x, y, 11, True, None)
+        super().__init__(x, y, 11, True, False, None)
 
 Tiles = list[list[Tile]]
 

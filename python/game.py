@@ -65,14 +65,20 @@ def draw_sprite(platform: Platform, sprite_index: SpriteIndex, x: PixelX, y: Pix
         ),
     )
 
-def draw_tile(platform: Platform, tile: TileSprite):
+def draw_tile_sprite(platform: Platform, tile: TileSprite):
     draw_sprite(platform, tile.sprite_index, tile.x * platform.sizes.tile, tile.y * platform.sizes.tile)
+
+def draw_tile(platform: Platform, tile: Tile):
+    draw_tile_sprite(platform, tile)
+
+    if tile.has_treasure:
+        draw_sprite(platform, 12, tile.x * platform.sizes.tile, tile.y * platform.sizes.tile)
 
 def draw_monster(platform: Platform, monster: Monster):
     if monster.teleport_counter > 0:
         draw_sprite(platform, 10, monster.x * platform.sizes.tile, monster.y * platform.sizes.tile);
     else:
-        draw_tile(platform, monster);
+        draw_tile_sprite(platform, monster);
         draw_hp(platform, monster);
 
 def draw_hp(platform: Platform, monster: Monster):
@@ -107,6 +113,7 @@ class RunningState:
     monsters: list[Monster]
     spawn_counter: int
     spawn_rate: int
+    score: int
 
 @dataclass
 class State:
@@ -158,6 +165,7 @@ def start_level(rng: random.Random, level: Level, player_hp: HP) -> Running:
         state.monsters,
         spawn_rate,
         spawn_rate,
+        0,
     ))
 
 def dead_state(running: Running) -> Dead:
@@ -226,8 +234,10 @@ def monster_do_stuff(state: RunningState, monster: Monster):
 def step_on(state: RunningState, monster: Monster, tile: Tile) -> State | None:
     match tile:
         case Floor():
-            # TODO
-            pass
+            if monster.is_player and tile.has_treasure:
+                state.score += 1;
+                tile.has_treasure = False;
+                spawn_monster(state);
         case Wall():
             pass
         case Exit():
