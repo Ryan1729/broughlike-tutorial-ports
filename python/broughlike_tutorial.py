@@ -4,6 +4,7 @@
 #
 
 import pygame
+import json
 
 pygame.init()
 pygame.font.init()
@@ -34,7 +35,75 @@ pygame.display.set_caption("AWESOME BROUGHLIKE")
 running = True
 dt = 0
 
-def get_sizes():
+SCORES_FILENAME = "scores.json"
+
+def get_scores() -> list[game.Score]:
+    validated_scores: list[game.Score] = []
+    try:
+        with open(SCORES_FILENAME, "r", encoding="utf-8") as f:
+            # If the type is different than this, given it's JSON, the
+            # other possibilties  will cause excpetions, which we'll
+            # catch anyway.
+            unvalidated_scores: list[dict[str, int | bool]] = json.load(f)
+
+            for unvalidated_score in unvalidated_scores:
+                score = unvalidated_score.get("score", None)
+                run = unvalidated_score.get("run", None)
+                total_score = unvalidated_score.get("total_score", None)
+                active = unvalidated_score.get("active", None)
+
+                if (
+                    type(score) == int
+                    and type(run) == int
+                    and type(total_score) == int
+                    and type(active) == bool
+                ):
+                    validated_scores.append({
+                        "score": score,
+                        "run": run,
+                        "total_score": total_score,
+                        "active": active,
+                    })
+                else:
+                    print("Invalid score:", unvalidated_score)
+    except FileNotFoundError as e:
+        # Expected to happen the first time the game starts
+        pass
+    except Exception as e:
+        print(type(e), e)
+    finally:
+        return validated_scores
+
+def save_scores(scores: list[game.Score]):
+    try:
+        with open(SCORES_FILENAME, "w", encoding="utf-8") as f:
+            f.write(json.dumps(scores))
+    except FileNotFoundError as e:
+        # Expected to happen the first time the game starts
+        pass
+    except Exception as e:
+        print(type(e), e)
+
+def add_score(score: int, won: bool):
+    scores = get_scores();
+
+    score_object: game.Score = {"score": score, "run": 1, "total_score": score, "active": won};
+
+    if scores:
+        last_score = scores.pop();
+        if last_score.get("active", False):
+            # If has active true, then it probably has the right structure
+            score_object["run"] = last_score["run"] + 1;
+            score_object["total_score"] += last_score["total_score"]
+        else:
+            scores.append(last_score);
+
+    scores.append(score_object);
+
+    save_scores(scores)
+
+
+def get_sizes() -> game.Sizes:
     w = screen.get_width()
     h = screen.get_height()
 
@@ -50,7 +119,13 @@ def get_sizes():
         int(tile),
     )
 
-platform = game.Platform(screen, get_font, get_sizes())
+platform = game.Platform(
+    screen,
+    get_font,
+    get_scores,
+    add_score,
+    get_sizes(),
+)
 
 initial_seed = int(time.time())
 
@@ -90,19 +165,24 @@ while running:
                 move_result = None
 
                 if event.key == pygame.K_w or event.key == pygame.K_UP:
-                    move_result = game.player_move(state.state, 0, -1)
+                    move_result = game.player_move(platform, state.state, 0, -1)
                 if event.key == pygame.K_s or event.key == pygame.K_DOWN:
-                    move_result = game.player_move(state.state, 0, 1)
+                    move_result = game.player_move(platform, state.state, 0, 1)
                 if event.key == pygame.K_a or event.key == pygame.K_LEFT:
-                    move_result = game.player_move(state.state, -1, 0)
+                    move_result = game.player_move(platform, state.state, -1, 0)
                 if event.key == pygame.K_d or event.key == pygame.K_RIGHT:
-                    move_result = game.player_move(state.state, 1, 0)
+                    move_result = game.player_move(platform, state.state, 1, 0)
 
                 if move_result:
                     if move_result.died:
                         state = game.dead_state(state)
                     elif move_result.move_result.did_move:
-                        new_state = game.step_on(state.state, state.state.player, move_result.move_result.new_tile)
+                        new_state = game.step_on(
+                            platform,
+                            state.state,
+                            state.state.player,
+                            move_result.move_result.new_tile
+                        )
                         if new_state:
                             state = new_state
     #
@@ -117,8 +197,10 @@ while running:
 
     if isinstance(state, game.Title):
         white = pygame.color.Color("white")
-        game.draw_text(platform, "BROUGHPYKE", 40, True, platform.sizes.play_area.height/2 - 110, white);
-        game.draw_text(platform, "TUTORIAL", 70, True, platform.sizes.play_area.height/2 - 50, white);
+        game.draw_text(platform, "BROUGHPYKE", 40, True, platform.sizes.play_area.height/2 - 210, white);
+        game.draw_text(platform, "TUTORIAL", 70, True, platform.sizes.play_area.height/2 - 150, white);
+
+        game.draw_scores(platform);
 
     if isinstance(state, game.Running):
         render_running(state.state)

@@ -3,7 +3,7 @@ import pygame
 
 from dataclasses import dataclass
 from functools import cmp_to_key
-from typing import Callable
+from typing import Callable, TypedDict
 import os
 import random
 
@@ -38,6 +38,12 @@ for i in range(17):
         )
     )
 
+class Score(TypedDict):
+    score: int
+    run: int
+    total_score: int
+    active: bool
+
 @dataclass
 class Sizes:
     play_area: pygame.Rect
@@ -49,6 +55,8 @@ FontSize = int
 class Platform:
     screen: Screen
     get_font: Callable[[FontSize], pygame.font.Font]
+    get_scores: Callable[[], list[Score]]
+    add_score: Callable[[int, bool], None]
     sizes: Sizes
 
 PixelX = int
@@ -104,6 +112,48 @@ def draw_text(platform: Platform, text: str, size: int, centered: bool, text_y: 
         (text_x, text_y),
     )
 
+white = pygame.color.Color("white")
+aqua = pygame.color.Color("aqua")
+violet = pygame.color.Color("violet")
+
+def draw_scores(platform: Platform):
+    scores = platform.get_scores();
+
+    if scores:
+        draw_text(
+            platform,
+            right_pad(["RUN","SCORE","TOTAL"]),
+            18,
+            True,
+            platform.sizes.play_area.height/2,
+            white
+        );
+
+        newest_score = scores.pop();
+        scores.sort(key=cmp_to_key(lambda a, b: b["total_score"] - a["total_score"]));
+
+        scores.insert(0, newest_score);
+
+        for i in range(min(10,len(scores))):
+            score_text = right_pad([str(scores[i]["run"]), str(scores[i]["score"]), str(scores[i]["total_score"])]);
+            draw_text(
+                platform,
+                score_text,
+                18,
+                True,
+                platform.sizes.play_area.height/2 + 24+i*24,
+                aqua if i == 0 else violet
+            );
+
+def right_pad(text_array: list[str]):
+    output = "";
+    for text in text_array:
+        for _ in range(len(text), 10):
+            text+=" ";
+        output += text;
+
+    return output;
+
 @dataclass
 class RunningState:
     player: Player
@@ -135,17 +185,18 @@ def title_state(seed: int) -> Title:
     return Title(random.Random(seed))
 
 def running_state(title: Title) -> Running:
-    return start_level(title.rng, 1, 3)
+    return start_level(title.rng, 1, 3, 0)
 
-def start_level(rng: random.Random, level: Level, player_hp: HP) -> Running:
+def start_level(rng: random.Random, level: Level, player_hp: HP, score: int) -> Running:
     @dataclass
     class MiniState:
         rng: random.Random
         tiles: Tiles
         level: Level
         monsters: list[Monster]
+        score: int
 
-    state = MiniState(rng, [], level, [])
+    state = MiniState(rng, [], level, [], score)
 
     generate_level(state);
 
@@ -165,7 +216,7 @@ def start_level(rng: random.Random, level: Level, player_hp: HP) -> Running:
         state.monsters,
         spawn_rate,
         spawn_rate,
-        0,
+        state.score,
     ))
 
 def dead_state(running: Running) -> Dead:
@@ -179,13 +230,13 @@ class PlayerMoveResult:
     died: bool
     move_result: MoveResult
 
-def player_move(state: RunningState, dx: W, dy: H) -> PlayerMoveResult:
+def player_move(platform: Platform, state: RunningState, dx: W, dy: H) -> PlayerMoveResult:
     died = False
 
     move_result = try_move(state.tiles, state.player, dx, dy)
 
     if move_result.did_move:
-        died = tick(state);
+        died = tick(platform, state);
 
     return PlayerMoveResult(
         died,
@@ -231,7 +282,7 @@ def monster_do_stuff(state: RunningState, monster: Monster):
         case _:
             print("unhandled do stuff case: ", monster)
 
-def step_on(state: RunningState, monster: Monster, tile: Tile) -> State | None:
+def step_on(platform: Platform, state: RunningState, monster: Monster, tile: Tile) -> State | None:
     match tile:
         case Floor():
             if monster.is_player and tile.has_treasure:
@@ -243,16 +294,17 @@ def step_on(state: RunningState, monster: Monster, tile: Tile) -> State | None:
         case Exit():
             if monster.is_player:
                 if state.level == NUM_LEVELS:
+                    platform.add_score(state.score, True);
                     return to_title_state(state.rng);
                 else:
-                    return start_level(state.rng, state.level + 1, min(MAX_HP, state.player.hp+1));
+                    return start_level(state.rng, state.level + 1, min(MAX_HP, state.player.hp+1), state.score);
         case _:
             print("unhandled step on case: ", tile)
 
     return None
 
 
-def tick(state: RunningState) -> bool:
+def tick(platform: Platform, state: RunningState) -> bool:
     died = False
 
     # In reverse so we can safely delete monsters
@@ -285,6 +337,7 @@ def tick(state: RunningState) -> bool:
             state.monsters.pop(i);
 
     if state.player.is_dead:
+        platform.add_score(state.score, False);
         died = True
 
     state.spawn_counter -= 1;
