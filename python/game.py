@@ -82,20 +82,41 @@ def draw_tile(platform: Platform, tile: Tile):
     if tile.has_treasure:
         draw_sprite(platform, 12, tile.x * platform.sizes.tile, tile.y * platform.sizes.tile)
 
+def sign(x: float) -> float:
+    if x > 0.0:
+        return 1.0
+    elif x < 0.0:
+        return -1.0
+    else:
+        return 0.0
+
 def draw_monster(platform: Platform, monster: Monster):
     if monster.teleport_counter > 0:
-        draw_sprite(platform, 10, monster.x * platform.sizes.tile, monster.y * platform.sizes.tile);
+        draw_sprite(
+            platform,
+            10,
+            int(monster.display_x() * platform.sizes.tile),
+            int(monster.display_y() * platform.sizes.tile)
+        );
     else:
-        draw_tile_sprite(platform, monster);
+        draw_sprite(
+            platform,
+            monster.sprite_index,
+            int(monster.display_x() * platform.sizes.tile),
+            int(monster.display_y() * platform.sizes.tile)
+        );
         draw_hp(platform, monster);
+
+    monster.offset_x -= sign(monster.offset_x)*(1/8);
+    monster.offset_y -= sign(monster.offset_y)*(1/8);
 
 def draw_hp(platform: Platform, monster: Monster):
     for i in range(int(monster.hp + 0.5)):
         draw_sprite(
             platform,
             9,
-            monster.x*platform.sizes.tile + ((i%3)*platform.sizes.tile*5)//16,
-            monster.y*platform.sizes.tile - ((i//3)*platform.sizes.tile*5)//16
+            int(monster.display_x() * platform.sizes.tile) + ((i%3)*platform.sizes.tile*5)//16,
+            int(monster.display_y() * platform.sizes.tile) - ((i//3)*platform.sizes.tile*5)//16
         );
 
 

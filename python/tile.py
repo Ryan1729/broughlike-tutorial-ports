@@ -89,6 +89,8 @@ def try_move(tiles: Tiles, monster: Monster, dx: W, dy: H) -> MoveResult:
             old_tile = get_tile(tiles, monster.x, monster.y)
             if dx != 0 or dy != 0:
                 old_tile.monster = None
+                monster.offset_x = old_tile.x - new_tile.x;
+                monster.offset_y = old_tile.y - new_tile.y;
 
             monster.x = new_tile.x
             monster.y = new_tile.y
