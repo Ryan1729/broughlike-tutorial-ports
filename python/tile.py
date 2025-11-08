@@ -97,10 +97,12 @@ def try_move(tiles: Tiles, monster: Monster, dx: W, dy: H) -> MoveResult:
 
 
         else:
-             if monster.is_player != new_tile.monster.is_player:
-                 monster.attacked_this_turn = True;
-                 new_tile.monster.is_stunned = True;
-                 hit(tiles, new_tile.monster, 1)
+            if monster.is_player != new_tile.monster.is_player:
+                monster.attacked_this_turn = True;
+                new_tile.monster.is_stunned = True;
+                hit(tiles, new_tile.monster, 1)
+                monster.offset_x = (new_tile.x - monster.x)/2;
+                monster.offset_y = (new_tile.y - monster.y)/2;
 
         did_move = True
 
