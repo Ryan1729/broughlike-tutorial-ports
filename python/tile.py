@@ -77,10 +77,12 @@ def get_tile(tiles: Tiles, x: X, y: Y) -> Tile:
 class MoveResult:
     did_move: bool
     new_tile: Tile
+    shake_amount: int
 
 def try_move(tiles: Tiles, monster: Monster, dx: W, dy: H) -> MoveResult:
     did_move = False
     new_tile = get_neighbor(tiles, monster, dx, dy)
+    shake_amount = 0
 
     if new_tile.passable:
         if not new_tile.monster:
@@ -101,12 +103,13 @@ def try_move(tiles: Tiles, monster: Monster, dx: W, dy: H) -> MoveResult:
                 monster.attacked_this_turn = True;
                 new_tile.monster.is_stunned = True;
                 hit(tiles, new_tile.monster, 1)
+                shake_amount = 5
                 monster.offset_x = (new_tile.x - monster.x)/2;
                 monster.offset_y = (new_tile.y - monster.y)/2;
 
         did_move = True
 
-    return MoveResult(did_move, new_tile)
+    return MoveResult(did_move, new_tile, shake_amount)
 
 def hit(tiles: Tiles, monster: Monster, damage: HP):
     monster.hp -= damage;

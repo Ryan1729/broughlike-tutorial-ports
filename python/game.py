@@ -58,6 +58,8 @@ class Platform:
     get_scores: Callable[[], list[Score]]
     add_score: Callable[[int, bool], None]
     sizes: Sizes
+    shake_w: W
+    shake_h: H
 
 PixelX = int
 PixelY = int
@@ -66,8 +68,8 @@ def draw_sprite(platform: Platform, sprite_index: SpriteIndex, x: PixelX, y: Pix
     platform.screen.blit(
         pygame.transform.scale(unscaled_sprites[sprite_index], (platform.sizes.tile + 0.5, platform.sizes.tile + 0.5)),
         pygame.Rect(
-            platform.sizes.play_area.x + x,
-            platform.sizes.play_area.y + y,
+            platform.sizes.play_area.x + x + platform.shake_w,
+            platform.sizes.play_area.y + y + platform.shake_h,
             platform.sizes.tile,
             platform.sizes.tile
         ),
@@ -185,6 +187,7 @@ class RunningState:
     spawn_counter: int
     spawn_rate: int
     score: int
+    shake_amount: int
 
 @dataclass
 class State:
@@ -216,8 +219,9 @@ def start_level(rng: random.Random, level: Level, player_hp: HP, score: int) -> 
         level: Level
         monsters: list[Monster]
         score: int
+        shake_amount: int
 
-    state = MiniState(rng, [], level, [], score)
+    state = MiniState(rng, [], level, [], score, 0)
 
     generate_level(state);
 
@@ -238,6 +242,7 @@ def start_level(rng: random.Random, level: Level, player_hp: HP, score: int) -> 
         spawn_rate,
         spawn_rate,
         state.score,
+        0,
     ))
 
 def dead_state(running: Running) -> Dead:
@@ -255,6 +260,7 @@ def player_move(platform: Platform, state: RunningState, dx: W, dy: H) -> Player
     died = False
 
     move_result = try_move(state.tiles, state.player, dx, dy)
+    state.shake_amount = max(state.shake_amount, move_result.shake_amount)
 
     if move_result.did_move:
         died = tick(platform, state);
@@ -270,7 +276,8 @@ def basic_do_stuff(state: RunningState, monster: Monster):
     if len(neighbors):
        neighbors.sort(key=cmp_to_key(lambda a, b: dist(a, state.player) - dist(b, state.player)));
        new_tile = neighbors[0];
-       try_move(state.tiles, monster, new_tile.x - monster.x, new_tile.y - monster.y)
+       move_result = try_move(state.tiles, monster, new_tile.x - monster.x, new_tile.y - monster.y)
+       state.shake_amount = max(state.shake_amount, move_result.shake_amount)
 
 def monster_do_stuff(state: RunningState, monster: Monster):
     monster.teleport_counter -= 1;
@@ -299,7 +306,8 @@ def monster_do_stuff(state: RunningState, monster: Monster):
         case Jester():
             neighbors = get_adjacent_passable_neighbors(state.rng, state.tiles, monster);
             if len(neighbors):
-                try_move(state.tiles, monster, neighbors[0].x - monster.x, neighbors[0].y - monster.y)
+                move_result = try_move(state.tiles, monster, neighbors[0].x - monster.x, neighbors[0].y - monster.y)
+                state.shake_amount = max(state.shake_amount, move_result.shake_amount)
         case _:
             print("unhandled do stuff case: ", monster)
 

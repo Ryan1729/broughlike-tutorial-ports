@@ -14,7 +14,9 @@ from game_types import NUM_TILES, UI_WIDTH
 import game
 from tile import get_tile
 
+import math
 import time
+import random
 
 clock = pygame.time.Clock()
 
@@ -125,6 +127,8 @@ platform = game.Platform(
     get_scores,
     add_score,
     get_sizes(),
+    0,
+    0,
 )
 
 initial_seed = int(time.time())
@@ -134,6 +138,8 @@ print(f"seed = {initial_seed}")
 state: game.State = game.title_state(initial_seed)
 
 def render_running(state: game.RunningState):
+    screenshake(platform, state)
+    
     for i in range(NUM_TILES):
         for j in range(NUM_TILES):
             game.draw_tile(platform, get_tile(state.tiles, i, j))
@@ -145,6 +151,18 @@ def render_running(state: game.RunningState):
 
     game.draw_text(platform, f"Level: {state.level}", 30, False, 40, pygame.color.Color("violet"));
     game.draw_text(platform, f"Score: {state.score}", 30, False, 90, pygame.color.Color("violet"));
+
+def screenshake(platform: game.Platform, state: game.RunningState):
+    if state.shake_amount:
+        state.shake_amount -= 1;
+        if state.shake_amount <= 0:
+            return
+
+    # State bugs are more reproducible if we don't use the state's rng for this.
+    shake_angle: float = random.random()*math.tau;
+
+    platform.shake_w = round(math.cos(shake_angle)*state.shake_amount);
+    platform.shake_h = round(math.sin(shake_angle)*state.shake_amount);
 
 while running:
     # poll for events

@@ -11,6 +11,7 @@ class StateFields(Protocol):
     tiles: Tiles
     level: Level
     monsters: list[Monster]
+    shake_amount: int
 
 def generate_level(state: StateFields):
     def cb() -> bool:
@@ -69,7 +70,11 @@ def generate_monsters(state: StateFields):
 def spawn_monster(state: StateFields):
     monster_type = shuffle(state.rng, [Bird, Snake, Tank, Eater, Jester])[0];
     monster = monster_type(random_passable_tile(state));
-    if try_move(state.tiles, monster, 0, 0):
+    
+    move_result = try_move(state.tiles, monster, 0, 0)
+    state.shake_amount = max(state.shake_amount, move_result.shake_amount)
+    
+    if move_result.did_move:
         state.monsters.append(monster);
     else:
         print("Could not move " + str(monster))
