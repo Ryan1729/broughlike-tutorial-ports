@@ -139,7 +139,7 @@ state: game.State = game.title_state(initial_seed)
 
 def render_running(state: game.RunningState):
     screenshake(platform, state)
-    
+
     for i in range(NUM_TILES):
         for j in range(NUM_TILES):
             game.draw_tile(platform, get_tile(state.tiles, i, j))
@@ -155,8 +155,11 @@ def render_running(state: game.RunningState):
 def screenshake(platform: game.Platform, state: game.RunningState):
     if state.shake_amount:
         state.shake_amount -= 1;
-        if state.shake_amount <= 0:
-            return
+
+    if state.shake_amount <= 0:
+        platform.shake_w = 0
+        platform.shake_h = 0
+        return
 
     # State bugs are more reproducible if we don't use the state's rng for this.
     shake_angle: float = random.random()*math.tau;
