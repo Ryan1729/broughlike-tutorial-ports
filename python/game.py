@@ -7,7 +7,7 @@ from typing import Callable, TypedDict
 import os
 import random
 
-from game_types import SpriteIndex, TileSprite, Level, W, H, dist, UI_WIDTH
+from game_types import SpriteIndex, TileSprite, Level, W, H, dist, UI_WIDTH, SFX
 from tile import Tiles, Tile, try_move, get_adjacent_passable_neighbors, get_adjacent_neighbors, in_bounds, replace, Floor, Wall, Exit, MoveResult
 from map import generate_level, random_passable_tile, spawn_monster
 from monster import Player, Monster, Bird, Snake, Tank, Eater, Jester, HP, MAX_HP
@@ -57,6 +57,7 @@ class Platform:
     get_font: Callable[[FontSize], pygame.font.Font]
     get_scores: Callable[[], list[Score]]
     add_score: Callable[[int, bool], None]
+    play_sound: Callable[[SFX | None], None]
     sizes: Sizes
     shake_w: W
     shake_h: H
@@ -261,6 +262,7 @@ def player_move(platform: Platform, state: RunningState, dx: W, dy: H) -> Player
 
     move_result = try_move(state.tiles, state.player, dx, dy)
     state.shake_amount = max(state.shake_amount, move_result.shake_amount)
+    platform.play_sound(move_result.sfx)
 
     if move_result.did_move:
         died = tick(platform, state);
@@ -270,7 +272,7 @@ def player_move(platform: Platform, state: RunningState, dx: W, dy: H) -> Player
         move_result,
     )
 
-def basic_do_stuff(state: RunningState, monster: Monster):
+def basic_do_stuff(platform: Platform, state: RunningState, monster: Monster):
     neighbors = get_adjacent_passable_neighbors(state.rng, state.tiles, monster);
     neighbors = list(filter(lambda t: (not t.monster) or (t.monster.is_player), neighbors));
     if len(neighbors):
@@ -278,8 +280,9 @@ def basic_do_stuff(state: RunningState, monster: Monster):
        new_tile = neighbors[0];
        move_result = try_move(state.tiles, monster, new_tile.x - monster.x, new_tile.y - monster.y)
        state.shake_amount = max(state.shake_amount, move_result.shake_amount)
+       platform.play_sound(move_result.sfx)
 
-def monster_do_stuff(state: RunningState, monster: Monster):
+def monster_do_stuff(platform: Platform, state: RunningState, monster: Monster):
     monster.teleport_counter -= 1;
     if monster.is_stunned or monster.teleport_counter > 0:
         monster.is_stunned = False;
@@ -289,25 +292,26 @@ def monster_do_stuff(state: RunningState, monster: Monster):
     # Matching here seems better than forcing monster.py to know about State
     match monster:
         case Bird():
-            basic_do_stuff(state, monster)
+            basic_do_stuff(platform, state, monster)
         case Snake():
-            basic_do_stuff(state, monster)
+            basic_do_stuff(platform, state, monster)
             if not monster.attacked_this_turn:
-                basic_do_stuff(state, monster)
+                basic_do_stuff(platform, state, monster)
         case Tank():
-            basic_do_stuff(state, monster)
+            basic_do_stuff(platform, state, monster)
         case Eater():
             neighbors = list(filter(lambda t: not t.passable and in_bounds(t.x,t.y), get_adjacent_neighbors(state.rng, state.tiles, monster)));
             if len(neighbors):
                 replace(state.tiles, neighbors[0], lambda x, y: Floor(x, y));
                 monster.heal(0.5);
             else:
-                basic_do_stuff(state, monster)
+                basic_do_stuff(platform, state, monster)
         case Jester():
             neighbors = get_adjacent_passable_neighbors(state.rng, state.tiles, monster);
             if len(neighbors):
                 move_result = try_move(state.tiles, monster, neighbors[0].x - monster.x, neighbors[0].y - monster.y)
                 state.shake_amount = max(state.shake_amount, move_result.shake_amount)
+                platform.play_sound(move_result.sfx)
         case _:
             print("unhandled do stuff case: ", monster)
 
@@ -316,12 +320,14 @@ def step_on(platform: Platform, state: RunningState, monster: Monster, tile: Til
         case Floor():
             if monster.is_player and tile.has_treasure:
                 state.score += 1;
+                platform.play_sound(SFX.Treasure)
                 tile.has_treasure = False;
                 spawn_monster(state);
         case Wall():
             pass
         case Exit():
             if monster.is_player:
+                platform.play_sound(SFX.NewLevel)
                 if state.level == NUM_LEVELS:
                     platform.add_score(state.score, True);
                     return to_title_state(state.rng);
@@ -346,7 +352,7 @@ def tick(platform: Platform, state: RunningState) -> bool:
                     pass
                 case Tank():
                     started_stunned = state.monsters[i].is_stunned;
-                    monster_do_stuff(state, state.monsters[i]);
+                    monster_do_stuff(platform, state, state.monsters[i]);
 
                     if not started_stunned:
                         state.monsters[i].is_stunned = True;
@@ -361,7 +367,7 @@ def tick(platform: Platform, state: RunningState) -> bool:
 
 
             # This seems nicer than maving to have monster.py know about State
-            monster_do_stuff(state, state.monsters[i]);
+            monster_do_stuff(platform, state, state.monsters[i]);
         else:
             state.monsters.pop(i);
 

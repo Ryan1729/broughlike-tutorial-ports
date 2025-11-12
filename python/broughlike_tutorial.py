@@ -10,10 +10,11 @@ pygame.init()
 pygame.font.init()
 screen: pygame.Surface = pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
 
-from game_types import NUM_TILES, UI_WIDTH
+from game_types import NUM_TILES, UI_WIDTH, SFX
 import game
 from tile import get_tile
 
+import os
 import math
 import time
 import random
@@ -121,11 +122,28 @@ def get_sizes() -> game.Sizes:
         int(tile),
     )
 
+sounds_path = os.path.join(os.path.dirname(__file__), "assets", "sounds")
+
+sounds: dict[SFX | None, pygame.mixer.Sound] = {
+    SFX.Hit1: pygame.mixer.Sound(os.path.join(sounds_path, "hit1.wav")),
+    SFX.Hit2: pygame.mixer.Sound(os.path.join(sounds_path, "hit2.wav")),
+    SFX.Treasure: pygame.mixer.Sound(os.path.join(sounds_path, "treasure.wav")),
+    SFX.NewLevel: pygame.mixer.Sound(os.path.join(sounds_path, "newLevel.wav")),
+    SFX.Spell: pygame.mixer.Sound(os.path.join(sounds_path, "spell.wav")),
+};
+
+def play_sound(sfx: SFX | None):
+    sound: pygame.mixer.Sound | None = sounds.get(sfx)
+    if not sound: return
+
+    sound.play()
+
 platform = game.Platform(
     screen,
     get_font,
     get_scores,
     add_score,
+    play_sound,
     get_sizes(),
     0,
     0,

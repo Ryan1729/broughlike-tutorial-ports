@@ -1,4 +1,5 @@
 from typing import Protocol
+from enum import Enum
 
 X = int
 Y = int
@@ -31,3 +32,10 @@ NUM_TILES = 9
 UI_WIDTH = 4
 
 Level = int
+
+class SFX(Enum):
+    Hit1 = 1
+    Hit2 = 2
+    Treasure = 3
+    NewLevel = 4
+    Spell = 5

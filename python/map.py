@@ -73,6 +73,7 @@ def spawn_monster(state: StateFields):
     
     move_result = try_move(state.tiles, monster, 0, 0)
     state.shake_amount = max(state.shake_amount, move_result.shake_amount)
+    # Skip propagation of sound because we know there won't be one
     
     if move_result.did_move:
         state.monsters.append(monster);
