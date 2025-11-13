@@ -155,6 +155,9 @@ print(f"seed = {initial_seed}")
 
 state: game.State = game.title_state(initial_seed)
 
+violet = pygame.color.Color("violet")
+aqua = pygame.color.Color("aqua")
+
 def render_running(state: game.RunningState):
     screenshake(platform, state)
 
@@ -167,8 +170,15 @@ def render_running(state: game.RunningState):
 
     game.draw_monster(platform, state.player)
 
-    game.draw_text(platform, f"Level: {state.level}", 30, False, 40, pygame.color.Color("violet"));
-    game.draw_text(platform, f"Score: {state.score}", 30, False, 90, pygame.color.Color("violet"));
+    game.draw_text(platform, f"Level: {state.level}", 30, False, 40, violet);
+    game.draw_text(platform, f"Score: {state.score}", 30, False, 90, violet);
+
+    for i in range(len(state.player.spells)):
+        spell_name = state.player.spells[i]
+
+        spell_text: str = f"{i+1}) {spell_name.name if spell_name else ''}";
+        game.draw_text(platform, spell_text, 20, False, 150+i*40, aqua);
+
 
 def screenshake(platform: game.Platform, state: game.RunningState):
     if state.shake_amount:
@@ -211,6 +221,9 @@ while running:
                     move_result = game.player_move(platform, state.state, -1, 0)
                 if event.key == pygame.K_d or event.key == pygame.K_RIGHT:
                     move_result = game.player_move(platform, state.state, 1, 0)
+
+                if event.key >= pygame.K_1 and event.key <= pygame.K_9:
+                    game.cast_spell(platform, state.state, event.key - pygame.K_1)
 
                 if move_result:
                     if move_result.died:

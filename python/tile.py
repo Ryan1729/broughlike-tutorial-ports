@@ -73,6 +73,20 @@ def get_tile(tiles: Tiles, x: X, y: Y) -> Tile:
     else:
         return Wall(x,y)
 
+def direct_move(tiles: Tiles, monster: Monster, new_tile: Tile):
+    new_tile.monster = monster;
+
+    old_tile = get_tile(tiles, monster.x, monster.y)
+    dx = new_tile.x - old_tile.x
+    dy = new_tile.y - old_tile.y
+    if dx != 0 or dy != 0:
+        old_tile.monster = None
+        monster.offset_x = old_tile.x - new_tile.x;
+        monster.offset_y = old_tile.y - new_tile.y;
+
+    monster.x = new_tile.x
+    monster.y = new_tile.y
+
 @dataclass
 class MoveResult:
     did_move: bool
@@ -88,18 +102,7 @@ def try_move(tiles: Tiles, monster: Monster, dx: W, dy: H) -> MoveResult:
 
     if new_tile.passable:
         if not new_tile.monster:
-            new_tile.monster = monster;
-
-            old_tile = get_tile(tiles, monster.x, monster.y)
-            if dx != 0 or dy != 0:
-                old_tile.monster = None
-                monster.offset_x = old_tile.x - new_tile.x;
-                monster.offset_y = old_tile.y - new_tile.y;
-
-            monster.x = new_tile.x
-            monster.y = new_tile.y
-
-
+            direct_move(tiles, monster, new_tile)
         else:
             if monster.is_player != new_tile.monster.is_player:
                 monster.attacked_this_turn = True;

@@ -1,7 +1,8 @@
 
 from dataclasses import dataclass
 
-from game_types import SpriteIndex, X, Y, TileSprite, PLAYER_INDEX, BIRD_INDEX, SNAKE_INDEX, TANK_INDEX, EATER_INDEX, JESTER_INDEX
+from game_types import SpriteIndex, X, Y, TileSprite, PLAYER_INDEX, BIRD_INDEX, SNAKE_INDEX, TANK_INDEX, EATER_INDEX, JESTER_INDEX, SpellName
+from util import shuffle, RNG
 
 HP = float
 STARTING_HP = 3
@@ -34,8 +35,17 @@ class Monster:
 
 
 class Player(Monster):
-    def __init__(self, tile: TileSprite, hp: HP):
+    spells: list[SpellName | None]
+
+    def __init__(self, tile: TileSprite, hp: HP, rng: RNG, num_spells: int):
         super().__init__(tile.x, tile.y, 0, 0, PLAYER_INDEX, hp, True, False, False, False, 0)
+
+        all_spells: list[SpellName | None] = [s for s in SpellName]
+        spells: list[SpellName | None] = shuffle(rng, all_spells)[:num_spells]
+        self.spells = spells
+
+    def add_spell(self, rng: RNG):
+        self.spells.append(shuffle(rng, [s for s in SpellName])[0])
 
 class Bird(Monster):
     def __init__(self, tile: TileSprite):

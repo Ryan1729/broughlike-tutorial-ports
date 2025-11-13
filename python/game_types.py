@@ -39,3 +39,6 @@ class SFX(Enum):
     Treasure = 3
     NewLevel = 4
     Spell = 5
+
+class SpellName(Enum):
+    WOOP = 1

@@ -7,8 +7,8 @@ from typing import Callable, TypedDict
 import os
 import random
 
-from game_types import SpriteIndex, TileSprite, Level, W, H, dist, UI_WIDTH, SFX
-from tile import Tiles, Tile, try_move, get_adjacent_passable_neighbors, get_adjacent_neighbors, in_bounds, replace, Floor, Wall, Exit, MoveResult
+from game_types import SpriteIndex, TileSprite, Level, W, H, dist, UI_WIDTH, SFX, SpellName
+from tile import Tiles, Tile, try_move, get_adjacent_passable_neighbors, get_adjacent_neighbors, in_bounds, replace, Floor, Wall, Exit, MoveResult, direct_move
 from map import generate_level, random_passable_tile, spawn_monster
 from monster import Player, Monster, Bird, Snake, Tank, Eater, Jester, HP, MAX_HP
 
@@ -189,6 +189,7 @@ class RunningState:
     spawn_rate: int
     score: int
     shake_amount: int
+    num_spells: int
 
 @dataclass
 class State:
@@ -210,9 +211,9 @@ def title_state(seed: int) -> Title:
     return Title(random.Random(seed))
 
 def running_state(title: Title) -> Running:
-    return start_level(title.rng, 1, 3, 0)
+    return start_level(title.rng, 1, 3, 0, 1)
 
-def start_level(rng: random.Random, level: Level, player_hp: HP, score: int) -> Running:
+def start_level(rng: random.Random, level: Level, player_hp: HP, score: int, num_spells: int) -> Running:
     @dataclass
     class MiniState:
         rng: random.Random
@@ -221,8 +222,9 @@ def start_level(rng: random.Random, level: Level, player_hp: HP, score: int) -> 
         monsters: list[Monster]
         score: int
         shake_amount: int
+        num_spells: int
 
-    state = MiniState(rng, [], level, [], score, 0)
+    state = MiniState(rng, [], level, [], score, 0, num_spells)
 
     generate_level(state);
 
@@ -235,7 +237,7 @@ def start_level(rng: random.Random, level: Level, player_hp: HP, score: int) -> 
     replace(state.tiles, exit_tile, lambda x, y: Exit(x, y))
 
     return Running(RunningState(
-        Player(starting_tile, player_hp),
+        Player(starting_tile, player_hp, state.rng, num_spells),
         state.rng,
         state.tiles,
         state.level,
@@ -244,6 +246,7 @@ def start_level(rng: random.Random, level: Level, player_hp: HP, score: int) -> 
         spawn_rate,
         state.score,
         0,
+        num_spells,
     ))
 
 def dead_state(running: Running) -> Dead:
@@ -320,6 +323,10 @@ def step_on(platform: Platform, state: RunningState, monster: Monster, tile: Til
         case Floor():
             if monster.is_player and tile.has_treasure:
                 state.score += 1;
+                if state.score % 3 == 0 and state.num_spells < 9:
+                    state.num_spells += 1;
+                    state.player.add_spell(state.rng);
+
                 platform.play_sound(SFX.Treasure)
                 tile.has_treasure = False;
                 spawn_monster(state);
@@ -332,7 +339,7 @@ def step_on(platform: Platform, state: RunningState, monster: Monster, tile: Til
                     platform.add_score(state.score, True);
                     return to_title_state(state.rng);
                 else:
-                    return start_level(state.rng, state.level + 1, min(MAX_HP, state.player.hp+1), state.score);
+                    return start_level(state.rng, state.level + 1, min(MAX_HP, state.player.hp+1), state.score, state.num_spells);
         case _:
             print("unhandled step on case: ", tile)
 
@@ -385,4 +392,27 @@ def tick(platform: Platform, state: RunningState) -> bool:
     return died
 
 
+#
+# Spells
+#
+def cast_spell(platform: Platform, state: RunningState, index: int) -> bool:
+    died = False
 
+    if index >= 0 and index < len(state.player.spells):
+        spell_name = state.player.spells[index];
+        state.player.spells[index] = None
+        if spell_name:
+            spells[spell_name](platform, state);
+            platform.play_sound(SFX.Spell);
+            died = tick(platform, state);
+
+    return died
+
+Spell = Callable[[Platform, RunningState], None]
+
+def woop(platform: Platform, state: RunningState):
+    direct_move(state.tiles, state.player, random_passable_tile(state))
+
+spells: dict[SpellName, Spell] = {
+    SpellName.WOOP: woop,
+}
