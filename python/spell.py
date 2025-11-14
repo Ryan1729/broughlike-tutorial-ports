@@ -1,7 +1,7 @@
-from game_types import SFX, SpellName
+from game_types import NUM_TILES, SFX, SpellName
 from game import Platform, RunningState, tick, PlayerMoveResult
 from map import random_passable_tile
-from tile import Tile, MoveResult, direct_move, get_tile
+from tile import Tile, MoveResult, direct_move, get_tile, hit, get_adjacent_passable_neighbors
 
 from typing import Callable
 
@@ -37,6 +37,17 @@ Spell = Callable[[Platform, RunningState], None]
 def woop(platform: Platform, state: RunningState):
     direct_move(state.tiles, state.player, random_passable_tile(state))
 
+def quake(platform: Platform, state: RunningState):
+    for i in range(NUM_TILES):
+        for j in range(NUM_TILES):
+            tile = get_tile(state.tiles, i, j);
+            if tile.monster:
+                numWalls = 4 - len(get_adjacent_passable_neighbors(state.rng, state.tiles, tile));
+                hit(state.tiles, tile.monster, numWalls*2);
+
+    state.shake_amount = 20;
+
 spells: dict[SpellName, Spell] = {
     SpellName.WOOP: woop,
+    SpellName.QUAKE: quake,
 }

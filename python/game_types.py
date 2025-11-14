@@ -1,5 +1,5 @@
 from typing import Protocol
-from enum import Enum
+from enum import Enum, auto
 
 X = int
 Y = int
@@ -34,11 +34,12 @@ UI_WIDTH = 4
 Level = int
 
 class SFX(Enum):
-    Hit1 = 1
-    Hit2 = 2
-    Treasure = 3
-    NewLevel = 4
-    Spell = 5
+    Hit1 = auto()
+    Hit2 = auto()
+    Treasure = auto()
+    NewLevel = auto()
+    Spell = auto()
 
 class SpellName(Enum):
-    WOOP = 1
+    WOOP = auto()
+    QUAKE = auto()
