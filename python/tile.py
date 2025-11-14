@@ -89,14 +89,14 @@ def direct_move(tiles: Tiles, monster: Monster, new_tile: Tile):
 
 @dataclass
 class MoveResult:
-    did_move: bool
-    new_tile: Tile
+    # None iff we didn't move
+    new_tile: Tile | None
     shake_amount: int
     sfx: SFX | None
 
 def try_move(tiles: Tiles, monster: Monster, dx: W, dy: H) -> MoveResult:
     did_move = False
-    new_tile = get_neighbor(tiles, monster, dx, dy)
+    new_tile: Tile | None = get_neighbor(tiles, monster, dx, dy)
     shake_amount = 0
     sfx = None
 
@@ -120,7 +120,10 @@ def try_move(tiles: Tiles, monster: Monster, dx: W, dy: H) -> MoveResult:
 
         did_move = True
 
-    return MoveResult(did_move, new_tile, shake_amount, sfx)
+    if not did_move:
+        new_tile = None
+
+    return MoveResult(new_tile, shake_amount, sfx)
 
 def hit(tiles: Tiles, monster: Monster, damage: HP):
     monster.hp -= damage;

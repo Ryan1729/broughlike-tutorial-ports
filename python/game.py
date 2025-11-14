@@ -7,8 +7,8 @@ from typing import Callable, TypedDict
 import os
 import random
 
-from game_types import SpriteIndex, TileSprite, Level, W, H, dist, UI_WIDTH, SFX, SpellName
-from tile import Tiles, Tile, try_move, get_adjacent_passable_neighbors, get_adjacent_neighbors, in_bounds, replace, Floor, Wall, Exit, MoveResult, direct_move
+from game_types import SpriteIndex, TileSprite, Level, W, H, dist, UI_WIDTH, SFX
+from tile import Tiles, Tile, try_move, get_adjacent_passable_neighbors, get_adjacent_neighbors, in_bounds, replace, Floor, Wall, Exit, MoveResult
 from map import generate_level, random_passable_tile, spawn_monster
 from monster import Player, Monster, Bird, Snake, Tank, Eater, Jester, HP, MAX_HP
 
@@ -267,7 +267,7 @@ def player_move(platform: Platform, state: RunningState, dx: W, dy: H) -> Player
     state.shake_amount = max(state.shake_amount, move_result.shake_amount)
     platform.play_sound(move_result.sfx)
 
-    if move_result.did_move:
+    if move_result.new_tile:
         died = tick(platform, state);
 
     return PlayerMoveResult(
@@ -390,29 +390,3 @@ def tick(platform: Platform, state: RunningState) -> bool:
         state.spawn_rate -= 1;
 
     return died
-
-
-#
-# Spells
-#
-def cast_spell(platform: Platform, state: RunningState, index: int) -> bool:
-    died = False
-
-    if index >= 0 and index < len(state.player.spells):
-        spell_name = state.player.spells[index];
-        state.player.spells[index] = None
-        if spell_name:
-            spells[spell_name](platform, state);
-            platform.play_sound(SFX.Spell);
-            died = tick(platform, state);
-
-    return died
-
-Spell = Callable[[Platform, RunningState], None]
-
-def woop(platform: Platform, state: RunningState):
-    direct_move(state.tiles, state.player, random_passable_tile(state))
-
-spells: dict[SpellName, Spell] = {
-    SpellName.WOOP: woop,
-}

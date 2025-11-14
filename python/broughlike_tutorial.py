@@ -12,6 +12,7 @@ screen: pygame.Surface = pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
 
 from game_types import NUM_TILES, UI_WIDTH, SFX
 import game
+import spell
 from tile import get_tile
 
 import os
@@ -223,12 +224,12 @@ while running:
                     move_result = game.player_move(platform, state.state, 1, 0)
 
                 if event.key >= pygame.K_1 and event.key <= pygame.K_9:
-                    game.cast_spell(platform, state.state, event.key - pygame.K_1)
+                    move_result = spell.cast(platform, state.state, event.key - pygame.K_1)
 
                 if move_result:
                     if move_result.died:
                         state = game.dead_state(state)
-                    elif move_result.move_result.did_move:
+                    elif move_result.move_result.new_tile:
                         new_state = game.step_on(
                             platform,
                             state.state,
