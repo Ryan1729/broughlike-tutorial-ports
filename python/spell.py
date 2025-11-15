@@ -47,7 +47,13 @@ def quake(platform: Platform, state: RunningState):
 
     state.shake_amount = 20;
 
+def maelstrom(platform: Platform, state: RunningState):
+    for i in range(len(state.monsters)):
+        direct_move(state.tiles, state.monsters[i], random_passable_tile(state))
+        state.monsters[i].teleport_counter = 2;
+
 spells: dict[SpellName, Spell] = {
     SpellName.WOOP: woop,
     SpellName.QUAKE: quake,
+    SpellName.MAELSTROM: maelstrom,
 }

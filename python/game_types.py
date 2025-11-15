@@ -43,3 +43,4 @@ class SFX(Enum):
 class SpellName(Enum):
     WOOP = auto()
     QUAKE = auto()
+    MAELSTROM = auto()
