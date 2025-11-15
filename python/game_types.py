@@ -44,3 +44,4 @@ class SpellName(Enum):
     WOOP = auto()
     QUAKE = auto()
     MAELSTROM = auto()
+    MULLIGAN = auto()

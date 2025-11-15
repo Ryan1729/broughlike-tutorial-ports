@@ -7,7 +7,7 @@ from typing import Callable, TypedDict
 import os
 import random
 
-from game_types import SpriteIndex, TileSprite, Level, W, H, dist, UI_WIDTH, SFX
+from game_types import SpriteIndex, TileSprite, Level, W, H, dist, UI_WIDTH, SFX, SpellName
 from tile import Tiles, Tile, try_move, get_adjacent_passable_neighbors, get_adjacent_neighbors, in_bounds, replace, Floor, Wall, Exit, MoveResult
 from map import generate_level, random_passable_tile, spawn_monster
 from monster import Player, Monster, Bird, Snake, Tank, Eater, Jester, HP, MAX_HP
@@ -213,7 +213,7 @@ def title_state(seed: int) -> Title:
 def running_state(title: Title) -> Running:
     return start_level(title.rng, 1, 3, 0, 1)
 
-def start_level(rng: random.Random, level: Level, player_hp: HP, score: int, num_spells: int) -> Running:
+def start_level(rng: random.Random, level: Level, player_hp: HP, score: int, num_spells: int, override_spells: list[SpellName | None] | None = None) -> Running:
     @dataclass
     class MiniState:
         rng: random.Random
@@ -236,8 +236,13 @@ def start_level(rng: random.Random, level: Level, player_hp: HP, score: int, num
 
     replace(state.tiles, exit_tile, lambda x, y: Exit(x, y))
 
+    player = Player(starting_tile, player_hp, state.rng, num_spells)
+
+    if override_spells != None:
+        player.spells = override_spells
+
     return Running(RunningState(
-        Player(starting_tile, player_hp, state.rng, num_spells),
+        player,
         state.rng,
         state.tiles,
         state.level,

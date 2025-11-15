@@ -1,5 +1,5 @@
 from game_types import NUM_TILES, SFX, SpellName
-from game import Platform, RunningState, tick, PlayerMoveResult
+from game import Platform, RunningState, start_level, tick, PlayerMoveResult
 from map import random_passable_tile
 from tile import Tile, MoveResult, direct_move, get_tile, hit, get_adjacent_passable_neighbors
 
@@ -52,8 +52,14 @@ def maelstrom(platform: Platform, state: RunningState):
         direct_move(state.tiles, state.monsters[i], random_passable_tile(state))
         state.monsters[i].teleport_counter = 2;
 
+def mulligan(platform: Platform, state: RunningState):
+    state.__dict__.update(
+        start_level(state.rng, state.level, 1, state.score, state.num_spells, state.player.spells).state.__dict__
+    )
+
 spells: dict[SpellName, Spell] = {
     SpellName.WOOP: woop,
     SpellName.QUAKE: quake,
     SpellName.MAELSTROM: maelstrom,
+    SpellName.MULLIGAN: mulligan,
 }
