@@ -45,3 +45,4 @@ class SpellName(Enum):
     QUAKE = auto()
     MAELSTROM = auto()
     MULLIGAN = auto()
+    AURA = auto()

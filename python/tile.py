@@ -15,18 +15,25 @@ class Tile:
     passable: bool
     has_treasure: bool
     monster: Monster|None
+    effect: SpriteIndex
+    effect_counter: int
+
+    def set_effect(self, effect: SpriteIndex):
+        self.effect = effect
+        self.effect_counter = 30
+
 
 class Floor(Tile):
     def __init__(self, x: X, y: Y):
-        super().__init__(x, y, 2, True, False, None)
+        super().__init__(x, y, 2, True, False, None, 2, 0)
 
 class Wall(Tile):
     def __init__(self, x: X, y: Y):
-        super().__init__(x, y, 3, False, False, None)
+        super().__init__(x, y, 3, False, False, None, 3, 0)
 
 class Exit(Tile):
     def __init__(self, x: X, y: Y):
-        super().__init__(x, y, 11, True, False, None)
+        super().__init__(x, y, 11, True, False, None, 11, 0)
 
 Tiles = list[list[Tile]]
 
@@ -107,12 +114,12 @@ def try_move(tiles: Tiles, monster: Monster, dx: W, dy: H) -> MoveResult:
             if monster.is_player != new_tile.monster.is_player:
                 monster.attacked_this_turn = True;
                 new_tile.monster.is_stunned = True;
-                
+
                 if new_tile.monster.is_player:
                     sfx = SFX.Hit1
                 else:
                     sfx = SFX.Hit2
-                
+
                 hit(tiles, new_tile.monster, 1)
                 shake_amount = 5
                 monster.offset_x = (new_tile.x - monster.x)/2;

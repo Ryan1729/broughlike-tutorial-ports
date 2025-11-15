@@ -85,6 +85,12 @@ def draw_tile(platform: Platform, tile: Tile):
     if tile.has_treasure:
         draw_sprite(platform, 12, tile.x * platform.sizes.tile, tile.y * platform.sizes.tile)
 
+    if tile.effect_counter:
+        tile.effect_counter -= 1
+        unscaled_sprites[tile.effect].set_alpha(int((tile.effect_counter / 30) * 255))
+        draw_sprite(platform, tile.effect, tile.x * platform.sizes.tile, tile.y * platform.sizes.tile)
+        unscaled_sprites[tile.effect].set_alpha(255)
+
 def sign(x: float) -> float:
     if x > 0.0:
         return 1.0
