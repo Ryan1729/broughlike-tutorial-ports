@@ -1,7 +1,7 @@
 from game_types import NUM_TILES, SFX, SpellName
 from game import Platform, RunningState, start_level, tick, PlayerMoveResult
 from map import random_passable_tile
-from tile import Tile, MoveResult, direct_move, get_tile, hit, get_adjacent_passable_neighbors, get_adjacent_neighbors, get_neighbor
+from tile import Tile, MoveResult, direct_move, get_tile, hit, get_adjacent_passable_neighbors, get_adjacent_neighbors, get_neighbor, replace, Floor
 
 from typing import Callable
 
@@ -85,6 +85,16 @@ def dash(platform: Platform, state: RunningState):
                 hit(state.tiles, tile.monster, 1);
 
 
+def dig(platform: Platform, state: RunningState):
+    for i in range(NUM_TILES):
+        for j in range(NUM_TILES):
+            tile = get_tile(state.tiles, i, j);
+
+            if not tile.passable:
+                replace(state.tiles, tile, lambda x, y: Floor(x, y));
+
+    get_tile(state.tiles, state.player.x, state.player.y).set_effect(13)
+    state.player.heal(2);
 
 spells: dict[SpellName, Spell] = {
     SpellName.WOOP: woop,
@@ -93,4 +103,5 @@ spells: dict[SpellName, Spell] = {
     SpellName.MULLIGAN: mulligan,
     SpellName.AURA: aura,
     SpellName.DASH: dash,
+    SpellName.DIG: dig,
 }

@@ -47,3 +47,4 @@ class SpellName(Enum):
     MULLIGAN = auto()
     AURA = auto()
     DASH = auto()
+    DIG = auto()
