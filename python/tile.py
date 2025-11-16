@@ -108,6 +108,8 @@ def try_move(tiles: Tiles, monster: Monster, dx: W, dy: H) -> MoveResult:
     sfx = None
 
     if new_tile.passable:
+        monster.last_dx = dx;
+        monster.last_dy = dy;
         if not new_tile.monster:
             direct_move(tiles, monster, new_tile)
         else:

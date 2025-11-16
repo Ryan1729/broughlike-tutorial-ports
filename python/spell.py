@@ -1,7 +1,7 @@
 from game_types import NUM_TILES, SFX, SpellName
 from game import Platform, RunningState, start_level, tick, PlayerMoveResult
 from map import random_passable_tile
-from tile import Tile, MoveResult, direct_move, get_tile, hit, get_adjacent_passable_neighbors, get_adjacent_neighbors
+from tile import Tile, MoveResult, direct_move, get_tile, hit, get_adjacent_passable_neighbors, get_adjacent_neighbors, get_neighbor
 
 from typing import Callable
 
@@ -66,10 +66,31 @@ def aura(platform: Platform, state: RunningState):
     get_tile(state.tiles, state.player.x, state.player.y).set_effect(13)
     state.player.heal(1);
 
+def dash(platform: Platform, state: RunningState):
+    new_tile = get_tile(state.tiles, state.player.x, state.player.y);
+    while True:
+        test_tile: Tile = get_neighbor(state.tiles, new_tile, state.player.last_dx, state.player.last_dy)
+        if test_tile.passable and not test_tile.monster:
+            new_tile = test_tile;
+        else:
+            break;
+    
+    if state.player.x != new_tile.x or state.player.y != new_tile.y:
+        direct_move(state.tiles, state.player, new_tile)
+        
+        for tile in get_adjacent_neighbors(state.rng, state.tiles, new_tile):
+            if tile.monster:
+                tile.set_effect(14);
+                tile.monster.is_stunned = True;
+                hit(state.tiles, tile.monster, 1);
+
+
+
 spells: dict[SpellName, Spell] = {
     SpellName.WOOP: woop,
     SpellName.QUAKE: quake,
     SpellName.MAELSTROM: maelstrom,
     SpellName.MULLIGAN: mulligan,
     SpellName.AURA: aura,
+    SpellName.DASH: dash,
 }

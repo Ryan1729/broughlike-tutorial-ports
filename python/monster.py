@@ -1,7 +1,7 @@
 
 from dataclasses import dataclass
 
-from game_types import SpriteIndex, X, Y, TileSprite, PLAYER_INDEX, BIRD_INDEX, SNAKE_INDEX, TANK_INDEX, EATER_INDEX, JESTER_INDEX, SpellName
+from game_types import SpriteIndex, X, Y, TileSprite, PLAYER_INDEX, BIRD_INDEX, SNAKE_INDEX, TANK_INDEX, EATER_INDEX, JESTER_INDEX, SpellName, W, H
 from util import shuffle, RNG
 
 HP = float
@@ -23,6 +23,8 @@ class Monster:
     attacked_this_turn: bool
     is_stunned: bool
     teleport_counter: int
+    last_dx: W
+    last_dy: H
 
     def heal(self, heal_amount: HP):
         self.hp = min(MAX_HP, self.hp+heal_amount);
@@ -38,7 +40,7 @@ class Player(Monster):
     spells: list[SpellName | None]
 
     def __init__(self, tile: TileSprite, hp: HP, rng: RNG, num_spells: int):
-        super().__init__(tile.x, tile.y, 0, 0, PLAYER_INDEX, hp, True, False, False, False, 0)
+        super().__init__(tile.x, tile.y, 0, 0, PLAYER_INDEX, hp, True, False, False, False, 0, -1, 0)
 
         all_spells: list[SpellName | None] = [s for s in SpellName]
         spells: list[SpellName | None] = shuffle(rng, all_spells)[:num_spells]
@@ -49,20 +51,20 @@ class Player(Monster):
 
 class Bird(Monster):
     def __init__(self, tile: TileSprite):
-        super().__init__(tile.x, tile.y, 0, 0, BIRD_INDEX, 3, False, False, False, False, 2)
+        super().__init__(tile.x, tile.y, 0, 0, BIRD_INDEX, 3, False, False, False, False, 2, -1, 0)
 
 class Snake(Monster):
     def __init__(self, tile: TileSprite):
-        super().__init__(tile.x, tile.y, 0, 0, SNAKE_INDEX, 1, False, False, False, False, 2)
+        super().__init__(tile.x, tile.y, 0, 0, SNAKE_INDEX, 1, False, False, False, False, 2, -1, 0)
 
 class Tank(Monster):
     def __init__(self, tile: TileSprite):
-        super().__init__(tile.x, tile.y, 0, 0, TANK_INDEX, 2, False, False, False, False, 2)
+        super().__init__(tile.x, tile.y, 0, 0, TANK_INDEX, 2, False, False, False, False, 2, -1, 0)
 
 class Eater(Monster):
     def __init__(self, tile: TileSprite):
-        super().__init__(tile.x, tile.y, 0, 0, EATER_INDEX, 1, False, False, False, False, 2)
+        super().__init__(tile.x, tile.y, 0, 0, EATER_INDEX, 1, False, False, False, False, 2, -1, 0)
 
 class Jester(Monster):
     def __init__(self, tile: TileSprite):
-        super().__init__(tile.x, tile.y, 0, 0, JESTER_INDEX, 2, False, False, False, False, 2)
+        super().__init__(tile.x, tile.y, 0, 0, JESTER_INDEX, 2, False, False, False, False, 2, -1, 0)

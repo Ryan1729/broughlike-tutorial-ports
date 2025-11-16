@@ -46,3 +46,4 @@ class SpellName(Enum):
     MAELSTROM = auto()
     MULLIGAN = auto()
     AURA = auto()
+    DASH = auto()

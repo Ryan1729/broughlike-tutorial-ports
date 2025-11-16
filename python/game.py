@@ -216,8 +216,8 @@ class Dead(State):
 def title_state(seed: int) -> Title:
     return Title(random.Random(seed))
 
-def running_state(title: Title) -> Running:
-    return start_level(title.rng, 1, 3, 0, 1)
+def running_state(title: Title, override_spells: list[SpellName | None] | None = None) -> Running:
+    return start_level(title.rng, 1, 3, 0, 1, override_spells)
 
 def start_level(rng: random.Random, level: Level, player_hp: HP, score: int, num_spells: int, override_spells: list[SpellName | None] | None = None) -> Running:
     @dataclass
