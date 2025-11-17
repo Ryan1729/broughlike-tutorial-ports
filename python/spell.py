@@ -1,6 +1,7 @@
-from game_types import NUM_TILES, SFX, SpellName
+from game_types import NUM_TILES, SFX, SpellName, W, H
 from game import Platform, RunningState, start_level, tick, PlayerMoveResult
 from map import random_passable_tile
+from monster import HP
 from tile import Tile, MoveResult, direct_move, get_tile, hit, get_adjacent_passable_neighbors, get_adjacent_neighbors, get_neighbor, replace, Floor, in_bounds
 
 from typing import Callable
@@ -120,6 +121,9 @@ def bravery(platform: Platform, state: RunningState):
     for monster in state.monsters:
         monster.is_stunned = True;
 
+def bolt(platform: Platform, state: RunningState):
+    bolt_travel(state, state.player.last_dx, state.player.last_dy, 15 + abs(state.player.last_dy), 4);
+
 spells: dict[SpellName, Spell] = {
     SpellName.WOOP: woop,
     SpellName.QUAKE: quake,
@@ -133,4 +137,17 @@ spells: dict[SpellName, Spell] = {
     SpellName.POWER: power,
     SpellName.BUBBLE: bubble,
     SpellName.BRAVERY: bravery,
+    SpellName.BOLT: bolt,
 }
+
+def bolt_travel(state: RunningState, dx: W, dy: H, effect: int, damage: HP):
+    new_tile = get_tile(state.tiles, state.player.x, state.player.y);
+    while True:
+        test_tile = get_neighbor(state.tiles, new_tile, dx, dy);
+        if test_tile.passable:
+            new_tile = test_tile;
+            if new_tile.monster:
+                hit(state.tiles, new_tile.monster, damage);
+            new_tile.set_effect(effect);
+        else:
+            break;
