@@ -1,7 +1,7 @@
 from game_types import NUM_TILES, SFX, SpellName
 from game import Platform, RunningState, start_level, tick, PlayerMoveResult
 from map import random_passable_tile
-from tile import Tile, MoveResult, direct_move, get_tile, hit, get_adjacent_passable_neighbors, get_adjacent_neighbors, get_neighbor, replace, Floor
+from tile import Tile, MoveResult, direct_move, get_tile, hit, get_adjacent_passable_neighbors, get_adjacent_neighbors, get_neighbor, replace, Floor, in_bounds
 
 from typing import Callable
 
@@ -101,6 +101,13 @@ def kingmaker(platform: Platform, state: RunningState):
         monster.heal(1);
         get_tile(state.tiles, monster.x, monster.y).has_treasure = True;
 
+def alchemy(platform: Platform, state: RunningState):
+    for tile in get_adjacent_neighbors(state.rng, state.tiles, get_tile(state.tiles, state.player.x, state.player.y)):
+        if not tile.passable and in_bounds(tile.x, tile.y):
+            replace(state.tiles, tile, lambda x, y: Floor(x, y));
+            get_tile(state.tiles, tile.x, tile.y).has_treasure = True;
+
+
 spells: dict[SpellName, Spell] = {
     SpellName.WOOP: woop,
     SpellName.QUAKE: quake,
@@ -110,4 +117,5 @@ spells: dict[SpellName, Spell] = {
     SpellName.DASH: dash,
     SpellName.DIG: dig,
     SpellName.KINGMAKER: kingmaker,
+    SpellName.ALCHEMY: alchemy,
 }

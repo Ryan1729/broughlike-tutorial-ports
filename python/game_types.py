@@ -49,3 +49,4 @@ class SpellName(Enum):
     DASH = auto()
     DIG = auto()
     KINGMAKER = auto()
+    ALCHEMY = auto()
