@@ -96,6 +96,11 @@ def dig(platform: Platform, state: RunningState):
     get_tile(state.tiles, state.player.x, state.player.y).set_effect(13)
     state.player.heal(2);
 
+def kingmaker(platform: Platform, state: RunningState):
+    for monster in state.monsters:
+        monster.heal(1);
+        get_tile(state.tiles, monster.x, monster.y).has_treasure = True;
+
 spells: dict[SpellName, Spell] = {
     SpellName.WOOP: woop,
     SpellName.QUAKE: quake,
@@ -104,4 +109,5 @@ spells: dict[SpellName, Spell] = {
     SpellName.AURA: aura,
     SpellName.DASH: dash,
     SpellName.DIG: dig,
+    SpellName.KINGMAKER: kingmaker,
 }

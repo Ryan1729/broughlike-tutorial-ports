@@ -48,3 +48,4 @@ class SpellName(Enum):
     AURA = auto()
     DASH = auto()
     DIG = auto()
+    KINGMAKER = auto()
