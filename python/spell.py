@@ -134,6 +134,17 @@ def cross(platform: Platform, state: RunningState):
 
     for direction in directions:
         bolt_travel(state, direction[0], direction[1], 15 + abs(direction[1]), 2);
+        
+def ex(platform: Platform, state: RunningState):
+    directions = [
+        [-1, -1],
+        [-1, 1],
+        [1, -1],
+        [1, 1]
+    ];
+
+    for direction in directions:
+        bolt_travel(state, direction[0], direction[1], 14, 3);
 
 spells: dict[SpellName, Spell] = {
     SpellName.WOOP: woop,
@@ -150,6 +161,7 @@ spells: dict[SpellName, Spell] = {
     SpellName.BRAVERY: bravery,
     SpellName.BOLT: bolt,
     SpellName.CROSS: cross,
+    SpellName.EX: ex,
 }
 
 def bolt_travel(state: RunningState, dx: W, dy: H, effect: int, damage: HP):

@@ -55,3 +55,4 @@ class SpellName(Enum):
     BRAVERY = auto()
     BOLT = auto()
     CROSS = auto()
+    EX = auto()
