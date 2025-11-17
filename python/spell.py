@@ -115,6 +115,10 @@ def bubble(platform: Platform, state: RunningState):
         if not state.player.spells[i]:
             state.player.spells[i] = state.player.spells[i-1];
 
+def bravery(platform: Platform, state: RunningState):
+    state.player.shield = 2;
+    for monster in state.monsters:
+        monster.is_stunned = True;
 
 spells: dict[SpellName, Spell] = {
     SpellName.WOOP: woop,
@@ -128,4 +132,5 @@ spells: dict[SpellName, Spell] = {
     SpellName.ALCHEMY: alchemy,
     SpellName.POWER: power,
     SpellName.BUBBLE: bubble,
+    SpellName.BRAVERY: bravery,
 }

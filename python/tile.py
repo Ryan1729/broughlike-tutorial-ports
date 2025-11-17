@@ -136,6 +136,9 @@ def try_move(tiles: Tiles, monster: Monster, dx: W, dy: H) -> MoveResult:
     return MoveResult(new_tile, shake_amount, sfx)
 
 def hit(tiles: Tiles, monster: Monster, damage: HP):
+    if monster.shield > 0:
+        return
+    
     monster.hp -= damage;
     if monster.hp <= 0:
         die(tiles, monster);

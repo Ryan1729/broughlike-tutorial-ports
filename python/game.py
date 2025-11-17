@@ -389,6 +389,8 @@ def tick(platform: Platform, state: RunningState) -> bool:
         else:
             state.monsters.pop(i);
 
+    state.player.update()
+
     if state.player.is_dead:
         platform.add_score(state.score, False);
         died = True
