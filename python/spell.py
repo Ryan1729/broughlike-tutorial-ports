@@ -107,6 +107,8 @@ def alchemy(platform: Platform, state: RunningState):
             replace(state.tiles, tile, lambda x, y: Floor(x, y));
             get_tile(state.tiles, tile.x, tile.y).has_treasure = True;
 
+def power(platform: Platform, state: RunningState):
+    state.player.bonus_attack = 5;
 
 spells: dict[SpellName, Spell] = {
     SpellName.WOOP: woop,
@@ -118,4 +120,5 @@ spells: dict[SpellName, Spell] = {
     SpellName.DIG: dig,
     SpellName.KINGMAKER: kingmaker,
     SpellName.ALCHEMY: alchemy,
+    SpellName.POWER: power,
 }

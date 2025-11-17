@@ -50,3 +50,4 @@ class SpellName(Enum):
     DIG = auto()
     KINGMAKER = auto()
     ALCHEMY = auto()
+    POWER = auto()

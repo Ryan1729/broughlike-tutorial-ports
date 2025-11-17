@@ -122,7 +122,8 @@ def try_move(tiles: Tiles, monster: Monster, dx: W, dy: H) -> MoveResult:
                 else:
                     sfx = SFX.Hit2
 
-                hit(tiles, new_tile.monster, 1)
+                hit(tiles, new_tile.monster, 1 + monster.bonus_attack)
+                monster.bonus_attack = 0
                 shake_amount = 5
                 monster.offset_x = (new_tile.x - monster.x)/2;
                 monster.offset_y = (new_tile.y - monster.y)/2;
