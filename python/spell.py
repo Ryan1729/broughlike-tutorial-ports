@@ -124,6 +124,17 @@ def bravery(platform: Platform, state: RunningState):
 def bolt(platform: Platform, state: RunningState):
     bolt_travel(state, state.player.last_dx, state.player.last_dy, 15 + abs(state.player.last_dy), 4);
 
+def cross(platform: Platform, state: RunningState):
+    directions = [
+        [0, -1],
+        [0, 1],
+        [-1, 0],
+        [1, 0]
+    ];
+
+    for direction in directions:
+        bolt_travel(state, direction[0], direction[1], 15 + abs(direction[1]), 2);
+
 spells: dict[SpellName, Spell] = {
     SpellName.WOOP: woop,
     SpellName.QUAKE: quake,
@@ -138,6 +149,7 @@ spells: dict[SpellName, Spell] = {
     SpellName.BUBBLE: bubble,
     SpellName.BRAVERY: bravery,
     SpellName.BOLT: bolt,
+    SpellName.CROSS: cross,
 }
 
 def bolt_travel(state: RunningState, dx: W, dy: H, effect: int, damage: HP):
