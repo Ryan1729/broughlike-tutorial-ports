@@ -196,16 +196,6 @@ def screenshake(platform: game.Platform, state: game.RunningState):
     platform.shake_w = round(math.cos(shake_angle)*state.shake_amount);
     platform.shake_h = round(math.sin(shake_angle)*state.shake_amount);
 
-#
-#  Dev hack we should remove later
-#
-import sys
-override_spells: list[spell.SpellName | None] | None = None
-if sys.argv[-1] == "newest_spell":
-    spellbook: list[spell.SpellName | None] | None = list(spell.spells.keys())
-    override_spells = spellbook[-1:]
-
-
 while running:
     # poll for events
     # pygame.QUIT event means the user clicked X to close your window
@@ -218,7 +208,7 @@ while running:
             #
 
             if isinstance(state, game.Title):
-                state = game.running_state(state, override_spells)
+                state = game.running_state(state)
             elif isinstance(state, game.Dead):
                 state = game.to_title_state(state.state.rng)
             elif isinstance(state, game.Running):
