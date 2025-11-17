@@ -110,6 +110,12 @@ def alchemy(platform: Platform, state: RunningState):
 def power(platform: Platform, state: RunningState):
     state.player.bonus_attack = 5;
 
+def bubble(platform: Platform, state: RunningState):
+    for i in range(len(state.player.spells) - 1, -1, -1):
+        if not state.player.spells[i]:
+            state.player.spells[i] = state.player.spells[i-1];
+
+
 spells: dict[SpellName, Spell] = {
     SpellName.WOOP: woop,
     SpellName.QUAKE: quake,
@@ -121,4 +127,5 @@ spells: dict[SpellName, Spell] = {
     SpellName.KINGMAKER: kingmaker,
     SpellName.ALCHEMY: alchemy,
     SpellName.POWER: power,
+    SpellName.BUBBLE: bubble,
 }

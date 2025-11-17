@@ -51,3 +51,4 @@ class SpellName(Enum):
     KINGMAKER = auto()
     ALCHEMY = auto()
     POWER = auto()
+    BUBBLE = auto()
